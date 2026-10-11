@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Produto | BBabilônia</title>
+<style>
+  :root { --fundo:#fff; --texto:#1b1b1b; --suave:#6b6b6b; --linha:#e3e3e3; --marca:#111; --ok:#1a7f4b; --erro:#c0392b; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif; color:var(--texto); background:var(--fundo); }
+  .pagina { max-width:520px; margin:0 auto; padding-bottom:90px; }
+  .foto { width:100%; aspect-ratio:1/1; object-fit:cover; background:#f2f2f2; display:block; }
+  .miniaturas { display:flex; gap:8px; padding:8px 12px; overflow-x:auto; }
+  .miniaturas img { width:56px; height:56px; object-fit:cover; border:2px solid transparent; border-radius:6px; cursor:pointer; flex:none; }
+  .miniaturas img.ativa { border-color:var(--marca); }
+  .video { width:100%; max-height:70vh; background:#000; display:block; }
+  .info { padding:12px 16px; }
+  h1 { font-size:1.15rem; margin:0 0 6px; font-weight:600; }
+  .preco { font-size:1.4rem; font-weight:700; }
+  .bloco { padding:14px 16px; border-top:1px solid var(--linha); }
+  .rotulo { font-size:.9rem; color:var(--suave); margin-bottom:10px; }
+  .rotulo b { color:var(--texto); }
+  .cores { display:flex; gap:10px; flex-wrap:wrap; }
+  .cor { width:52px; height:52px; border-radius:8px; border:2px solid var(--linha); overflow:hidden; cursor:pointer; padding:0; background:#fafafa; font-size:.7rem; }
+  .cor img { width:100%; height:100%; object-fit:cover; display:block; }
+  .cor.ativa { border-color:var(--marca); }
+  .tamanhos { display:flex; gap:8px; flex-wrap:wrap; }
+  .tam { min-width:48px; padding:10px 14px; border:1.5px solid var(--linha); border-radius:8px; background:#fff; font-size:.95rem; cursor:pointer; }
+  .tam.ativa { border-color:var(--marca); background:var(--marca); color:#fff; }
+  .tam.esgotado { color:#aaa; text-decoration:line-through; cursor:not-allowed; background:#f6f6f6; }
+  .stock { font-size:.85rem; margin-top:10px; }
+  .stock.ok { color:var(--ok); }
+  .stock.sem { color:var(--erro); }
+  .qtd { display:flex; align-items:center; gap:0; width:max-content; border:1.5px solid var(--linha); border-radius:8px; overflow:hidden; }
+  .qtd button { width:44px; height:44px; border:0; background:#fff; font-size:1.3rem; cursor:pointer; }
+  .qtd button:disabled { color:#bbb; cursor:not-allowed; }
+  .qtd span { min-width:48px; text-align:center; font-weight:600; }
+  .barra { position:fixed; left:0; right:0; bottom:0; background:#fff; border-top:1px solid var(--linha); padding:12px 16px; }
+  .barra-interna { max-width:520px; margin:0 auto; }
+  .comprar { width:100%; padding:15px; border:0; border-radius:10px; background:var(--marca); color:#fff; font-size:1rem; font-weight:600; cursor:pointer; }
+  .comprar:disabled { background:#bdbdbd; cursor:not-allowed; }
+  .botoes { display:flex; gap:10px; }
+  .botoes .comprar { flex:1; padding:14px 8px; font-size:.95rem; }
+  .comprar.claro { background:#fff; color:var(--marca); border:2px solid var(--marca); }
+  .ver-carrinho { display:block; text-align:center; font-size:.85rem; margin-bottom:8px; color:var(--marca); }
+  .aviso { text-align:center; font-size:.85rem; margin-bottom:8px; min-height:1.1em; color:var(--erro); }
+  .aviso.ok { color:var(--ok); }
+  .carregando { padding:40px 16px; text-align:center; color:var(--suave); }
+  button:focus-visible { outline:3px solid #2b6cff; outline-offset:2px; }
+</style>
+</head>
+<body>
+<div class="pagina" id="app"><div class="carregando">A carregar produto…</div></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script>
+  const SUPABASE_URL = "https://dsfoqoeawvjafypycldz.supabase.co";
+  const SUPABASE_KEY = "sb_publishable_BN4NiVcDab9CqdTY_odgDA_uUOhjja0";
+
+  const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  const app = document.getElementById("app");
+  const idProduto = new URLSearchParams(location.search).get("id");
+
+  let produto = null, variantes = [];
+  let corSel = null, tamSel = null, qtd = 1;
+
+  const nomeDe  = p => p.name || p.nome || "Produto";
+  const precoDe = p => p.price ?? p.preco ?? 0;
+  const moedaDe = p => p.currency || "MZN";
+  const fmtPreco = p => Number(precoDe(p)).toLocaleString("pt-PT", { minimumFractionDigits:2 }) + " " + moedaDe(p);
+
+  // Aceita os dois formatos: {cor, tamanho, stock} e {cor, tamanho, quantidade}
+  function normalizar(v) {
+    const bruto = v.stock ?? v.quantidade ?? v.qty ?? 0;
+    const n = Number(bruto);
+    return {
+      ...v,
+      cor: v.cor || v.color || "Única",
+      tamanho: v.tamanho || v.size || "Único",
+      quantidade: Number.isFinite(n) ? n : 0
+    };
+  }
+
+  const cores = () => [...new Set(variantes.map(v => v.cor))];
+  const tamanhosDaCor = c => variantes.filter(v => v.cor === c);
+  const varianteAtual = () => variantes.find(v => v.cor === corSel && v.tamanho === tamSel);
+  const fotoDaCor = c => (variantes.find(v => v.cor === c && v.image_url) || {}).image_url || produto.image_url || "";
+
+  async function iniciar() {
+    if (!idProduto) { app.innerHTML = '<div class="carregando">Abra esta página com ?id=NUMERO_DO_PRODUTO no fim do endereço.</div>'; return; }
+    const { data, error } = await db.from("products").select("*").eq("id", idProduto).single();
+    if (error || !data) { app.innerHTML = '<div class="carregando">Produto não encontrado.</div>'; return; }
+    produto = data;
+    variantes = Array.isArray(data.variants) ? data.variants.map(normalizar) : [];
+    desenhar();
+  }
+
+  function desenhar() {
+    const foto = corSel ? fotoDaCor(corSel) : (produto.image_url || "");
+    const galeria = [produto.image_url, ...variantes.map(v => v.image_url)].filter(Boolean);
+    const unicas = [...new Set(galeria)];
+    const v = varianteAtual();
+    const maximo = v ? v.quantidade : 0;
+    if (qtd > maximo && maximo > 0) qtd = maximo;
+
+    app.innerHTML = `
+      <img class="foto" id="fotoPrincipal" src="${foto}" alt="${nomeDe(produto)}">
+      ${unicas.length > 1 ? `<div class="miniaturas">${unicas.map(u => `<img src="${u}" class="${u === foto ? "ativa" : ""}" data-foto="${u}" alt="">`).join("")}</div>` : ""}
+      ${produto.video_url ? `<video class="video" src="${produto.video_url}" controls playsinline preload="metadata"></video>` : ""}
+      <div class="info">
+        <h1>${nomeDe(produto)}</h1>
+        <div class="preco">${fmtPreco(produto)}</div>
+      </div>
+
+      <div class="bloco">
+        <div class="rotulo">Cor: <b>${corSel || "escolha uma cor"}</b></div>
+        <div class="cores">
+          ${cores().map(c => `<button class="cor ${c === corSel ? "ativa" : ""}" data-cor="${c}" title="${c}">
+              ${fotoDaCor(c)
