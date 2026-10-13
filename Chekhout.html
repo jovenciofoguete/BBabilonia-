@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Finalizar compra | BBabilônia</title>
+<style>
+  :root { --texto:#1b1b1b; --suave:#6b6b6b; --linha:#e3e3e3; --marca:#111; --erro:#c0392b; --ok:#1e7a46; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif; color:var(--texto); background:#fff; }
+  .pagina { max-width:520px; margin:0 auto; padding:16px 16px 40px; }
+  h1 { font-size:1.2rem; margin:0 0 14px; }
+  h2 { font-size:1rem; margin:22px 0 10px; }
+  .voltar { display:inline-block; margin-bottom:10px; font-size:.9rem; color:var(--suave); }
+  .resumo { border:1.5px solid var(--linha); border-radius:10px; padding:4px 12px; }
+  .resumo-item { display:flex; justify-content:space-between; gap:10px; padding:10px 0; border-top:1px solid var(--linha); font-size:.9rem; }
+  .resumo-item:first-child { border-top:0; }
+  .resumo-item small { color:var(--suave); display:block; }
+  .resumo-total { display:flex; justify-content:space-between; font-weight:700; padding:12px 0 8px; border-top:1.5px solid var(--linha); }
+  label { display:block; font-size:.88rem; font-weight:600; margin:12px 0 5px; }
+  input, select, textarea { width:100%; padding:13px; border:1.5px solid var(--linha); border-radius:8px; font-size:1rem; font-family:inherit; background:#fff; color:var(--texto); }
+  textarea { min-height:78px; resize:vertical; }
+  input:focus, select:focus, textarea:focus, button:focus-visible, a:focus-visible { outline:3px solid #2b6cff; outline-offset:2px; }
+  .pagamentos { display:grid; gap:8px; }
+  .pagamento { display:flex; align-items:center; gap:10px; border:1.5px solid var(--linha); border-radius:8px; padding:13px; font-weight:600; margin:0; cursor:pointer; }
+  .pagamento input { width:auto; margin:0; }
+  .pagamento:has(input:checked) { border-color:var(--marca); background:#f6f6f6; }
+  .nota { color:var(--suave); font-size:.85rem; margin-top:8px; }
+  .botao { width:100%; margin-top:22px; padding:15px; border:0; border-radius:10px; background:var(--marca); color:#fff; font-size:1rem; font-weight:600; cursor:pointer; }
+  .botao:disabled { opacity:.6; cursor:wait; }
+  .erro { color:var(--erro); font-size:.9rem; margin-top:12px; min-height:1.2em; }
+  .sucesso { text-align:center; padding:50px 10px; }
+  .sucesso h1 { color:var(--ok); }
+  .sucesso a { color:var(--marca); font-weight:600; }
+  .ref { display:inline-block; background:#f2f2f2; border-radius:8px; padding:8px 14px; font-weight:700; letter-spacing:.5px; margin:10px 0; }
+</style>
+</head>
+<body>
+<div class="pagina" id="app"></div>
+
+<script>
+  // ====== CONFIGURAÇÃO ======
+  const SUPABASE_URL = "https://dsfoqoeawvjafypycldz.supabase.co";
+  const SUPABASE_KEY = "sb_publishable_BN4NiVcDab9CqdTY_odgDA_uUOhjja0";
+  const chave = "carrinho";
+  // ==========================
+
+  const app = document.getElementById("app");
+  const ler = () => { try { return JSON.parse(localStorage.getItem(chave) || "[]"); } catch (e) { return []; } };
+  const fmt = (n, m) => Number(n).toLocaleString("pt-PT", { minimumFractionDigits:2 }) + " " + (m || "MZN");
+  const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]));
+
+  function desenhar() {
+    const carrinho = ler();
+    if (!carrinho.length) {
+      app.innerHTML = '<h1>Finalizar compra</h1><div class="sucesso" style="padding-top:20px">O seu carrinho está vazio.<br><br><a href="carrinho.html">Voltar ao carrinho</a></div>';
+      return;
+    }
+
+    const totais = {};
+    carrinho.forEach(i => { const m = i.moeda || "MZN"; totais[m] = (totais[m] || 0) + Number(i.preco) * i.qtd; });
+
+    app.innerHTML = `
+      <a class="voltar" href="carrinho.html">← Voltar ao carrinho</a>
+      <h1>Finalizar compra</h1>
+
+      <div class="resumo">
+        ${carrinho.map(i => `
+          <div class="resumo-item">
+            <div>${esc(i.nome)} × ${i.qtd}<small>${esc(i.cor)} · ${esc(i.tamanho)}</small></div>
+            <div>${fmt(Number(i.preco) * i.qtd, i.moeda)}</div>
+          </div>`).join("")}
+        ${Object.keys(totais).map(m => `<div class="resumo-total"><span>Total</span><span>${fmt(totais[m], m)}</span></div>`).join("")}
+      </div>
+
+      <form id="form" novalidate>
+        <h2>Os seus dados</h2>
+        <label for="nome">Nome completo</label>
+        <input id="nome" autocomplete="name" required>
+        <label for="telefone">Telefone</label>
+        <input id="telefone" type="tel" autocomplete="tel" placeholder="84 123 4567" required>
+        <label for="email">Email (opcional)</label>
+        <input id="email" type="email" autocomplete="email">
+        <label for="pais">País</label>
+        <input id="pais" autocomplete="country-name" value="Moçambique" required>
+        <label for="morada">Morada de entrega</label>
+        <textarea id="morada" autocomplete="street-address" placeholder="Cidade, bairro, rua e ponto de referência" required></textarea>
+
+        <h2>Forma de pagamento</h2>
+        <div class="pagamentos">
+          <label class="pagamento"><input type="radio" name="pag" value="M-Pesa" checked> M-Pesa</label>
+          <label class="pagamento"><input type="radio" name="pag" value="e-Mola"> e-Mola</label>
+          <label class="pagamento"><input type="radio" name="pag" value="Cartão Visa/Mastercard"> Cartão Visa / Mastercard</label>
+        </div>
+        <p class="nota">Depois de enviar o pedido, entramos em contacto para confirmar o pagamento e a entrega.</p>
+
+        <div class="erro" id="erro" role="alert"></div>
+        <button class="botao" id="enviar" type="submit">Enviar pedido</button>
+      </form>`;
+
+    document.getElementById("form").addEventListener("submit", e => enviar(e, carrinho, totais));
+  }
+
+  async function enviar(e, carrinho, totais) {
+    e.preventDefault();
+    const erro = document.getElementById("erro");
+    const botao = document.getElementById("enviar");
+    const v = id => document.getElementById(id).value.trim();
+    erro.textContent = "";
+
+    if (!v("nome")) return erro.textContent = "Escreva o seu nome.";
+    if (v("telefone").replace(/\D/g, "").length < 9) return erro.textContent = "Escreva um telefone válido, com pelo menos 9 números.";
+    if (!v("pais")) return erro.textContent = "Escreva o país.";
+    if (!v("morada")) return erro.textContent = "Escreva a morada de entrega.";
+
+    const moedas = Object.keys(totais);
+    if (moedas.length > 1) return erro.textContent = "O carrinho tem produtos em moedas diferentes. Faça um pedido para cada moeda.";
+
+    const id = (crypto.randomUUID ? crypto.randomUUID() : ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c => (c ^ Math.random() * 16 >> c / 4).toString(16)));
+    const pedido = {
+      id,
+      customer_name: v("nome"),
+      phone: v("telefone"),
+      email: v("email") || null,
+      address: v("morada"),
+      country: v("pais"),
+      items: carrinho,
+      total: totais[moedas[0]],
+      currency: moedas[0],
+      payment_method: document.querySelector('input[name="pag"]:checked').value,
+      status: "pendente"
+    };
+
+    botao.disabled = true;
+    botao.textContent = "A enviar...";
+    try {
+      const r = await fetch(SUPABASE_URL + "/rest/v1/orders", {
+        method: "POST",
+        headers: {
+          "apikey": SUPABASE_KEY,
+          "Content-Type": "application/json",
+          "Prefer": "return=minimal"
+        },
+        body: JSON.stringify(pedido)
+      });
+      if (!r.ok) throw new Error(await r.text());
+      localStorage.removeItem(chave);
+      app.innerHTML = `
+        <div class="sucesso">
+          <h1>Pedido enviado</h1>
+          <p>Obrigado, ${esc(pedido.customer_name)}. Guarde o número do seu pedido:</p>
+          <div class="ref">${id.slice(0, 8).toUpperCase()}</div>
+          <p>Vamos contactá-lo no ${esc(pedido.phone)} para confirmar o pagamento por ${esc(pedido.payment_method)} e a entrega.</p>
+          <p><a href="javascript:history.go(-2)">Voltar à loja</a></p>
+        </div>`;
+    } catch (err) {
+      console.error(err);
+      erro.textContent = "Não foi possível enviar o pedido. Verifique a ligação à internet e tente outra vez.";
+      botao.disabled = false;
+      botao.textContent = "Enviar pedido";
+    }
+  }
+
+  desenhar();
+</script>
+</body>
+  </html>
