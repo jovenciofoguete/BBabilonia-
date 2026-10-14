@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Finalizar compra | BBabilônia</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Nunito+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--lapis:#1B2F6B;--lapis2:#264190;--ouro:#D9A441;--erro:#B5472E;--ok:#1E7A4C;
+  --fundo:#FBFBF9;--papel:#fff;--texto:#1A1D29;--suave:#6B7080;--linha:#E1E3EA}
+@media (prefers-color-scheme: dark){:root{--fundo:#12141C;--papel:#1B1E29;--texto:#F1F2F6;--suave:#9AA0B3;--linha:#2B2F3D;--lapis:#0F1A3D}}
+*{box-sizing:border-box;margin:0}
+body{font-family:'Nunito Sans',system-ui,sans-serif;background:var(--fundo);color:var(--texto);line-height:1.45}
+:focus-visible{outline:3px solid var(--ouro);outline-offset:2px}
+header{background:var(--lapis);color:#fff;padding:14px}
+header div{max-width:640px;margin:auto;display:flex;justify-content:space-between;align-items:center}
+.logo{font-family:'Sora',sans-serif;font-weight:800;font-size:18px;color:#fff;text-decoration:none}
+.logo span{color:var(--ouro)}
+header a.volta{color:#fff;font-size:14px;font-weight:600}
+main{max-width:640px;margin:auto;padding:16px 14px 40px}
+h1{font-family:'Sora',sans-serif;font-size:21px;margin:6px 0 14px}
+h2{font-family:'Sora',sans-serif;font-size:16px;margin:22px 0 10px}
+.caixa{background:var(--papel);border:1px solid var(--linha);border-radius:12px;padding:12px}
+.item{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--linha)}
+.item:last-child{border-bottom:0}
+.item .f{width:54px;height:54px;border-radius:8px;background:var(--linha);overflow:hidden;flex:none}
+.item .f img{width:100%;height:100%;object-fit:cover}
+.item .d{flex:1;min-width:0;font-size:14px}
+.item .d b{display:block;font-weight:600}
+.item .d span{color:var(--suave);font-size:13px}
+.item .p{font-weight:700;font-size:14px;white-space:nowrap}
+.total{display:flex;justify-content:space-between;font-family:'Sora',sans-serif;font-weight:700;font-size:17px;padding-top:10px}
+label{display:block;font-size:14px;font-weight:600;margin:12px 0 5px}
+label small{font-weight:400;color:var(--suave)}
+input,textarea{width:100%;font:inherit;font-size:16px;padding:11px 12px;border:1px solid var(--linha);border-radius:10px;background:var(--papel);color:var(--texto)}
+textarea{min-height:70px;resize:vertical}
+.pag{display:grid;gap:8px}
+.op{display:flex;gap:12px;align-items:flex-start;padding:12px;border:2px solid var(--linha);border-radius:12px;background:var(--papel);cursor:pointer}
+.op input{width:20px;height:20px;margin-top:2px;accent-color:var(--lapis2);flex:none}
+.op b{display:block;font-size:15px}
+.op span{font-size:13px;color:var(--suave)}
+.op:has(input:checked){border-color:var(--lapis2);background:color-mix(in srgb,var(--lapis2) 8%,var(--papel))}
+#aviso{display:none;margin-top:12px;padding:10px 12px;border-radius:10px;background:color-mix(in srgb,var(--erro) 12%,var(--papel));color:var(--erro);font-size:14px;font-weight:600}
+button.enviar{width:100%;margin-top:18px;border:0;border-radius:12px;background:var(--lapis2);color:#fff;font:inherit;font-weight:700;font-size:17px;padding:15px;cursor:pointer}
+button.enviar:disabled{opacity:.6}
+#ok{display:none;text-align:center;padding:70px 10px}
+#ok h1{color:var(--ok);font-size:26px}
+#ok p{margin:14px 0 22px}
+#ok a{font-weight:700;color:var(--lapis2)}
+.vazio{text-align:center;padding:60px 10px;color:var(--suave)}
+.vazio a{display:inline-block;margin-top:12px;font-weight:700;color:var(--lapis2)}
+</style>
+</head>
+<body>
+<header><div><a class="logo" href="index.html">B-<span>Babilônia</span></a><a class="volta" href="carrinho.html">Voltar ao carrinho</a></div></header>
+
+<main>
+  <section id="form">
+    <h1>Finalizar compra</h1>
+    <div class="caixa" id="resumo"></div>
+
+    <h2>Os seus dados</h2>
+    <label for="nome">Nome completo</label>
+    <input id="nome" autocomplete="name">
+    <label for="tel">Telefone (com indicativo, ex.: +258...)</label>
+    <input id="tel" type="tel" autocomplete="tel">
+    <label for="email">Email <small>(opcional)</small></label>
+    <input id="email" type="email" autocomplete="email">
+    <label for="pais">País</label>
+    <input id="pais" list="paises" autocomplete="country-name" value="Moçambique">
+    <datalist id="paises">
+      <option>Moçambique</option><option>Angola</option><option>Portugal</option><option>Brasil</option>
+      <option>África do Sul</option><option>Zimbabué</option><option>Malawi</option><option>Zâmbia</option>
+      <option>Tanzânia</option><option>Essuatíni</option><option>Cabo Verde</option><option>Guiné-Bissau</option>
+      <option>São Tomé e Príncipe</option><option>Reino Unido</option><option>França</option><option>Alemanha</option>
+      <option>Espanha</option><option>Itália</option><option>Estados Unidos</option><option>Canadá</option>
+      <option>China</option><option>Índia</option><option>Emirados Árabes Unidos</option><option>Austrália</option>
+    </datalist>
+    <label for="morada">Morada de entrega</label>
+    <textarea id="morada" autocomplete="street-address"></textarea>
+    <label for="notas">Notas <small>(opcional)</small></label>
+    <textarea id="notas"></textarea>
+
+    <h2>Como quer pagar?</h2>
+    <div class="pag">
+      <label class="op"><input type="radio" name="pag" value="mpesa" checked>
+        <div><b>M-Pesa</b><span>Pagamento por telemóvel. Confirmamos consigo por telefone.</span></div></label>
+      <label class="op"><input type="radio" name="pag" value="emola">
+        <div><b>e-Mola</b><span>Pagamento por telemóvel. Confirmamos consigo por telefone.</span></div></label>
+      <label class="op"><input type="radio" name="pag" value="visa_mastercard">
+        <div><b>Cartão Visa ou Mastercard</b><span>De qualquer país. Enviamos-lhe uma ligação segura para pagar.</span></div></label>
+    </div>
+
+    <div id="refBox">
+      <label for="ref">Referência do pagamento <small>(opcional, se já pagou)</small></label>
+      <input id="ref">
+    </div>
+
+    <p id="aviso" role="alert"></p>
+    <button class="enviar" id="btn">Enviar pedido</button>
+  </section>
+
+  <section id="ok">
+    <h1>Pedido enviado</h1>
+    <p id="msgOk"></p>
+    <a href="index.html">Voltar à loja</a>
+  </section>
+</main>
+
+<script>
+const SUPA = "https://dsfoqoeawvjafypycldz.supabase.co";
+const KEY  = "sb_publishable_BN4NiVcDab9CqdTY_odgDA_uUOhjja0";
+// Quando tiver um gateway de cartões, cole aqui o link de pagamento (ex.: "https://...").
+// Se ficar vazio, enviamos ao cliente uma ligação segura por contacto.
+const LINK_CARTAO = "";
+
+const $ = id => document.getElementById(id);
+let itens = [];
+try { itens = JSON.parse(localStorage.getItem("carrinho") || "[]"); } catch(e){}
+
+const moeda = (itens[0] && itens[0].moeda) || "MZN";
+const total = itens.reduce((s,i)=> s + Number(i.preco||0) * Number(i.qtd||1), 0);
+const fmt = v => Number(v).toLocaleString("pt-PT",{maximumFractionDigits:2}) + " " + moeda;
+const esc = t => String(t ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+function resumo(){
+  if(!itens.length){
+    $("form").innerHTML = '<div class="vazio"><p>O seu carrinho está vazio.</p><a href="index.html">Ver produtos</a></div>';
+    return;
+  }
+  $("resumo").innerHTML = itens.map(i => `
+    <div class="item">
+      <div class="f">${i.foto ? `<img src="${esc(i.foto)}" alt="">` : ""}</div>
+      <div class="d"><b>${esc(i.nome)}</b><span>${[i.cor,i.tamanho].filter(Boolean).map(esc).join(" · ")} · Qtd ${esc(i.qtd||1)}</span></div>
+      <div class="p">${fmt(Number(i.preco||0)*Number(i.qtd||1))}</div>
+    </div>`).join("") + `<div class="total"><span>Total</span><span>${fmt(total)}</span></div>`;
+}
+
+function erro(t){ const a=$("aviso"); a.textContent=t; a.style.display="block"; a.scrollIntoView({block:"center"}); }
+
+async function enviar(){
+  $("aviso").style.display = "none";
+  const nome = $("nome").value.trim(), tel = $("tel").value.trim(),
+        morada = $("morada").value.trim(), pais = $("pais").value.trim();
+  const metodo = document.querySelector('input[name="pag"]:checked').value;
+  if(nome.length < 3) return erro("Escreva o seu nome completo.");
+  if(tel.replace(/\D/g,"").length < 7) return erro("Escreva um telefone válido, com indicativo do país.");
+  if(!pais) return erro("Escreva o seu país.");
+  if(morada.length < 5) return erro("Escreva a morada de entrega.");
+
+  const btn = $("btn"); btn.disabled = true; btn.textContent = "A enviar...";
+  const pedido = {
+    customer_name: nome,
+    customer_phone: tel,
+    customer_email: $("email").value.trim() || null,
+    delivery_address: morada,
+    notes: $("notas").value.trim() || null,
+    payment_method: metodo,
+    payment_reference: $("ref").value.trim() || null,
+    country: pais,
+    currency: moeda,
+    items: itens,
+    subtotal: total,
+    total: total
+  };
+  try{
+    const r = await fetch(SUPA + "/rest/v1/orders", {
+      method: "POST",
+      headers: { apikey: KEY, Authorization: "Bearer " + KEY, "Content-Type": "application/json", Prefer: "return=minimal" },
+      body: JSON.stringify(pedido)
+    });
+    if(!r.ok) throw new Error(await r.text());
+  }catch(e){
+    btn.disabled = false; btn.textContent = "Enviar pedido";
+    return erro("Não foi possível enviar o pedido. Verifique a ligação e tente de novo.");
+  }
+  localStorage.removeItem("carrinho");
+  if(metodo === "visa_mastercard" && LINK_CARTAO){ location.href = LINK_CARTAO; return; }
+  const como = metodo === "visa_mastercard"
+    ? "para lhe enviar uma ligação segura de pagamento com cartão"
+    : "para confirmar o pagamento e a entrega";
+  $("msgOk").textContent = `Obrigado, ${nome}. Vamos entrar em contacto pelo telefone ${tel} ${como}.`;
+  $("form").style.display = "none";
+  $("ok").style.display = "block";
+  window.scrollTo(0,0);
+}
+
+document.querySelectorAll('input[name="pag"]').forEach(r => r.addEventListener("change", () => {
+  $("refBox").style.display = r.value === "visa_mastercard" && r.checked ? "none" : "block";
+}));
+$("btn").addEventListener("click", enviar);
+resumo();
+</script>
+</body>
+</html>
