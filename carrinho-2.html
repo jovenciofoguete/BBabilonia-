@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Carrinho – BBabilônia</title>
+<style>
+  :root{
+    --bg:#faf7f2; --card:#ffffff; --text:#1f1a17; --muted:#6f655e;
+    --line:#e6dfd6; --brand:#7a1f3d; --brand-text:#ffffff; --danger:#b3261e;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#17130f; --card:#221c17; --text:#f3ece4; --muted:#a89d93;
+      --line:#38302a; --brand:#d9758f; --brand-text:#1a0d12; --danger:#f2867f;
+    }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;line-height:1.45}
+  header{padding:16px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between}
+  header a{color:var(--text);text-decoration:none;font-weight:700;font-size:1.1rem}
+  main{max-width:680px;margin:0 auto;padding:16px 16px 140px}
+  h1{font-size:1.35rem;margin:8px 0 16px}
+  .item{display:flex;gap:12px;background:var(--card);border:1px solid var(--line);
+    border-radius:12px;padding:12px;margin-bottom:12px}
+  .item img{width:84px;height:84px;object-fit:cover;border-radius:8px;background:var(--line);flex:none}
+  .info{flex:1;min-width:0}
+  .nome{font-weight:600;margin:0 0 2px;overflow-wrap:anywhere}
+  .meta{color:var(--muted);font-size:.9rem;margin:0 0 8px}
+  .linha{display:flex;align-items:center;justify-content:space-between;gap:8px}
+  .qtd{display:inline-flex;align-items:center;border:1px solid var(--line);border-radius:8px}
+  .qtd button{width:38px;height:38px;border:0;background:transparent;color:var(--text);font-size:1.2rem;cursor:pointer}
+  .qtd span{min-width:28px;text-align:center}
+  .preco{font-weight:700}
+  .remover{background:none;border:0;color:var(--danger);font-size:.85rem;cursor:pointer;padding:6px 0}
+  button:focus-visible,a:focus-visible{outline:3px solid var(--brand);outline-offset:2px}
+  .rodape{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--line);
+    padding:12px 16px calc(12px + env(safe-area-inset-bottom,0px))}
+  .rodape-in{max-width:680px;margin:0 auto}
+  .totais{margin-bottom:10px}
+  .totais div{display:flex;justify-content:space-between;font-weight:700}
+  .finalizar{display:block;width:100%;text-align:center;background:var(--brand);color:var(--brand-text);
+    border:0;border-radius:10px;padding:14px;font-size:1rem;font-weight:700;cursor:pointer;text-decoration:none}
+  .vazio{text-align:center;padding:48px 8px;color:var(--muted)}
+  .vazio a{display:inline-block;margin-top:12px;color:var(--brand);font-weight:700}
+</style>
+</head>
+<body>
+<header>
+  <a href="/">BBabilônia</a>
+</header>
+<main>
+  <h1>O seu carrinho</h1>
+  <div id="lista"></div>
+</main>
+<div class="rodape" id="rodape" hidden>
+  <div class="rodape-in">
+    <div class="totais" id="totais"></div>
+    <a class="finalizar" href="checkout.html">Finalizar compra</a>
+  </div>
+</div>
+
+<script>
+function ler(){
+  try{ return JSON.parse(localStorage.getItem("carrinho")) || []; }catch(e){ return []; }
+}
+function gravar(c){
+  try{ localStorage.setItem("carrinho", JSON.stringify(c)); }catch(e){}
+}
+function dinheiro(v,m){
+  var n = Number(v)||0;
+  return n.toLocaleString("pt-PT",{minimumFractionDigits:0,maximumFractionDigits:2}) + " " + (m||"MZN");
+}
+function esc(t){
+  return String(t==null?"":t).replace(/[&<>"']/g,function(c){
+    return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
+  });
+}
+function mudarQtd(i,d){
+  var c = ler();
+  if(!c[i]) return;
+  c[i].qtd = Math.max(1,(Number(c[i].qtd)||1)+d);
+  gravar(c); render();
+}
+function remover(i){
+  var c = ler();
+  c.splice(i,1);
+  gravar(c); render();
+}
+function render(){
+  var c = ler();
+  var lista = document.getElementById("lista");
+  var rodape = document.getElementById("rodape");
+  if(!c.length){
+    lista.innerHTML = '<div class="vazio">O carrinho está vazio.<br><a href="/">Ver produtos</a></div>';
+    rodape.hidden = true;
+    return;
+  }
+  var totais = {};
+  lista.innerHTML = c.map(function(it,i){
+    var q = Number(it.qtd)||1, p = Number(it.preco)||0, m = it.moeda||"MZN";
+    totais[m] = (totais[m]||0) + p*q;
+    var detalhes = [it.cor, it.tamanho].filter(Boolean).join(" · ");
+    return '<div class="item">'
+      + (it.foto ? '<img src="'+esc(it.foto)+'" alt="">' : '<img alt="">')
+      + '<div class="info">'
+      + '<p class="nome">'+esc(it.nome)+'</p>'
+      + '<p class="meta">'+esc(detalhes)+'</p>'
+      + '<div class="linha">'
+      + '<div class="qtd"><button onclick="mudarQtd('+i+',-1)" aria-label="Diminuir">−</button><span>'+q+'</span><button onclick="mudarQtd('+i+',1)" aria-label="Aumentar">+</button></div>'
+      + '<span class="preco">'+dinheiro(p*q,m)+'</span>'
+      + '</div>'
+      + '<button class="remover" onclick="remover('+i+')">Remover</button>'
+      + '</div></div>';
+  }).join("");
+  document.getElementById("totais").innerHTML = Object.keys(totais).map(function(m){
+    return '<div><span>Total</span><span>'+dinheiro(totais[m],m)+'</span></div>';
+  }).join("");
+  rodape.hidden = false;
+}
+render();
+</script>
+</body>
+</html>
