@@ -5,147 +5,280 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Produto | BBabilônia</title>
 <style>
-:root{--azul:#264190;--fundo:#fff;--texto:#1A1D29;--suave:#6B7080;--linha:#E1E3EA;--ok:#1E7A4C;--erro:#B5472E}
-@media (prefers-color-scheme:dark){:root{--fundo:#12141C;--texto:#F1F2F6;--suave:#9AA0B3;--linha:#2B2F3D}}
-*{box-sizing:border-box;margin:0}
-body{font-family:system-ui,sans-serif;background:var(--fundo);color:var(--texto);line-height:1.4;padding-bottom:30px}
-header{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;background:#1B2F6B;color:#fff;position:sticky;top:0;z-index:5}
-header a{color:#fff;text-decoration:none;font-weight:700}
-main{max-width:560px;margin:auto}
-.foto{width:100%;aspect-ratio:1/1;object-fit:contain;background:#f1f1f1;display:block}
-.mini{display:flex;gap:8px;padding:8px 14px;overflow-x:auto}
-.mini img{width:56px;height:56px;object-fit:cover;border-radius:8px;border:2px solid var(--linha);cursor:pointer}
-video{width:100%;max-height:420px;background:#000;display:block}
-.bloco{padding:14px;border-bottom:1px solid var(--linha)}
-h1{font-size:20px;font-weight:600}
-.preco{font-size:26px;font-weight:700;margin-top:6px}
-.rot{color:var(--suave);margin-bottom:10px}
-.rot b{color:var(--texto)}
-.ops{display:flex;flex-wrap:wrap;gap:8px}
-.op{min-width:56px;padding:10px 14px;border:2px solid var(--linha);border-radius:10px;background:transparent;color:var(--texto);font:inherit;cursor:pointer;display:flex;align-items:center;gap:8px}
-.op img{width:34px;height:34px;object-fit:cover;border-radius:6px}
-.op[aria-pressed=true]{border-color:var(--texto);background:var(--texto);color:var(--fundo)}
-.op:disabled{opacity:.4;text-decoration:line-through;cursor:not-allowed}
-.disp{margin-top:10px;font-size:14px;color:var(--ok)}
-.disp.x{color:var(--erro)}
-.qtd{display:inline-flex;border:2px solid var(--linha);border-radius:10px;align-items:center}
-.qtd button{width:44px;height:44px;border:0;background:transparent;color:var(--texto);font-size:22px;cursor:pointer}
-.qtd span{min-width:36px;text-align:center;font-weight:600}
-#add{display:block;width:calc(100% - 28px);margin:16px 14px 6px;padding:15px;border:0;border-radius:12px;background:var(--azul);color:#fff;font-size:17px;font-weight:700;cursor:pointer}
-#msg{padding:4px 14px;font-weight:600;min-height:24px}
-#msg a{color:var(--azul)}
+:root{
+  --bg:#0f1424; --card:#171d33; --line:#2a3250; --text:#f2f4fa; --muted:#98a1bf;
+  --brand:#1b2f6e; --accent:#ff5a36; --chip:#1e2540;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--text);padding-bottom:84px}
+header{background:var(--brand);display:flex;justify-content:space-between;align-items:center;padding:16px 18px;position:sticky;top:0;z-index:5}
+header a{color:#fff;text-decoration:none;font-weight:600;font-size:18px}
+#foto{width:100%;max-height:420px;object-fit:contain;background:#0a0e1a;display:block}
+.wrap{padding:18px}
+h1{font-size:24px;font-weight:600;margin-bottom:6px}
+.preco{font-size:30px;font-weight:700;color:var(--accent);margin-bottom:6px}
+.desc{color:var(--muted);font-size:15px;line-height:1.5;margin-top:10px}
+.sec{border-top:1px solid var(--line);margin-top:18px;padding-top:16px}
+.sec h2{font-size:15px;font-weight:500;color:var(--muted);margin-bottom:12px}
+.sec h2 b{color:var(--text);font-weight:600}
+.cores{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:10px}
+.cor{background:var(--chip);border:2px solid transparent;border-radius:10px;overflow:hidden;cursor:pointer;text-align:center;font-size:14px;color:var(--text)}
+.cor img{width:100%;aspect-ratio:1/1;object-fit:cover;display:block;background:#0a0e1a}
+.cor .sem{width:100%;aspect-ratio:1/1;display:flex;align-items:center;justify-content:center;background:#0a0e1a;color:var(--muted);font-size:12px}
+.cor span{display:block;padding:7px 4px}
+.cor.on{border-color:var(--accent)}
+.cor.on span{color:var(--accent);font-weight:600}
+.cor.off{opacity:.4}
+.tams{display:flex;flex-wrap:wrap;gap:10px}
+.tam{min-width:56px;padding:11px 16px;background:var(--chip);border:2px solid transparent;border-radius:10px;color:var(--text);font-size:16px;cursor:pointer;text-align:center}
+.tam.on{border-color:var(--accent);color:var(--accent);font-weight:600}
+.tam.off{opacity:.35;text-decoration:line-through;cursor:not-allowed}
+.aviso{color:var(--muted);font-size:14px}
+.qtd{display:inline-flex;align-items:center;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.qtd button{width:48px;height:46px;background:none;border:0;color:var(--text);font-size:22px;cursor:pointer}
+.qtd span{min-width:44px;text-align:center;font-size:18px}
+.stock{color:var(--muted);font-size:14px;margin-left:12px}
+video{width:100%;border-radius:10px;margin-top:14px;background:#000}
+.barra{position:fixed;left:0;right:0;bottom:0;background:var(--bg);border-top:1px solid var(--line);padding:12px 16px}
+#add{width:100%;padding:16px;border:0;border-radius:12px;background:var(--accent);color:#fff;font-size:18px;font-weight:600;cursor:pointer}
+#add:disabled{background:#3a4263;color:#8c94b3}
+#msg{position:fixed;left:50%;bottom:96px;transform:translateX(-50%);background:#fff;color:#111;padding:12px 18px;border-radius:10px;font-size:15px;display:none;z-index:9;max-width:90%;text-align:center}
 </style>
 </head>
 <body>
-<header><a href="index.html">B-Babilônia</a><a href="carrinho.html">Carrinho (<span id="n">0</span>)</a></header>
-<main id="app"><p class="bloco">A carregar...</p></main>
+<header>
+  <a href="index.html">B-Babilônia</a>
+  <a href="carrinho.html">Carrinho (<span id="cnt">0</span>)</a>
+</header>
+
+<img id="foto" alt="" style="display:none">
+
+<div class="wrap">
+  <h1 id="nome">A carregar…</h1>
+  <div class="preco" id="preco"></div>
+
+  <div class="sec" id="secCor" style="display:none">
+    <h2>Cor: <b id="corSel">escolha uma cor</b></h2>
+    <div class="cores" id="cores"></div>
+  </div>
+
+  <div class="sec" id="secTam" style="display:none">
+    <h2>Tamanho: <b id="tamSel">escolha um tamanho</b></h2>
+    <div class="tams" id="tams"></div>
+  </div>
+
+  <div class="sec">
+    <h2>Quantidade</h2>
+    <div class="qtd"><button id="menos" type="button">−</button><span id="q">1</span><button id="mais" type="button">+</button></div>
+    <span class="stock" id="stock"></span>
+  </div>
+
+  <div class="sec" id="secVideo" style="display:none">
+    <h2>Vídeo do produto</h2>
+    <video id="video" controls playsinline preload="metadata"></video>
+  </div>
+
+  <p class="desc" id="desc"></p>
+</div>
+
+<div class="barra"><button id="add" type="button">Adicionar ao carrinho</button></div>
+<div id="msg"></div>
+
 <script>
-const SUPA="https://dsfoqoeawvjafypycldz.supabase.co";
-const KEY="sb_publishable_BN4NiVcDab9CqdTY_odgDA_uUOhjja0";
-const $=i=>document.getElementById(i);
-const esc=t=>String(t==null?"":t).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-const nome=o=>o.name||o.nome||o.title||o.titulo||"Produto";
-const fmt=(v,m)=>Number(v||0).toLocaleString("pt-PT",{minimumFractionDigits:2,maximumFractionDigits:2})+" "+(m||"MZN");
-const id=new URLSearchParams(location.search).get("id");
-let P=null,V=[],IM=[],cor=null,tam=null,qtd=1,fotoAtual=null;
+var SUPABASE_URL = "https://dsfoqoeawvjafypycldz.supabase.co";
+var SUPABASE_KEY = "sb_publishable_BN4NiVcDab9CqdTY_odgDA_uUOhjja0";
 
-function contar(){let n=0;try{JSON.parse(localStorage.getItem("carrinho")||"[]").forEach(i=>n+=Number(i.qtd||1))}catch(e){}$("n").textContent=n}
+var produto = null, variantes = [], cores = [];
+var corSel = "", tamSel = "", qtd = 1;
 
-function ler(raw){
-  let v=raw;
-  if(typeof v==="string"){try{v=JSON.parse(v)}catch(e){v=[]}}
-  if(!Array.isArray(v))return[];
-  const out=[],vistos={};
-  v.forEach(x=>{
-    const c=String(x.cor||x.color||"").trim().replace(/\.$/,"");
-    const s=Number(x.stock!=null?x.stock:(x.quantity!=null?x.quantity:x.qty))||0;
-    const img=x.foto||x.image||x.image_url||null;
-    let lista=String(x.tamanho||x.size||"").split(/[,;.\s]+/).filter(Boolean);
-    if(!lista.length)lista=[""];
-    lista.forEach(t=>{const k=c+"|"+t;if(vistos[k])return;vistos[k]=1;out.push({cor:c,tam:t,stock:s,img:img})});
+function $(id){ return document.getElementById(id); }
+function cap(s){ s = String(s).trim(); return s.charAt(0).toUpperCase() + s.slice(1); }
+function esc(s){ return String(s).replace(/[&<>"]/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]; }); }
+
+function lerCarrinho(){
+  try { return JSON.parse(localStorage.getItem("carrinho")) || []; } catch(e){ return []; }
+}
+function atualizarContador(){
+  var n = 0; lerCarrinho().forEach(function(i){ n += Number(i.qtd) || 1; });
+  $("cnt").textContent = n;
+}
+function aviso(t){
+  var m = $("msg"); m.textContent = t; m.style.display = "block";
+  clearTimeout(aviso.t); aviso.t = setTimeout(function(){ m.style.display = "none"; }, 2200);
+}
+
+/* Aceita os formatos antigos e novos de variants e separa cores escritas juntas
+   (ex.: "Branco .preto. Azul. Vinho" vira 4 cores) */
+function normalizar(raw){
+  var lista = raw;
+  if (typeof lista === "string") { try { lista = JSON.parse(lista); } catch(e){ lista = []; } }
+  if (!Array.isArray(lista)) lista = [];
+  var out = [];
+  lista.forEach(function(v){
+    if (!v) return;
+    var cor = v.cor || v.color || v.colour || "";
+    var tam = v.tamanho || v.size || "";
+    var st = (v.stock !== undefined && v.stock !== null && v.stock !== "") ? v.stock
+           : (v.quantity !== undefined ? v.quantity : (v.qtd !== undefined ? v.qtd : null));
+    st = (st === null) ? null : Number(st);
+    var foto = v.foto || v.image || v.image_url || v.img || "";
+    var cs = String(cor).split(/[,.;\/|]+/).map(function(x){ return x.trim(); }).filter(Boolean);
+    if (!cs.length) cs = [""];
+    var ts = String(tam).split(/[,;\/|]+/).map(function(x){ return x.trim(); }).filter(Boolean);
+    if (!ts.length) ts = [""];
+    cs.forEach(function(c){ ts.forEach(function(t){
+      out.push({cor: c ? cap(c) : "", tam: t.toUpperCase(), stock: st, foto: foto});
+    }); });
   });
   return out;
 }
 
-function estoque(){
-  const f=V.find(v=>v.cor===(cor||"")&&v.tam===(tam||""));
-  return f?f.stock:null;
+function montarCores(){
+  var vistos = {};
+  cores = [];
+  variantes.forEach(function(v){
+    if (!v.cor) return;
+    if (!vistos[v.cor]) { vistos[v.cor] = {nome: v.cor, foto: v.foto || "", total: 0}; cores.push(vistos[v.cor]); }
+    if (!vistos[v.cor].foto && v.foto) vistos[v.cor].foto = v.foto;
+    vistos[v.cor].total += (v.stock === null ? 999 : v.stock);
+  });
+}
+
+function tamanhosDaCor(){
+  var vistos = {}, lista = [];
+  variantes.forEach(function(v){
+    if (cores.length && v.cor !== corSel) return;
+    if (!v.tam) return;
+    if (!vistos[v.tam]) { vistos[v.tam] = {nome: v.tam, stock: 0}; lista.push(vistos[v.tam]); }
+    vistos[v.tam].stock += (v.stock === null ? 999 : v.stock);
+  });
+  return lista;
+}
+
+function stockAtual(){
+  var s = 0, achou = false;
+  variantes.forEach(function(v){
+    if (cores.length && v.cor !== corSel) return;
+    if (tamSel && v.tam !== tamSel) return;
+    achou = true; s += (v.stock === null ? 999 : v.stock);
+  });
+  return achou ? s : 999;
+}
+
+function fotoAtual(){
+  var c = cores.filter(function(x){ return x.nome === corSel; })[0];
+  if (c && c.foto) return c.foto;
+  return (produto && produto.image_url) || "";
 }
 
 function desenhar(){
-  const cores=[...new Set(V.map(v=>v.cor))].filter(Boolean);
-  const tams=V.filter(v=>v.cor===(cor||"")&&v.tam);
-  const principal=fotoAtual||IM[0]||"";
-  const st=estoque();
-  let h="";
-  if(P.video_url)h+='<video controls playsinline preload="metadata" src="'+esc(P.video_url)+'"></video>';
-  if(principal)h+='<img class="foto" src="'+esc(principal)+'" alt="">';
-  if(IM.length>1)h+='<div class="mini">'+IM.map((u,i)=>'<img src="'+esc(u)+'" data-i="'+i+'" alt="">').join("")+'</div>';
-  h+='<div class="bloco"><h1>'+esc(nome(P))+'</h1><div class="preco">'+fmt(P.price!=null?P.price:P.preco,P.currency)+'</div></div>';
-  if(cores.length){
-    h+='<div class="bloco"><div class="rot">Cor: <b>'+(cor?esc(cor):"escolha uma cor")+'</b></div><div class="ops">'+
-      cores.map(c=>{const im=(V.find(v=>v.cor===c&&v.img)||{}).img;
-        return '<button class="op" data-cor="'+esc(c)+'" aria-pressed="'+(c===cor)+'">'+(im?'<img src="'+esc(im)+'" alt="">':"")+esc(c)+'</button>'}).join("")+'</div></div>';
-  }
-  if(V.some(v=>v.tam)){
-    h+='<div class="bloco"><div class="rot">Tamanho: <b>'+(tam?esc(tam):"escolha um tamanho")+'</b></div>';
-    if(cores.length&&!cor){h+='<div class="rot">Escolha primeiro a cor.</div>';}
-    else{
-      h+='<div class="ops">'+tams.map(v=>'<button class="op" data-tam="'+esc(v.tam)+'" aria-pressed="'+(v.tam===tam)+'"'+(v.stock<=0?" disabled":"")+'>'+esc(v.tam)+'</button>').join("")+'</div>';
-      if(tam&&st!==null)h+='<div class="disp'+(st>0?"":" x")+'">'+(st>0?st+" disponíveis":"Esgotado")+'</div>';
+  // foto principal muda com a cor escolhida
+  var f = fotoAtual(), img = $("foto");
+  if (f) { img.src = f; img.style.display = "block"; } else { img.style.display = "none"; }
+
+  // cores
+  if (cores.length) {
+    $("secCor").style.display = "block";
+    $("corSel").textContent = corSel || "escolha uma cor";
+    $("cores").innerHTML = cores.map(function(c){
+      var thumb = c.foto ? '<img src="'+esc(c.foto)+'" alt="">' : '<div class="sem">sem foto</div>';
+      var cls = "cor" + (c.nome === corSel ? " on" : "") + (c.total <= 0 ? " off" : "");
+      return '<div class="'+cls+'" data-cor="'+esc(c.nome)+'">'+thumb+'<span>'+esc(c.nome)+'</span></div>';
+    }).join("");
+    Array.prototype.forEach.call(document.querySelectorAll(".cor"), function(el){
+      el.onclick = function(){
+        var nome = el.getAttribute("data-cor");
+        var c = cores.filter(function(x){ return x.nome === nome; })[0];
+        if (c && c.total <= 0) { aviso("Esta cor está esgotada"); return; }
+        corSel = nome; tamSel = ""; qtd = 1; desenhar();
+      };
+    });
+  } else { $("secCor").style.display = "none"; }
+
+  // tamanhos
+  var temTams = variantes.some(function(v){ return v.tam; });
+  if (temTams) {
+    $("secTam").style.display = "block";
+    $("tamSel").textContent = tamSel || "escolha um tamanho";
+    if (cores.length && !corSel) {
+      $("tams").innerHTML = '<span class="aviso">Escolha primeiro a cor.</span>';
+    } else {
+      $("tams").innerHTML = tamanhosDaCor().map(function(t){
+        var cls = "tam" + (t.nome === tamSel ? " on" : "") + (t.stock <= 0 ? " off" : "");
+        return '<button type="button" class="'+cls+'" data-tam="'+esc(t.nome)+'">'+esc(t.nome)+'</button>';
+      }).join("");
+      Array.prototype.forEach.call(document.querySelectorAll(".tam"), function(el){
+        el.onclick = function(){
+          if (el.className.indexOf("off") > -1) { aviso("Tamanho esgotado"); return; }
+          tamSel = el.getAttribute("data-tam"); qtd = 1; desenhar();
+        };
+      });
     }
-    h+='</div>';
-  }
-  h+='<div class="bloco"><div class="rot">Quantidade</div><div class="qtd"><button data-q="-1" aria-label="Menos">−</button><span>'+qtd+'</span><button data-q="1" aria-label="Mais">+</button></div></div>';
-  h+='<button id="add">Adicionar ao carrinho</button><div id="msg" role="status"></div>';
-  $("app").innerHTML=h;
+  } else { $("secTam").style.display = "none"; }
+
+  // quantidade e stock
+  var max = stockAtual();
+  if (qtd > max) qtd = Math.max(1, max);
+  $("q").textContent = qtd;
+  $("stock").textContent = (max < 999 && (tamSel || (!cores.length && !temTams))) ? ("Disponível: " + max) : "";
+  $("add").disabled = (max <= 0);
 }
 
 function adicionar(){
-  const msg=$("msg");
-  if(V.some(v=>v.cor)&&!cor){msg.textContent="Escolha uma cor.";return}
-  if(V.some(v=>v.tam)&&!tam){msg.textContent="Escolha um tamanho.";return}
-  const st=estoque();
-  if(st!==null&&st<=0){msg.textContent="Este tamanho está esgotado.";return}
-  if(st!==null&&qtd>st){msg.textContent="Só temos "+st+" disponíveis.";return}
-  let c=[];try{c=JSON.parse(localStorage.getItem("carrinho")||"[]")}catch(e){}
-  const ex=c.find(i=>i.id===P.id&&i.cor===(cor||"")&&i.tamanho===(tam||""));
-  if(ex)ex.qtd=Number(ex.qtd||1)+qtd;
-  else c.push({id:P.id,nome:nome(P),cor:cor||"",tamanho:tam||"",qtd:qtd,preco:Number(P.price!=null?P.price:P.preco)||0,moeda:P.currency||"MZN",foto:fotoAtual||IM[0]||""});
-  localStorage.setItem("carrinho",JSON.stringify(c));
-  contar();
-  msg.innerHTML='Adicionado ao carrinho. <a href="carrinho.html">Ver carrinho</a>';
+  if (cores.length && !corSel) { aviso("Escolha a cor"); return; }
+  var temTams = variantes.some(function(v){ return v.tam; });
+  if (temTams && !tamSel) { aviso("Escolha o tamanho"); return; }
+  if (stockAtual() <= 0) { aviso("Esgotado"); return; }
+
+  var preco = Number(produto.price !== undefined ? produto.price : (produto.preco !== undefined ? produto.preco : 0));
+  var item = {
+    id: produto.id,
+    nome: produto.name || produto.nome || produto.title || "Produto",
+    cor: corSel, tamanho: tamSel, qtd: qtd,
+    preco: preco, moeda: produto.currency || "MZN",
+    foto: fotoAtual()
+  };
+  var c = lerCarrinho(), achou = false;
+  c.forEach(function(i){
+    if (i.id === item.id && i.cor === item.cor && i.tamanho === item.tamanho) { i.qtd = (Number(i.qtd)||0) + item.qtd; achou = true; }
+  });
+  if (!achou) c.push(item);
+  try { localStorage.setItem("carrinho", JSON.stringify(c)); } catch(e){}
+  atualizarContador();
+  aviso("Adicionado ao carrinho");
 }
 
-$("app").addEventListener("click",e=>{
-  const b=e.target.closest("button,img[data-i]");
-  if(!b)return;
-  if(b.dataset.cor!==undefined){cor=b.dataset.cor;tam=null;qtd=1;fotoAtual=(V.find(v=>v.cor===cor&&v.img)||{}).img||null;desenhar();}
-  else if(b.dataset.tam!==undefined){tam=b.dataset.tam;qtd=1;desenhar();}
-  else if(b.dataset.q!==undefined){const st=estoque();let n=qtd+Number(b.dataset.q);if(n<1)n=1;if(st!==null&&n>st)n=Math.max(st,1);qtd=n;desenhar();}
-  else if(b.dataset.i!==undefined){fotoAtual=IM[Number(b.dataset.i)];desenhar();}
-  else if(b.id==="add")adicionar();
-});
+$("menos").onclick = function(){ if (qtd > 1) { qtd--; $("q").textContent = qtd; } };
+$("mais").onclick = function(){
+  if (qtd < stockAtual()) { qtd++; $("q").textContent = qtd; } else { aviso("Não há mais stock"); }
+};
+$("add").onclick = adicionar;
+atualizarContador();
 
-async function iniciar(){
-  contar();
-  if(!id){$("app").innerHTML='<p class="bloco">Produto não encontrado. <a href="index.html">Ver loja</a></p>';return}
-  try{
-    const r=await fetch(SUPA+"/rest/v1/products?id=eq."+encodeURIComponent(id)+"&select=*",{headers:{apikey:KEY,Authorization:"Bearer "+KEY}});
-    const d=await r.json();
-    if(!Array.isArray(d)||!d[0])throw 0;
-    P=d[0];
-  }catch(e){
-    $("app").innerHTML='<p class="bloco">Não foi possível carregar o produto. <a href="index.html">Ver loja</a></p>';return;
-  }
-  V=ler(P.variants);
-  IM=[P.image_url].concat(Array.isArray(P.images)?P.images:[]).filter(Boolean);
-  const cores=[...new Set(V.map(v=>v.cor))].filter(Boolean);
-  if(cores.length===1)cor=cores[0];
-  document.title=nome(P)+" | BBabilônia";
-  desenhar();
+var id = new URLSearchParams(location.search).get("id");
+if (!id) {
+  $("nome").textContent = "Produto não encontrado";
+} else {
+  fetch(SUPABASE_URL + "/rest/v1/products?id=eq." + encodeURIComponent(id) + "&select=*", {
+    headers: { "apikey": SUPABASE_KEY }
+  }).then(function(r){ return r.json(); }).then(function(rows){
+    if (!rows || !rows.length) { $("nome").textContent = "Produto não encontrado"; return; }
+    produto = rows[0];
+    var nome = produto.name || produto.nome || produto.title || "Produto";
+    document.title = nome + " | BBabilônia";
+    $("nome").textContent = nome;
+    var p = Number(produto.price !== undefined ? produto.price : (produto.preco !== undefined ? produto.preco : 0));
+    $("preco").textContent = p.toLocaleString("pt-PT", {minimumFractionDigits: 2, maximumFractionDigits: 2}) + " " + (produto.currency || "MZN");
+    $("desc").textContent = produto.description || produto.descricao || "";
+    if (produto.video_url) { $("video").src = produto.video_url; $("secVideo").style.display = "block"; }
+    variantes = normalizar(produto.variants);
+    montarCores();
+    if (cores.length === 1 && cores[0].total > 0) corSel = cores[0].nome;
+    desenhar();
+  }).catch(function(){
+    $("nome").textContent = "Erro ao carregar o produto";
+  });
 }
-iniciar();
 </script>
 </body>
 </html>
