@@ -70,4 +70,115 @@ function ler(){
   try{ return JSON.parse(localStorage.getItem("carrinho")) || []; }catch(e){ return []; }
 }
 function esc(t){
-  return String(t==null?"":t)
+  return String(t==null?"":t).replace(/[&<>"']/g,function(c){
+    return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
+  });
+}
+function dinheiro(v,m){
+  return (Number(v)||0).toLocaleString("pt-PT",{minimumFractionDigits:2,maximumFractionDigits:2}) + " " + m;
+}
+
+var itens = ler();
+var totais = {};
+itens.forEach(function(it){
+  var m = it.moeda || "MZN";
+  totais[m] = (totais[m]||0) + (Number(it.preco)||0)*(Number(it.qtd)||1);
+});
+var moedas = Object.keys(totais);
+
+function desenharResumo(){
+  var r = document.getElementById("resumo");
+  if(!itens.length){
+    r.innerHTML = '<p>O carrinho está vazio. <a href="/">Ver produtos</a></p>';
+    document.getElementById("btn").disabled = true;
+    return;
+  }
+  r.innerHTML = itens.map(function(it){
+    var q = Number(it.qtd)||1, m = it.moeda||"MZN";
+    var det = [it.cor,it.tamanho].filter(Boolean).join(" · ");
+    return '<div class="res-linha"><div>'+esc(it.nome)+' × '+q+(det?'<small>'+esc(det)+'</small>':'')+'</div><div>'+dinheiro((Number(it.preco)||0)*q,m)+'</div></div>';
+  }).join("") + moedas.map(function(m){
+    return '<div class="res-total"><span>Total</span><span>'+dinheiro(totais[m],m)+'</span></div>';
+  }).join("");
+}
+desenharResumo();
+
+document.querySelectorAll('input[name="pag"]').forEach(function(r){
+  r.addEventListener("change",function(){
+    document.querySelectorAll(".pag").forEach(function(l){ l.classList.remove("sel"); });
+    r.closest(".pag").classList.add("sel");
+  });
+});
+
+function mostrarErro(msg,detalhe){
+  var e = document.getElementById("erro");
+  e.innerHTML = esc(msg) + (detalhe ? '<small>'+esc(detalhe)+'</small>' : '');
+  e.hidden = false;
+}
+
+document.getElementById("btn").addEventListener("click", async function(){
+  var btn = this;
+  document.getElementById("erro").hidden = true;
+
+  var nome = document.getElementById("nome").value.trim();
+  var tel = document.getElementById("tel").value.trim();
+  var email = document.getElementById("email").value.trim();
+  var pais = document.getElementById("pais").value.trim();
+  var morada = document.getElementById("morada").value.trim();
+  var pagEl = document.querySelector('input[name="pag"]:checked');
+
+  if(!itens.length) return mostrarErro("O carrinho está vazio.");
+  if(moedas.length > 1) return mostrarErro("O carrinho tem produtos em moedas diferentes. Faça um pedido para cada moeda.");
+  if(!nome) return mostrarErro("Escreva o seu nome completo.");
+  if(!tel) return mostrarErro("Escreva o seu telefone.");
+  if(!morada) return mostrarErro("Escreva a morada de entrega.");
+  if(!pagEl) return mostrarErro("Escolha a forma de pagamento.");
+
+  var moeda = moedas[0];
+  var total = totais[moeda];
+
+  var pedido = {
+    customer_name: nome,
+    customer_phone: tel,
+    customer_email: email || null,
+    delivery_address: morada,
+    country: pais || null,
+    payment_method: pagEl.value,
+    currency: moeda,
+    subtotal: total,
+    total: total,
+    items: itens
+  };
+
+  btn.disabled = true;
+  btn.textContent = "A enviar...";
+  try{
+    var resp = await fetch(SUPABASE_URL + "/rest/v1/orders", {
+      method: "POST",
+      headers: {
+        "apikey": SUPABASE_KEY,
+        "Content-Type": "application/json",
+        "Prefer": "return=minimal"
+      },
+      body: JSON.stringify(pedido)
+    });
+    if(!resp.ok){
+      var detalhe = "";
+      try{ var j = await resp.json(); detalhe = (j.message || "") + (j.details ? " – " + j.details : "") + (j.hint ? " – " + j.hint : ""); }catch(e){ detalhe = "Erro " + resp.status; }
+      mostrarErro("Não foi possível enviar o pedido.", detalhe);
+      btn.disabled = false; btn.textContent = "Enviar pedido";
+      return;
+    }
+    try{ localStorage.removeItem("carrinho"); }catch(e){}
+    document.getElementById("app").innerHTML =
+      '<div class="sucesso"><h1>Pedido enviado</h1>'
+      + '<p>Obrigado, '+esc(nome)+'. Vamos entrar em contacto pelo telefone '+esc(tel)+' para confirmar o pagamento e a entrega.</p>'
+      + '<a href="/">Voltar à loja</a></div>';
+  }catch(e){
+    mostrarErro("Não foi possível enviar o pedido. Verifique a ligação à internet e tente outra vez.", String(e && e.message || e));
+    btn.disabled = false; btn.textContent = "Enviar pedido";
+  }
+});
+</script>
+</body>
+</html>
