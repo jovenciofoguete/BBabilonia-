@@ -31,7 +31,7 @@ button{padding:12px 16px;border-radius:10px;border:1px solid var(--line);backgro
  <label>Preço</label><input id="preco" type="number" inputmode="decimal">
  <label>Moeda</label><select id="moeda"><option>MZN</option><option>USD</option><option>EUR</option><option>ZAR</option><option>BRL</option></select>
  <label>Descrição</label><textarea id="desc" rows="3"></textarea>
- <div id="catb" class="hide"><label>Categoria</label><select id="cat"></select></div>
+ <div id="catb" class="hide"><label>Categoria (grupo › subgrupo)</label><select id="cat"></select></div>
 
  <h3>Fotos do produto</h3><div class="g" id="fg"></div>
  <button id="af" style="margin-top:10px">+ Adicionar fotos</button>
@@ -62,8 +62,21 @@ async function init(){
  if(user)cats();
 }
 async function cats(){
- const {data}=await sb.from('categories').select('id,name').order('name').limit(500);
- if(data&&data.length){$('cat').innerHTML=data.map(c=>`<option value="${c.id}">${c.name}</option>`).join('');$('catb').classList.remove('hide')}
+ const {data}=await sb.from('categories').select('id,name,parent_id').order('name').limit(1000);
+ if(!data||!data.length)return;
+ const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+ const kids={},groups={},OUT='Outras categorias';
+ data.forEach(c=>{const k=c.parent_id||'root';(kids[k]=kids[k]||[]).push(c)});
+ function walk(c,path){
+  const ch=kids[c.id];
+  if(!ch||!ch.length){const g=path.length?path.join(' › '):OUT;(groups[g]=groups[g]||[]).push(c);return}
+  ch.forEach(x=>walk(x,path.concat(c.name)));
+ }
+ (kids.root||[]).forEach(c=>walk(c,[]));
+ const keys=Object.keys(groups).sort((a,b)=>a===OUT?1:b===OUT?-1:a.localeCompare(b,'pt'));
+ $('cat').innerHTML='<option value="">— Escolha a categoria —</option>'+keys.map(k=>
+  `<optgroup label="${esc(k)}">`+groups[k].sort((a,b)=>a.name.localeCompare(b.name,'pt')).map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('')+'</optgroup>').join('');
+ $('catb').classList.remove('hide');
 }
 $('ent').onclick=async()=>{const {error}=await sb.auth.signInWithPassword({email:$('em').value,password:$('pw').value});error?alert('Email ou palavra-passe errados.'):init()};
 $('cri').onclick=async()=>{const {error}=await sb.auth.signUp({email:$('em').value,password:$('pw').value});
@@ -87,6 +100,7 @@ async function up(file){
 }
 $('sv').onclick=async()=>{
  if(!$('nome').value||!$('preco').value)return msg('Preencha o nome e o preço.');
+ if(!$('catb').classList.contains('hide')&&!$('cat').value)return msg('Escolha a categoria.');
  if(!fotos.length&&!cores.length)return msg('Adicione pelo menos uma foto.');
  if(cores.some(c=>!c.nome.trim()))return msg('Dê um nome a cada cor.');
  $('sv').disabled=true;
