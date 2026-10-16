@@ -7,7 +7,9 @@
   function findSelect() {
     var all = document.querySelectorAll('select');
     for (var i = 0; i < all.length; i++) {
-      if (/categ/i.test((all[i].id || '') + ' ' + (all[i].name || ''))) return all[i];
+      var s = all[i];
+      var first = s.options[0] ? s.options[0].text : '';
+      if (/categoria/i.test(first) || /cat/i.test((s.id || '') + ' ' + (s.name || ''))) return s;
     }
     return null;
   }
@@ -36,7 +38,7 @@
         var o = opts[i];
         if (!o.value) continue;
         var g = (o.parentNode && o.parentNode.tagName === 'OPTGROUP') ? o.parentNode.label : '';
-        out.push({ value: o.value, text: o.text, group: g });
+        out.push({ value: o.value, text: o.text.trim(), group: g });
       }
       return out;
     }
