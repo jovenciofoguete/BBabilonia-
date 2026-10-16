@@ -1,0 +1,15 @@
+<!doctype html><html lang="pt"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Pagamento | B-Babilônia</title><style>*{box-sizing:border-box}body{margin:0;background:#0f1219;color:#e9ecf2;font-family:system-ui,sans-serif}header{background:#0f1a3d;padding:16px;font-weight:700;font-size:22px}header b{color:#d9a93f}main{max-width:520px;margin:auto;padding:16px}label{display:block;margin:12px 0 4px;font-size:14px;color:#aab}input,select,textarea{width:100%;padding:12px;border-radius:8px;border:1px solid #2b3350;background:#161b27;color:#fff;font-size:16px}button{width:100%;margin-top:18px;padding:14px;border:0;border-radius:8px;background:#d9a93f;color:#111;font-weight:700;font-size:17px}.box{background:#161b27;border-radius:10px;padding:14px;margin:12px 0}.ok{color:#2e9d62}.err{color:#ff7a7a}small{color:#99a}</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script></head><body>
+<header><b style="color:#fff">B-</b><b>Babilônia</b></header>
+<main style="text-align:center;padding-top:60px"><h1 id="t">A confirmar o pagamento…</h1><p id="p"></p><p><a href="index.html" style="color:#8ea2ff">Voltar à loja</a></p></main>
+<script>
+const sb=supabase.createClient('https://dsfoqoeawvjafypycldz.supabase.co','sb_publishable_BN4NiVcDab9CqdTY_odgDA_uUOhjja0');
+const id=new URLSearchParams(location.search).get('pedido');let n=0;
+async function ver(){
+  const {data}=await sb.rpc('estado_pedido',{p_id:id});const o=data&&data[0];
+  if(o&&o.payment_status==='pago'){const t=document.getElementById('t');t.textContent='Pagamento efetuado com sucesso';t.className='ok';
+    document.getElementById('p').textContent='Obrigado, '+o.customer_name+'. Recebemos '+o.total+' '+o.currency+'. Vai receber a confirmação por email.';return;}
+  if(++n<20)setTimeout(ver,3000);else document.getElementById('t').textContent='Ainda a confirmar. Atualize esta página dentro de instantes.';
+}
+ver();
+</script></body></html>
