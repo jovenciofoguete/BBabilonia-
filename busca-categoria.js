@@ -1,104 +1,103 @@
 (function () {
-  var done = false;
+  var sel = null, input, list, status;
+
   function norm(t) {
     return (t || '').toString().toLowerCase()
       .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
   }
+
   function findSelect() {
     var all = document.querySelectorAll('select');
     for (var i = 0; i < all.length; i++) {
       var s = all[i];
+      var key = (s.id || '') + ' ' + (s.name || '');
+      if (/moeda|currency/i.test(key)) continue;
       var first = s.options[0] ? s.options[0].text : '';
-      if (/categoria/i.test(first) || /cat/i.test((s.id || '') + ' ' + (s.name || ''))) return s;
+      if (/categ/i.test(key) || /categoria/i.test(first)) return s;
     }
     return null;
   }
-  function init() {
-    if (done) return;
-    var sel = findSelect();
+
+  function render() {
     if (!sel) return;
-    done = true;
+    var q = norm(input.value);
+    list.innerHTML = '';
+    var lastGroup = null, shown = 0;
+    Array.prototype.forEach.call(sel.options, function (o) {
+      if (!o.value) return;
+      var parts = o.text.split(/\s*[›>]\s*/);
+      var name = parts.pop();
+      var group = parts.join(' › ');
+      if (!group && o.parentNode.tagName === 'OPTGROUP') group = o.parentNode.label;
+      if (q && norm(o.text + ' ' + group).indexOf(q) < 0) return;
+      if (group && group !== lastGroup) {
+        var h = document.createElement('div');
+        h.textContent = group;
+        h.style.cssText = 'padding:8px 12px;font-size:13px;color:#9aa0a6;background:#17171a;position:sticky;top:0';
+        list.appendChild(h);
+        lastGroup = group;
+      }
+      var it = document.createElement('div');
+      var isSel = o.value === sel.value;
+      it.textContent = (isSel ? '✓ ' : '') + name;
+      it.style.cssText = 'padding:12px 16px;font-size:16px;border-top:1px solid #2a2a2e;cursor:pointer;color:#fff;' +
+        (isSel ? 'background:#1d3b6e;font-weight:bold;' : '');
+      it.onclick = function () {
+        sel.value = o.value;
+        sel.dispatchEvent(new Event('change', { bubbles: true }));
+        status.textContent = 'Escolhida: ' + o.text;
+        render();
+      };
+      list.appendChild(it);
+      shown++;
+    });
+    if (!shown) {
+      var e = document.createElement('div');
+      e.textContent = 'Nenhuma categoria encontrada';
+      e.style.cssText = 'padding:14px;color:#9aa0a6';
+      list.appendChild(e);
+    }
+  }
 
+  function build() {
+    sel = findSelect();
+    if (!sel || sel.options.length < 2) { sel = null; return false; }
     var box = document.createElement('div');
-    box.style.cssText = 'width:100%;margin:4px 0;';
+    box.style.cssText = 'margin:6px 0 14px';
 
-    var inp = document.createElement('input');
-    inp.type = 'search';
-    inp.placeholder = '🔍 Pesquisar categoria...';
-    inp.autocomplete = 'off';
-    inp.style.cssText = 'width:100%;box-sizing:border-box;padding:12px;font-size:16px;border:1px solid #444;border-radius:8px 8px 0 0;background:#1c1c1f;color:#fff;margin:0;';
+    var bar = document.createElement('div');
+    bar.style.cssText = 'display:flex;align-items:center;background:#1c1c1e;border:1px solid #333;border-radius:12px;padding:0 12px';
+    var icon = document.createElement('span');
+    icon.textContent = '🔍';
+    input = document.createElement('input');
+    input.type = 'search';
+    input.placeholder = 'Pesquisar categoria...';
+    input.style.cssText = 'flex:1;background:transparent;border:0;outline:0;color:#fff;font-size:16px;padding:14px 10px';
+    input.oninput = render;
+    bar.appendChild(icon);
+    bar.appendChild(input);
 
-    var chosen = document.createElement('div');
-    chosen.style.cssText = 'display:none;padding:8px 12px;font-size:14px;background:#14301f;color:#7dffa8;border-left:1px solid #444;border-right:1px solid #444;';
+    status = document.createElement('div');
+    status.style.cssText = 'font-size:13px;color:#9aa0a6;margin:6px 2px';
+    var cur = sel.options[sel.selectedIndex];
+    status.textContent = sel.value && cur ? 'Escolhida: ' + cur.text : 'Nenhuma categoria escolhida';
 
-    var list = document.createElement('div');
-    list.style.cssText = 'max-height:340px;overflow-y:auto;background:#1c1c1f;color:#eee;border:1px solid #444;border-top:0;border-radius:0 0 8px 8px;';
+    list = document.createElement('div');
+    list.style.cssText = 'max-height:320px;overflow-y:auto;background:#1c1c1e;border:1px solid #333;border-radius:12px';
 
-    box.appendChild(inp);
-    box.appendChild(chosen);
+    box.appendChild(bar);
+    box.appendChild(status);
     box.appendChild(list);
     sel.style.display = 'none';
     sel.parentNode.insertBefore(box, sel.nextSibling);
-
-    function items() {
-      var out = [];
-      var opts = sel.options;
-      for (var i = 0; i < opts.length; i++) {
-        var o = opts[i];
-        if (!o.value) continue;
-        var g = (o.parentNode && o.parentNode.tagName === 'OPTGROUP') ? o.parentNode.label : '';
-        out.push({ value: o.value, text: o.text.trim(), group: g });
-      }
-      return out;
-    }
-
-    function render() {
-      var q = norm(inp.value);
-      list.innerHTML = '';
-      var found = 0, last = null;
-      items().forEach(function (it) {
-        if (q && norm(it.group + ' ' + it.text).indexOf(q) === -1) return;
-        found++;
-        if (it.group && it.group !== last) {
-          last = it.group;
-          var h = document.createElement('div');
-          h.textContent = it.group;
-          h.style.cssText = 'padding:10px 12px;font-weight:bold;font-size:15px;background:#2a2a2e;color:#fff;position:sticky;top:0;';
-          list.appendChild(h);
-        }
-        var d = document.createElement('div');
-        var on = String(sel.value) === String(it.value);
-        d.textContent = it.text;
-        d.style.cssText = 'padding:12px 12px 12px 26px;border-bottom:1px solid #2d2d30;cursor:pointer;font-size:15px;' +
-          (on ? 'background:#1d4ed8;color:#fff;' : '');
-        d.addEventListener('click', function () {
-          sel.value = it.value;
-          sel.dispatchEvent(new Event('input', { bubbles: true }));
-          sel.dispatchEvent(new Event('change', { bubbles: true }));
-          chosen.style.display = 'block';
-          chosen.textContent = '✔ Escolhida: ' + (it.group ? it.group + ' › ' : '') + it.text;
-          render();
-        });
-        list.appendChild(d);
-      });
-      if (!found) {
-        var n = document.createElement('div');
-        n.style.cssText = 'padding:12px;color:#999;';
-        n.textContent = 'Nenhuma categoria encontrada';
-        list.appendChild(n);
-      }
-    }
-
-    inp.addEventListener('input', render);
-    render();
-
-    /* se as categorias chegarem depois do carregamento, atualiza a lista */
     new MutationObserver(render).observe(sel, { childList: true, subtree: true });
+    render();
+    return true;
   }
-  init();
-  if (!done) {
-    var obs = new MutationObserver(function () { init(); if (done) obs.disconnect(); });
-    obs.observe(document.documentElement, { childList: true, subtree: true });
-    document.addEventListener('DOMContentLoaded', init);
-  }
+
+  var tries = 0;
+  var timer = setInterval(function () {
+    tries++;
+    if (build() || tries > 40) clearInterval(timer);
+  }, 300);
 })();
