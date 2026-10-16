@@ -123,3 +123,6 @@ render();
 </script>
 </body>
 </html>
+<script>
+try{var c=JSON.parse(localStorage.getItem('carrinho')||'[]');if(Array.isArray(c)){var m={},o=[];c.forEach(function(i){var k=[i.nome,i.cor,i.tamanho].join('|');if(m[k]){m[k].qtd=(Number(m[k].qtd)||1)+(Number(i.qtd)||1);}else{m[k]=i;o.push(i);}});localStorage.setItem('carrinho',JSON.stringify(o));}}catch(e){}
+                                                                                                                      </script>
