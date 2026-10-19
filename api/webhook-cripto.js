@@ -1,5 +1,7 @@
 // api/webhook-cripto.js
-// Recebe o aviso do NOWPayments quando o cliente paga e marca o pedido como pago.
+// Recebe o aviso do NOWPayments quando o cliente paga em cripto, confirma a
+// assinatura, marca o pedido como pago (valor do fornecedor retido até à
+// entrega) e cria as notificações para o cliente e para o fornecedor.
 
 const crypto = require('crypto');
 
@@ -14,23 +16,41 @@ function sortObject(o) {
   }, {});
 }
 
+async function supabase(caminho, metodo, corpo) {
+  const chave = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const r = await fetch(SUPABASE_URL + '/rest/v1/' + caminho, {
+    method: metodo,
+    headers: {
+      apikey: chave,
+      Authorization: 'Bearer ' + chave,
+      'Content-Type': 'application/json',
+      Prefer: 'return=representation'
+    },
+    body: corpo ? JSON.stringify(corpo) : undefined
+  });
+  const texto = await r.text();
+  if (!r.ok) throw new Error('Supabase ' + r.status + ': ' + texto);
+  return texto ? JSON.parse(texto) : null;
+}
+
 module.exports = async (req, res) => {
   if (req.method !== 'POST') return res.status(405).send('Metodo nao permitido');
 
   const secret = process.env.NOWPAYMENTS_IPN_SECRET;
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!secret || !serviceKey) return res.status(500).send('Configuracao em falta');
+  if (!secret || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    return res.status(500).send('Configuracao em falta');
+  }
 
   const body = typeof req.body === 'string' ? JSON.parse(req.body) : (req.body || {});
 
   // 1) Confirmar que o aviso vem mesmo do NOWPayments
   const sig = String(req.headers['x-nowpayments-sig'] || '');
-  const expected = crypto
+  const esperado = crypto
     .createHmac('sha512', secret)
     .update(JSON.stringify(sortObject(body)))
     .digest('hex');
-  if (sig.length !== expected.length ||
-      !crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expected))) {
+  if (sig.length !== esperado.length ||
+      !crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(esperado))) {
     return res.status(401).send('Assinatura invalida');
   }
 
@@ -40,31 +60,56 @@ module.exports = async (req, res) => {
   }
 
   // 3) O order_id enviado ao NOWPayments e o id do pedido
-  const orderId = String(body.order_id || '');
-  if (!/^[0-9a-f-]{36}$/i.test(orderId)) {
+  const pedidoId = String(body.order_id || '');
+  if (!/^[0-9a-f-]{36}$/i.test(pedidoId)) {
     return res.status(400).send('order_id invalido');
   }
 
-  const r = await fetch(SUPABASE_URL + '/rest/v1/orders?id=eq.' + encodeURIComponent(orderId), {
-    method: 'PATCH',
-    headers: {
-      apikey: serviceKey,
-      Authorization: 'Bearer ' + serviceKey,
-      'Content-Type': 'application/json',
-      Prefer: 'return=representation'
-    },
-    body: JSON.stringify({ payment_status: 'pago' })
-  });
+  try {
+    const rows = await supabase('orders?id=eq.' + pedidoId + '&select=id,status,payment_status', 'GET');
+    const pedido = rows && rows[0];
+    if (!pedido) return res.status(404).send('Pedido nao encontrado');
 
-  const data = await r.json().catch(() => null);
-  if (!r.ok) {
-    console.error('Erro Supabase', r.status, data);
-    return res.status(500).send('Erro ao atualizar pedido');
-  }
-  if (!Array.isArray(data) || data.length === 0) {
-    console.error('Pedido nao encontrado', orderId);
-    return res.status(404).send('Pedido nao encontrado');
-  }
+    // Aviso repetido: ja esta pago, nao faz nada outra vez
+    if (pedido.status === 'paid' || pedido.payment_status === 'pago') {
+      return res.status(200).send('Ja processado');
+    }
 
-  return res.status(200).send('OK');
+    // 4) Marca como pago (igual ao cartao: valor do fornecedor fica retido)
+    await supabase('orders?id=eq.' + pedidoId, 'PATCH', {
+      status: 'paid',
+      payment_method: 'cripto',
+      payment_reference: String(body.payment_id || '')
+    });
+
+    // A criar-pagamento.js le payment_status; se a coluna existir, atualiza
+    try {
+      await supabase('orders?id=eq.' + pedidoId, 'PATCH', { payment_status: 'pago' });
+    } catch (e) {
+      console.error('payment_status nao atualizado:', e.message);
+    }
+
+    // 5) Notificacoes (cliente + fornecedor); se falhar, o pagamento fica confirmado na mesma
+    try {
+      await supabase('notifications', 'POST', [
+        {
+          order_id: pedidoId,
+          tipo: 'pagamento_cliente',
+          mensagem: 'Pagamento recebido com sucesso. Obrigado pela compra!'
+        },
+        {
+          order_id: pedidoId,
+          tipo: 'pagamento_fornecedor',
+          mensagem: 'Novo pagamento recebido. O valor fica retido ate marcar o pedido como entregue.'
+        }
+      ]);
+    } catch (e) {
+      console.error('Notificacao falhou:', e.message);
+    }
+
+    return res.status(200).send('OK');
+  } catch (e) {
+    console.error('Webhook erro:', e.message);
+    return res.status(500).send('Erro ao processar');
+  }
 };
