@@ -1,6 +1,7 @@
 // api/webhook-stripe.js
-// Recebe o aviso do Stripe quando o cliente paga, confirma a assinatura
-// e marca o pedido como pago (dinheiro retido até à entrega).
+// Recebe o aviso do Stripe quando o cliente paga com cartão, confirma a assinatura,
+// marca o pedido como pago (valor do fornecedor retido até à entrega)
+// e cria as notificações para o cliente e para o fornecedor.
 const crypto = require('crypto');
 
 const SUPABASE_URL = 'https://dsfoqoeawvjafypycldz.supabase.co';
@@ -48,6 +49,50 @@ async function supabase(caminho, metodo, corpo) {
   return texto ? JSON.parse(texto) : null;
 }
 
+async function marcarPago(pedidoId, referencia) {
+  const rows = await supabase(
+    `orders?id=eq.${pedidoId}&select=id,status,payment_status`,
+    'GET'
+  );
+  const pedido = rows && rows[0];
+  if (!pedido) return;
+  // aviso repetido: já está pago, não faz nada outra vez
+  if (pedido.status === 'paid' || pedido.payment_status === 'pago') return;
+
+  // 1) marca o pedido como pago (valor do fornecedor fica retido)
+  await supabase(`orders?id=eq.${pedidoId}`, 'PATCH', {
+    status: 'paid',
+    payment_method: 'cartao',
+    payment_reference: referencia,
+  });
+
+  // a criar-pagamento.js lê payment_status; se a coluna existir, atualiza
+  try {
+    await supabase(`orders?id=eq.${pedidoId}`, 'PATCH', { payment_status: 'pago' });
+  } catch (e) {
+    console.error('payment_status não atualizado:', e.message);
+  }
+
+  // 2) notificações (cliente + fornecedor); se falhar, o pagamento fica confirmado na mesma
+  try {
+    await supabase('notifications', 'POST', [
+      {
+        order_id: pedidoId,
+        tipo: 'pagamento_cliente',
+        mensagem: 'Pagamento recebido com sucesso. Obrigado pela compra!',
+      },
+      {
+        order_id: pedidoId,
+        tipo: 'pagamento_fornecedor',
+        mensagem:
+          'Novo pagamento recebido. O valor fica retido até marcar o pedido como entregue.',
+      },
+    ]);
+  } catch (e) {
+    console.error('Notificação falhou:', e.message);
+  }
+}
+
 async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).send('Método não permitido');
 
@@ -62,45 +107,23 @@ async function handler(req, res) {
   const evento = JSON.parse(corpo.toString('utf8'));
 
   try {
+    // Pagamento criado pela criar-pagamento.js (PaymentIntent)
+    if (evento.type === 'payment_intent.succeeded') {
+      const pi = evento.data.object;
+      const pedidoId = pi.metadata && pi.metadata.order_id;
+      if (pedidoId) await marcarPago(pedidoId, pi.id);
+    }
+
+    // Pagamento por Checkout Session (mantido por compatibilidade)
     if (evento.type === 'checkout.session.completed') {
       const sessao = evento.data.object;
       const pedidoId =
         (sessao.metadata && sessao.metadata.order_id) || sessao.client_reference_id;
-
       if (pedidoId && sessao.payment_status === 'paid') {
-        // 1) marca o pedido como pago (valor do fornecedor fica retido)
-        const pedidos = await supabase(
-          `orders?id=eq.${pedidoId}`,
-          'PATCH',
-          {
-            status: 'paid',
-            payment_method: 'cartao',
-            payment_reference: sessao.payment_intent || sessao.id,
-          }
-        );
-
-        // 2) notificações (cliente + fornecedor); se as colunas forem
-        // diferentes, o pagamento fica confirmado na mesma
-        try {
-          const p = pedidos && pedidos[0];
-          await supabase('notifications', 'POST', [
-            {
-              order_id: pedidoId,
-              tipo: 'pagamento_cliente',
-              mensagem: 'Pagamento recebido com sucesso. Obrigado pela compra!',
-            },
-            {
-              order_id: pedidoId,
-              tipo: 'pagamento_fornecedor',
-              mensagem:
-                'Novo pagamento recebido. O valor fica retido até marcar o pedido como entregue.',
-            },
-          ]);
-        } catch (e) {
-          console.error('Notificação falhou:', e.message);
-        }
+        await marcarPago(pedidoId, sessao.payment_intent || sessao.id);
       }
     }
+
     return res.status(200).json({ recebido: true });
   } catch (e) {
     console.error('Webhook erro:', e.message);
