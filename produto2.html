@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Produto – BBabilônia</title>
+<style>
+:root{--ink:#1f1d2b;--gold:#b8862b;--bg:#faf8f4;--line:#e4dfd3;--ok:#2e7d4f;--bad:#b3261e}
+*{box-sizing:border-box}
+body{margin:0;font:16px/1.45 system-ui,sans-serif;background:var(--bg);color:var(--ink);padding-bottom:90px}
+a{color:inherit}
+header{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line);background:#fff;position:sticky;top:0;z-index:5}
+header b{font-size:18px}
+main{max-width:640px;margin:auto;padding:0 14px}
+#main-img{width:100%;aspect-ratio:1;object-fit:cover;background:#eee;margin-top:12px;border-radius:6px}
+#thumbs,#cores{display:flex;gap:8px;overflow-x:auto;padding:8px 0}
+#thumbs img{width:60px;height:60px;object-fit:cover;border-radius:4px;border:2px solid transparent;flex:none}
+#thumbs img.on{border-color:var(--gold)}
+video{width:100%;border-radius:6px;margin-top:8px}
+h1{font-size:21px;margin:12px 0 2px}
+.preco{font-size:22px;font-weight:700;color:var(--gold)}
+h3{margin:18px 0 6px;font-size:15px}
+.cor{flex:none;width:76px;text-align:center;font-size:12px;border:2px solid var(--line);border-radius:6px;padding:3px;background:#fff;cursor:pointer}
+.cor img,.cor i{display:block;width:100%;aspect-ratio:1;object-fit:cover;border-radius:3px;background:#ddd}
+.cor.on{border-color:var(--gold)}
+#tams{display:flex;flex-wrap:wrap;gap:8px}
+.tam{border:1.5px solid var(--line);background:#fff;border-radius:6px;padding:6px 8px;min-width:78px;text-align:center}
+.tam.on{border-color:var(--gold);background:#fbf3e0}
+.tam b{display:block}
+.tam small{color:#6b6880;font-size:11px}
+.q{display:flex;justify-content:center;align-items:center;gap:6px;margin-top:4px}
+.q button{width:28px;height:28px;border-radius:50%;border:1px solid var(--ink);background:#fff;font-size:17px;line-height:1}
+.esg{padding:12px;border:1px dashed var(--bad);border-radius:6px;color:var(--bad)}
+#resumo{background:#fff;border:1px solid var(--line);border-radius:6px;padding:10px;margin-top:14px}
+#resumo div{display:flex;justify-content:space-between;padding:3px 0;font-size:14px}
+.pers{margin-top:16px;border:1px solid var(--line);border-radius:6px;background:#fff;padding:10px}
+.pers label.t{display:flex;gap:8px;align-items:center;font-weight:600}
+#pf{display:none;margin-top:8px}
+#pf .g{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+#pf label{font-size:12px;color:#55526a}
+#pf input[type=number],#pf input[type=text],#pf textarea{width:100%;padding:8px;border:1px solid var(--line);border-radius:5px;font:inherit}
+#bar{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--line);padding:10px 14px;display:flex;gap:10px;align-items:center;z-index:6}
+#bar span{flex:1;font-weight:700}
+#bar button{background:var(--ink);color:#fff;border:0;border-radius:6px;padding:13px 16px;font:600 15px system-ui}
+#bar button:disabled{opacity:.4}
+#msg{position:fixed;top:60px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:8px 14px;border-radius:6px;display:none;z-index:9;font-size:14px}
+</style>
+</head>
+<body>
+<header><b>BBabilônia</b><a href="carrinho.html">Carrinho (<span id="cc">0</span>)</a></header>
+<div id="msg"></div>
+<main id="app"><p>A carregar…</p></main>
+<div id="bar" style="display:none"><span id="tot">0</span><button id="add" disabled>Adicionar ao carrinho</button></div>
+
+<script>
+const SB='https://dsfoqoeawvjafypycldz.supabase.co';
+const KEY='sb_publishable_BN4NiVcDab9CqdTY_odgDA_uUOhjja0';
+const BUCKET='produtos';
+const ORDEM=['XS','S','M','L','XL','2XL','3XL','4XL','5XL'];
+const $=s=>document.querySelector(s);
+let P,V=[],IMG=[],cor=null,sel={},pers={on:false,med:{},refs:[]};
+
+const fmt=(n,m)=>Number(n||0).toLocaleString('pt-PT')+' '+(m||'MZN');
+const norm=t=>{t=String(t).trim().toUpperCase();return t==='XXL'?'2XL':t==='XXXL'?'3XL':t==='XXXXL'?'4XL':t==='XXXXXL'?'5XL':t};
+function toast(t){const m=$('#msg');m.textContent=t;m.style.display='block';setTimeout(()=>m.style.display='none',2200)}
+function cartCount(){try{return JSON.parse(localStorage.getItem('carrinho')||'[]').reduce((a,i)=>a+(+i.qtd||1),0)}catch(e){return 0}}
+
+async function load(){
+  const id=new URLSearchParams(location.search).get('id');
+  if(!id){$('#app').innerHTML='<p>Produto não indicado.</p>';return}
+  const r=await fetch(`${SB}/rest/v1/products?id=eq.${encodeURIComponent(id)}&select=*`,{headers:{apikey:KEY,Authorization:'Bearer '+KEY}});
+  const d=await r.json();
+  if(!d[0]){$('#app').innerHTML='<p>Produto não encontrado.</p>';return}
+  P=d[0];
+  let vs=P.variants;if(typeof vs==='string'){try{vs=JSON.parse(vs)}catch(e){vs=[]}}
+  V=(vs||[]).map(v=>{
+    const s=v.stock??v.quantity??v.qty??v.quantidade;
+    return{cor:(v.cor||v.color||'Único').trim(),tam:norm(v.tamanho||v.size||'Único'),stock:(s===undefined||s===null||s==='')?999:+s,foto:v.foto||v.image||v.image_url||''}
+  });
+  let im=P.images;if(typeof im==='string'){try{im=JSON.parse(im)}catch(e){im=[]}}
+  IMG=(im||[]).map(x=>typeof x==='string'?{url:x,cor:''}:{url:x.url||x.src||x.image_url,cor:(x.cor||x.color||'').trim()}).filter(x=>x.url);
+  if(!IMG.length&&P.image_url)IMG=[{url:P.image_url,cor:''}];
+  cor=cores()[0]||null;
+  render();
+}
+const cores=()=>[...new Set(V.map(v=>v.cor))];
+const fotoCor=c=>{const a=IMG.find(i=>i.cor.toLowerCase()===c.toLowerCase());if(a)return a.url;const v=V.find(v=>v.cor===c&&v.foto);return v?v.foto:''};
+const stockCor=c=>V.filter(v=>v.cor===c).reduce((a,v)=>a+v.stock,0);
+const tamsCor=c=>V.filter(v=>v.cor===c&&v.stock>0).sort((a,b)=>{const i=ORDEM.indexOf(a.tam),j=ORDEM.indexOf(b.tam);if(i>=0&&j>=0)return i-j;if(i>=0)return -1;if(j>=0)return 1;return parseFloat(a.tam)-parseFloat(b.tam)||a.tam.localeCompare(b.tam)});
+
+function render(){
+  const nome=P.name||P.nome||'Produto',preco=P.price??P.preco,moeda=P.currency||'MZN';
+  const todasEsg=V.length&&V.every(v=>v.stock<=0);
+  const capa=(cor&&fotoCor(cor))||(IMG[0]&&IMG[0].url)||'';
+  let h=`<img id="main-img" src="${capa}" alt="">`;
+  if(IMG.length>1)h+=`<div id="thumbs">${IMG.map(i=>`<img src="${i.url}" class="${i.url===capa?'on':''}" onclick="foto('${i.url}')">`).join('')}</div>`;
+  if(P.video_url)h+=`<video src="${P.video_url}" controls playsinline></video>`;
+  h+=`<h1>${nome}</h1><div class="preco">${fmt(preco,moeda)}</div>`;
+  if(todasEsg){h+=`<div class="esg" style="margin-top:12px">Esgotado. Pode pedir uma peça personalizada abaixo.</div>`}
+  else if(V.length){
+    h+=`<h3>Cor${cor?': '+cor:''}</h3><div id="cores">`+cores().map(c=>{const f=fotoCor(c),s=stockCor(c);
+      return`<div class="cor ${c===cor?'on':''}" onclick="mudaCor('${c.replace(/'/g,"\\'")}')">${f?`<img src="${f}">`:'<i></i>'}${c}${s<=0?'<small style="display:block;color:#b3261e">esgotado</small>':''}</div>`}).join('')+'</div>';
+    h+=`<h3>Tamanho e quantidade</h3><div id="tams"></div>`;
+  }
+  h+=`<div id="resumo" style="display:none"></div>`;
+  h+=`<div class="pers"><label class="t"><input type="checkbox" id="pc" ${pers.on?'checked':''} onchange="togPers(this.checked)"> Personalizar por medidas</label>
+  <div id="pf"><div class="g">`+['Altura','Ombros','Peito','Barriga','Cintura','Ombro até pés','Ombro até cintura','Cintura até pés','Largura das mangas','Boca das mangas'].map(m=>`<div><label>${m} (cm)</label><input type="number" inputmode="decimal" value="${pers.med[m]||''}" oninput="pers.med['${m}']=this.value;totais()"></div>`).join('')+
+  `</div><label style="display:block;margin-top:8px">Outras medidas ou notas</label><textarea rows="2" oninput="pers.med['Notas']=this.value">${pers.med['Notas']||''}</textarea>
+  <label style="display:block;margin-top:8px">Fotos ou vídeo de referência</label><input type="file" id="pfile" accept="image/*,video/*" multiple onchange="envia(this.files)">
+  <input type="text" placeholder="ou cole um link de foto/vídeo" onchange="if(this.value){pers.refs.push(this.value);this.value='';listaRefs()}">
+  <div id="refs" style="font-size:12px;margin-top:4px"></div></div></div>`;
+  $('#app').innerHTML=h;$('#bar').style.display='flex';$('#cc').textContent=cartCount();
+  $('#pf').style.display=pers.on?'block':'none';
+  tams();totais();listaRefs();
+}
+function foto(u){$('#main-img').src=u;document.querySelectorAll('#thumbs img').forEach(i=>i.classList.toggle('on',i.src===u))}
+function mudaCor(c){cor=c;render()}
+function tams(){
+  const box=$('#tams');if(!box)return;
+  const l=tamsCor(cor);
+  if(!l.length){box.innerHTML='<div class="esg">Esta cor está esgotada.</div>';return}
+  box.innerHTML=l.map(v=>{const k=cor+'|'+v.tam,q=sel[k]||0;
+    return`<div class="tam ${q?'on':''}"><b>${v.tam}</b><small>${v.stock<999?v.stock+' em stock':'disponível'}</small>
+    <div class="q"><button onclick="qt('${k.replace(/'/g,"\\'")}',-1,${v.stock})">−</button><span>${q}</span><button onclick="qt('${k.replace(/'/g,"\\'")}',1,${v.stock})">+</button></div></div>`}).join('');
+}
+function qt(k,d,max){const q=Math.max(0,Math.min(max,(sel[k]||0)+d));if(q)sel[k]=q;else delete sel[k];tams();totais()}
+function togPers(on){pers.on=on;$('#pf').style.display=on?'block':'none';totais()}
+function persOk(){return pers.on&&Object.keys(pers.med).some(k=>k!=='Notas'&&pers.med[k])}
+function totais(){
+  const moeda=P.currency||'MZN',preco=+(P.price??P.preco)||0;
+  const ks=Object.keys(sel);
+  const r=$('#resumo');
+  let h=ks.map(k=>{const[c,t]=k.split('|');return`<div><span>${c} · ${t} × ${sel[k]}</span><span>${fmt(preco*sel[k],moeda)}</span></div>`}).join('');
+  if(persOk()){h+=`<div><span>Personalizado (medidas) × 1</span><span>${fmt(preco,moeda)}</span></div>`}
+  r.style.display=h?'block':'none';r.innerHTML=h;
+  const itens=ks.reduce((a,k)=>a+sel[k],0)+(persOk()?1:0);
+  $('#tot').textContent=itens?fmt(preco*itens,moeda):'Escolha tamanho e quantidade';
+  $('#add').disabled=!itens;
+}
+async function envia(files){
+  for(const f of files){
+    const nome=`ref/${Date.now()}-${f.name.replace(/[^\w.]/g,'_')}`;
+    try{
+      const r=await fetch(`${SB}/storage/v1/object/${BUCKET}/${nome}`,{method:'POST',headers:{apikey:KEY,Authorization:'Bearer '+KEY,'Content-Type':f.type},body:f});
+      if(!r.ok)throw 0;
+      pers.refs.push(`${SB}/storage/v1/object/public/${BUCKET}/${nome}`);
+    }catch(e){toast('Não foi possível enviar o ficheiro. Cole um link.')}
+  }
+  listaRefs();
+}
+function listaRefs(){const e=$('#refs');if(e)e.innerHTML=pers.refs.map((u,i)=>`<div>✓ Referência ${i+1} <a href="#" onclick="pers.refs.splice(${i},1);listaRefs();return false">remover</a></div>`).join('')}
+$('#add').onclick=()=>{
+  let c=[];try{c=JSON.parse(localStorage.getItem('carrinho')||'[]')}catch(e){}
+  const nome=P.name||P.nome||'Produto',preco=+(P.price??P.preco)||0,moeda=P.currency||'MZN';
+  const push=(it)=>{const x=!it.medidas&&c.find(i=>!i.medidas&&i.id===it.id&&i.cor===it.cor&&i.tamanho===it.tamanho);if(x)x.qtd+=it.qtd;else c.push(it)};
+  Object.keys(sel).forEach(k=>{const[cc,t]=k.split('|');push({id:P.id,nome,cor:cc,tamanho:t,qtd:sel[k],preco,moeda,foto:fotoCor(cc)||(IMG[0]&&IMG[0].url)||P.image_url||''})});
+  if(persOk())push({id:P.id,nome,cor:cor||'',tamanho:'Personalizado',qtd:1,preco,moeda,foto:(IMG[0]&&IMG[0].url)||P.image_url||'',medidas:pers.med,referencias:pers.refs});
+  localStorage.setItem('carrinho',JSON.stringify(c));
+  sel={};$('#cc').textContent=cartCount();render();toast('Adicionado ao carrinho');
+};
+$('#cc').textContent=cartCount();
+load().catch(()=>{$('#app').innerHTML='<p>Erro ao carregar o produto. Tente de novo.</p>'});
+</script>
+</body>
+  </html>
