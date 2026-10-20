@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Produto – BBabilônia</title>
+<style>
+:root{--azul:#1d3a6b;--ouro:#c8932e;--fundo:#fbfbfd;--texto:#1a1f2b;--cinza:#6b7385;--linha:#e2e5ec;--card:#fff}
+@media (prefers-color-scheme:dark){:root{--fundo:#12151c;--texto:#eef0f5;--cinza:#9aa2b5;--linha:#2a3040;--card:#1a1f2b;--azul:#7fa2e8}}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--fundo);color:var(--texto);padding:env(safe-area-inset-top,0) 0 120px}
+header{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid var(--linha)}
+header a{color:var(--azul);font-weight:700;text-decoration:none}
+#galeria{display:flex;gap:8px;overflow-x:auto;padding:12px 16px;scroll-snap-type:x mandatory}
+#galeria img{height:280px;max-width:85vw;object-fit:cover;border-radius:10px;scroll-snap-align:start;flex:none}
+.info{padding:0 16px}
+h1{font-size:1.25rem;margin:8px 0 4px}
+.preco{font-size:1.4rem;font-weight:800;color:var(--ouro)}
+.cor{display:flex;gap:12px;margin:14px 16px;padding:12px;border:1px solid var(--linha);border-radius:12px;background:var(--card)}
+.cor>img,.cor>.sem{width:96px;height:120px;object-fit:cover;border-radius:8px;flex:none;background:var(--linha)}
+.sem{display:flex;align-items:center;justify-content:center;font-size:.75rem;color:var(--cinza);text-align:center}
+.dir{flex:1;min-width:0}
+.nome-cor{font-weight:700;margin-bottom:8px}
+.tam{display:flex;align-items:center;gap:6px;margin-bottom:6px}
+.tam b{width:44px;font-size:.9rem}
+.tam small{color:var(--cinza);font-size:.7rem;flex:1}
+.tam input{width:52px;padding:6px;border:1px solid var(--linha);border-radius:6px;text-align:center;font-size:1rem;background:var(--fundo);color:var(--texto)}
+.tam button{width:34px;height:34px;border:0;border-radius:6px;background:var(--azul);color:#fff;font-size:1.2rem}
+.barra{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--linha);padding:10px 16px calc(10px + env(safe-area-inset-bottom,0));display:flex;align-items:center;gap:12px}
+.barra div{flex:1}
+.barra strong{font-size:1.1rem;display:block}
+.barra span{font-size:.75rem;color:var(--cinza)}
+.barra button{padding:13px 18px;border:0;border-radius:10px;background:var(--ouro);color:#1a1200;font-weight:800;font-size:1rem}
+.barra button:disabled{opacity:.4}
+#msg{padding:24px 16px;color:var(--cinza)}
+</style>
+</head>
+<body>
+<header><a href="index.html">BBabilônia</a><a href="carrinho.html">Carrinho (<span id="nc">0</span>)</a></header>
+<div id="msg">A carregar…</div>
+<div id="galeria"></div>
+<div class="info"><h1 id="nome"></h1><div class="preco" id="preco"></div></div>
+<div id="cores"></div>
+<div class="barra"><div><strong id="total">0</strong><span id="resumo">Escolha as quantidades</span></div><button id="add" disabled>Adicionar ao carrinho</button></div>
+
+<script>
+var SB="https://dsfoqoeawvjafypycldz.supabase.co";
+var KEY="sb_publishable_BN4NiVcDab9CqdTY_odgDA_uUOhjja0";
+var ordem=["XS","S","M","L","XL","2XL","3XL","4XL","5XL","6XL","7XL","8XL"];
+var P=null,grupos=[],preco=0,moeda="MZN";
+
+function cart(){try{return JSON.parse(localStorage.getItem("carrinho")||"[]")}catch(e){return[]}}
+function contar(){var n=0;cart().forEach(function(i){n+=Number(i.qtd)||0});document.getElementById("nc").textContent=n}
+function urlDe(x){if(!x)return"";if(typeof x==="string")return x;return x.url||x.src||x.image_url||x.foto||""}
+
+function normalizar(v){
+  var cor=v.cor||v.color||v.colour||"Única";
+  var tam=v.tamanho!=null?v.tamanho:(v.size!=null?v.size:"");
+  var st=v.stock!=null?v.stock:(v.quantity!=null?v.quantity:v.qtd);
+  var foto=urlDe(v.foto||v.image||v.imagem||v.image_url||v.img);
+  return{cor:String(cor),tam:String(tam),stock:Number(st)||0,foto:foto};
+}
+
+function montar(){
+  var vs=P.variants;
+  if(typeof vs==="string"){try{vs=JSON.parse(vs)}catch(e){vs=[]}}
+  vs=(vs||[]).map(normalizar).filter(function(v){return v.stock>0});
+  var mapa={};
+  vs.forEach(function(v){
+    var g=mapa[v.cor]||(mapa[v.cor]={cor:v.cor,foto:"",tams:[]});
+    if(!g.foto&&v.foto)g.foto=v.foto;
+    g.tams.push(v);
+  });
+  var imgs=P.images;
+  if(typeof imgs==="string"){try{imgs=JSON.parse(imgs)}catch(e){imgs=[]}}
+  imgs=imgs||[];
+  grupos=Object.keys(mapa).map(function(k){
+    var g=mapa[k];
+    if(!g.foto){
+      for(var i=0;i<imgs.length;i++){
+        var o=imgs[i];
+        if(o&&typeof o==="object"&&String(o.cor||o.color||"").toLowerCase()===k.toLowerCase()){g.foto=urlDe(o);break}
+      }
+    }
+    g.tams.sort(function(a,b){
+      var ia=ordem.indexOf(a.tam.toUpperCase()),ib=ordem.indexOf(b.tam.toUpperCase());
+      if(ia>-1&&ib>-1)return ia-ib;
+      var na=parseFloat(a.tam),nb=parseFloat(b.tam);
+      if(!isNaN(na)&&!isNaN(nb))return na-nb;
+      return a.tam<b.tam?-1:1;
+    });
+    return g;
+  });
+  var gal=document.getElementById("galeria");gal.innerHTML="";
+  var lista=[];
+  imgs.forEach(function(x){var u=urlDe(x);if(u)lista.push(u)});
+  if(!lista.length&&P.image_url)lista.push(P.image_url);
+  lista.forEach(function(u){var im=document.createElement("img");im.src=u;im.alt="";gal.appendChild(im)});
+  if(!lista.length)gal.style.display="none";
+
+  var box=document.getElementById("cores");box.innerHTML="";
+  grupos.forEach(function(g,gi){
+    var d=document.createElement("div");d.className="cor";
+    var f=g.foto?'<img src="'+g.foto+'" alt="">':'<div class="sem">sem foto</div>';
+    var h='<div class="dir"><div class="nome-cor"></div>';
+    g.tams.forEach(function(t,ti){
+      h+='<div class="tam"><b></b><small>'+t.stock+' disp.</small>'+
+         '<input type="number" inputmode="numeric" min="0" max="'+t.stock+'" value="0" data-g="'+gi+'" data-t="'+ti+'">'+
+         '<button type="button" data-g="'+gi+'" data-t="'+ti+'">+</button></div>';
+    });
+    d.innerHTML=f+h+'</div>';
+    d.querySelector(".nome-cor").textContent=g.cor;
+    var bs=d.querySelectorAll(".tam b");
+    g.tams.forEach(function(t,i){bs[i].textContent=t.tam||"–"});
+    box.appendChild(d);
+  });
+  box.addEventListener("input",totais);
+  box.addEventListener("click",function(e){
+    var b=e.target.closest("button");if(!b)return;
+    var inp=box.querySelector('input[data-g="'+b.dataset.g+'"][data-t="'+b.dataset.t+'"]');
+    var max=Number(inp.max);
+    inp.value=Math.min(max,(Number(inp.value)||0)+1);
+    totais();
+  });
+  if(!grupos.length){document.getElementById("resumo").textContent="Sem stock disponível"}
+}
+
+function escolhidos(){
+  var r=[];
+  document.querySelectorAll("#cores input").forEach(function(inp){
+    var g=grupos[inp.dataset.g],t=g.tams[inp.dataset.t];
+    var q=Math.min(Number(inp.max),Math.max(0,Math.floor(Number(inp.value)||0)));
+    if(q>0)r.push({g:g,t:t,q:q});
+  });
+  return r;
+}
+
+function totais(){
+  var e=escolhidos(),n=0;
+  e.forEach(function(x){n+=x.q});
+  document.getElementById("total").textContent=(n*preco).toLocaleString("pt-PT")+" "+moeda;
+  document.getElementById("resumo").textContent=n?(n+" peça(s) em "+e.length+" linha(s)"):"Escolha as quantidades";
+  document.getElementById("add").disabled=!n;
+}
+
+document.getElementById("add").onclick=function(){
+  var e=escolhidos();if(!e.length)return;
+  var c=cart();
+  e.forEach(function(x){
+    var ex=c.filter(function(i){return i.id===P.id&&i.cor===x.g.cor&&i.tamanho===x.t.tam})[0];
+    if(ex){ex.qtd=(Number(ex.qtd)||0)+x.q}
+    else c.push({id:P.id,nome:P.nome_,cor:x.g.cor,tamanho:x.t.tam,qtd:x.q,preco:preco,moeda:moeda,foto:x.g.foto||P.image_url||""});
+  });
+  localStorage.setItem("carrinho",JSON.stringify(c));
+  contar();
+  document.querySelectorAll("#cores input").forEach(function(i){i.value=0});
+  totais();
+  document.getElementById("resumo").textContent="Adicionado. Veja o carrinho.";
+};
+
+(function(){
+  contar();
+  var id=new URLSearchParams(location.search).get("id");
+  if(!id){document.getElementById("msg").textContent="Falta o ?id= do produto no endereço.";return}
+  fetch(SB+"/rest/v1/products?id=eq."+encodeURIComponent(id)+"&select=*",{headers:{apikey:KEY,Authorization:"Bearer "+KEY}})
+  .then(function(r){return r.json()})
+  .then(function(a){
+    if(!a||!a[0]){document.getElementById("msg").textContent="Produto não encontrado.";return}
+    P=a[0];
+    P.nome_=P.name||P.title||P.nome||"Produto";
+    preco=Number(P.price!=null?P.price:P.preco)||0;
+    moeda=P.currency||"MZN";
+    document.title=P.nome_+" – BBabilônia";
+    document.getElementById("nome").textContent=P.nome_;
+    document.getElementById("preco").textContent=preco.toLocaleString("pt-PT")+" "+moeda;
+    document.getElementById("msg").style.display="none";
+    montar();totais();
+  })
+  .catch(function(){document.getElementById("msg").textContent="Erro ao carregar o produto."});
+})();
+</script>
+</body>
+</html>
