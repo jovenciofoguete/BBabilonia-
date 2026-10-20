@@ -18,6 +18,12 @@ button{padding:12px 16px;border-radius:10px;border:1px solid var(--line);backgro
 .it label input{width:auto}
 .ch{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}.ch span{background:var(--card);border:1px solid var(--line);padding:7px 12px;border-radius:8px}
 #m{margin-top:12px;color:var(--ac)}.hide{display:none}
+#ts .ts-tipo button{background:var(--card);color:var(--tx);border:1px solid var(--line)}
+#ts .ts-tipo button.on{background:var(--ac);border-color:var(--ac);color:#fff}
+#ts .ts-cor{border:1px solid var(--line);background:var(--card)}
+#ts .ts-item label{color:var(--tx);margin:0 0 2px}
+#ts .ts-item input{background:var(--bg);color:var(--tx);border:1px solid var(--line)}
+#ts .ts-nota{color:var(--mut)}
 </style></head><body>
 <h1>Área do fornecedor</h1>
 <div id="login">
@@ -39,9 +45,8 @@ button{padding:12px 16px;border-radius:10px;border:1px solid var(--line);backgro
  <h3>Cores (uma foto por cor)</h3><div class="g" id="cg"></div>
  <button id="ac" style="margin-top:10px">+ Adicionar cor com foto</button>
 
- <h3>Tamanhos</h3>
- <input id="ti" placeholder="Ex.: M, L, XL, 2XL (separe por vírgula)">
- <div class="ch" id="tc"></div>
+ <h3>Tamanhos e stock por cor</h3>
+ <div id="ts"></div>
 
  <h3>Vídeo (opcional)</h3>
  <button id="av">+ Escolher vídeo</button> <span id="vn" style="color:var(--mut)"></span>
@@ -51,15 +56,19 @@ button{padding:12px 16px;border-radius:10px;border:1px solid var(--line);backgro
 <input type="file" id="ff" accept="image/*" multiple hidden>
 <input type="file" id="fc" accept="image/*" multiple hidden>
 <input type="file" id="fv" accept="video/*" hidden>
+<script src="tamanhos-stock.js"></script>
 <script>
 const sb=supabase.createClient('https://dsfoqoeawvjafypycldz.supabase.co','sb_publishable_BN4NiVcDab9CqdTY_odgDA_uUOhjja0');
 const $=i=>document.getElementById(i);
 let user=null,fotos=[],cores=[],video=null;
 const msg=t=>$('m').textContent=t;
+function refreshTs(){
+ TamanhosStock.definirCores(cores.filter(c=>c.ok&&c.nome.trim()).map(c=>c.nome.trim()));
+}
 async function init(){
  const {data}=await sb.auth.getSession();user=data.session&&data.session.user;
  $('login').classList.toggle('hide',!!user);$('form').classList.toggle('hide',!user);
- if(user)cats();
+ if(user){TamanhosStock.montar('#ts',{cores:[]});cats();}
 }
 async function cats(){
  const {data}=await sb.from('categories').select('id,name,parent_id').order('name').limit(1000);
@@ -84,15 +93,14 @@ $('cri').onclick=async()=>{const {error}=await sb.auth.signUp({email:$('em').val
 function draw(){
  $('fg').innerHTML=fotos.map((f,i)=>`<div class="it"><img src="${f.prev}"><button class="x" onclick="fotos.splice(${i},1);draw()">×</button></div>`).join('');
  $('cg').innerHTML=cores.map((c,i)=>`<div class="it"><img src="${c.prev}"><button class="x" onclick="cores.splice(${i},1);draw()">×</button>
-  <input placeholder="Nome da cor" value="${c.nome}" oninput="cores[${i}].nome=this.value">
-  <label><input type="checkbox" ${c.ok?'checked':''} onchange="cores[${i}].ok=this.checked"> Disponível</label></div>`).join('');
+  <input placeholder="Nome da cor" value="${c.nome}" oninput="cores[${i}].nome=this.value" onchange="refreshTs()">
+  <label><input type="checkbox" ${c.ok?'checked':''} onchange="cores[${i}].ok=this.checked;refreshTs()"> Disponível</label></div>`).join('');
+ if(user)refreshTs();
 }
 $('af').onclick=()=>$('ff').click();$('ac').onclick=()=>$('fc').click();$('av').onclick=()=>$('fv').click();
 $('ff').onchange=e=>{[...e.target.files].forEach(f=>fotos.push({file:f,prev:URL.createObjectURL(f)}));e.target.value='';draw()};
 $('fc').onchange=e=>{[...e.target.files].forEach(f=>cores.push({file:f,prev:URL.createObjectURL(f),nome:'',ok:true}));e.target.value='';draw()};
 $('fv').onchange=e=>{video=e.target.files[0];$('vn').textContent=video?video.name:''};
-$('ti').oninput=()=>{$('tc').innerHTML=tams().map(t=>`<span>${t}</span>`).join('')};
-const tams=()=>$('ti').value.split(',').map(s=>s.trim()).filter(Boolean);
 async function up(file){
  const p=`${user.id}/${Date.now()}-${Math.random().toString(36).slice(2)}-${file.name.replace(/[^\w.]/g,'_')}`;
  const {error}=await sb.storage.from('produtos').upload(p,file);if(error)throw error;
@@ -109,8 +117,11 @@ $('sv').onclick=async()=>{
   const imgs=[];for(const f of fotos)imgs.push(await up(f.file));
   const cs=[];for(const c of cores){const u=await up(c.file);cs.push({nome:c.nome.trim(),foto:u,disponivel:c.ok});if(!imgs.includes(u))imgs.push(u)}
   let v=null;if(video){msg('A enviar vídeo…');v=await up(video)}
+  refreshTs();
+  const vars=TamanhosStock.obter();
+  const tamUn=[...new Set(vars.map(x=>x.tamanho))];
   const row={name:$('nome').value,price:Number($('preco').value),currency:$('moeda').value,description:$('desc').value,
-   images:imgs,image_url:imgs[0],video_url:v,colors:cs,sizes:tams(),supplier_id:user.id};
+   images:imgs,image_url:imgs[0],video_url:v,colors:cs,sizes:tamUn,variants:vars,supplier_id:user.id};
   if(!$('catb').classList.contains('hide'))row.category_id=$('cat').value;
   const {data,error}=await sb.from('products').insert(row).select('id').single();
   if(error)throw error;
