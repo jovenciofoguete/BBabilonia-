@@ -1,130 +1,175 @@
 <!DOCTYPE html>
 <html lang="pt">
-<head> <script>
-try{var c=JSON.parse(localStorage.getItem('carrinho')||'[]');if(Array.isArray(c)){var m={},o=[];c.forEach(function(i){var k=[i.nome,i.cor,i.tamanho].join('|');if(m[k]){m[k].qtd=(Number(m[k].qtd)||1)+(Number(i.qtd)||1);}else{m[k]=i;o.push(i);}});localStorage.setItem('carrinho',JSON.stringify(o));}}catch(e){}
-</script>
-<meta charset="UTF-8">
+<head>
+<meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Carrinho – BBabilônia</title>
 <style>
-  :root{
-    --bg:#faf7f2; --card:#ffffff; --text:#1f1a17; --muted:#6f655e;
-    --line:#e6dfd6; --brand:#7a1f3d; --brand-text:#ffffff; --danger:#b3261e;
-  }
-  @media (prefers-color-scheme: dark){
-    :root{
-      --bg:#17130f; --card:#221c17; --text:#f3ece4; --muted:#a89d93;
-      --line:#38302a; --brand:#d9758f; --brand-text:#1a0d12; --danger:#f2867f;
-    }
-  }
   *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--text);
-    font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;line-height:1.45}
-  header{padding:16px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between}
-  header a{color:var(--text);text-decoration:none;font-weight:700;font-size:1.1rem}
-  main{max-width:680px;margin:0 auto;padding:16px 16px 140px}
-  h1{font-size:1.35rem;margin:8px 0 16px}
-  .item{display:flex;gap:12px;background:var(--card);border:1px solid var(--line);
-    border-radius:12px;padding:12px;margin-bottom:12px}
-  .item img{width:84px;height:84px;object-fit:cover;border-radius:8px;background:var(--line);flex:none}
+  body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#f5f5f5;color:#222}
+  header{background:#111;color:#fff;padding:14px 16px;display:flex;justify-content:space-between;align-items:center}
+  header a{color:#fff;text-decoration:none;font-weight:bold}
+  main{max-width:720px;margin:0 auto;padding:12px}
+  #aviso{display:none;background:#fff3cd;color:#664d03;border:1px solid #ffecb5;border-radius:8px;padding:10px;margin-bottom:10px;font-size:14px}
+  .item{background:#fff;border-radius:10px;padding:10px;margin-bottom:10px;display:flex;gap:10px}
+  .item img,.sem-foto{width:84px;height:84px;object-fit:cover;border-radius:8px;background:#eee;flex:none}
+  .sem-foto{display:flex;align-items:center;justify-content:center;font-size:11px;color:#888}
   .info{flex:1;min-width:0}
-  .nome{font-weight:600;margin:0 0 2px;overflow-wrap:anywhere}
-  .meta{color:var(--muted);font-size:.9rem;margin:0 0 8px}
-  .linha{display:flex;align-items:center;justify-content:space-between;gap:8px}
-  .qtd{display:inline-flex;align-items:center;border:1px solid var(--line);border-radius:8px}
-  .qtd button{width:38px;height:38px;border:0;background:transparent;color:var(--text);font-size:1.2rem;cursor:pointer}
-  .qtd span{min-width:28px;text-align:center}
-  .preco{font-weight:700}
-  .remover{background:none;border:0;color:var(--danger);font-size:.85rem;cursor:pointer;padding:6px 0}
-  button:focus-visible,a:focus-visible{outline:3px solid var(--brand);outline-offset:2px}
-  .rodape{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--line);
-    padding:12px 16px calc(12px + env(safe-area-inset-bottom,0px))}
-  .rodape-in{max-width:680px;margin:0 auto}
-  .totais{margin-bottom:10px}
-  .totais div{display:flex;justify-content:space-between;font-weight:700}
-  .finalizar{display:block;width:100%;text-align:center;background:var(--brand);color:var(--brand-text);
-    border:0;border-radius:10px;padding:14px;font-size:1rem;font-weight:700;cursor:pointer;text-decoration:none}
-  .vazio{text-align:center;padding:48px 8px;color:var(--muted)}
-  .vazio a{display:inline-block;margin-top:12px;color:var(--brand);font-weight:700}
+  .nome{font-weight:bold;font-size:15px;margin-bottom:3px}
+  .det{font-size:13px;color:#555;margin:2px 0}
+  .preco{font-weight:bold;margin-top:4px}
+  .stock{font-size:12px;color:#c0392b;margin-top:2px}
+  .linha{display:flex;align-items:center;gap:8px;margin-top:8px}
+  .linha button{width:32px;height:32px;border:1px solid #ccc;background:#fff;border-radius:6px;font-size:18px}
+  .linha .rem{width:auto;padding:0 10px;font-size:13px;color:#c0392b;margin-left:auto;border-color:#e6b0aa}
+  .total{background:#fff;border-radius:10px;padding:12px;margin-bottom:10px}
+  .total div{display:flex;justify-content:space-between;font-weight:bold;font-size:17px;margin:3px 0}
+  #btn{width:100%;padding:14px;background:#e67e22;color:#fff;border:0;border-radius:10px;font-size:16px;font-weight:bold}
+  #btn:disabled{background:#bbb}
+  .vazio{text-align:center;padding:40px 10px;color:#666}
+  .vazio a{color:#e67e22}
 </style>
 </head>
 <body>
-<header>
-  <a href="/">BBabilônia</a>
-</header>
+<header><a href="index.html">← Loja</a><span>Carrinho</span><span></span></header>
 <main>
-  <h1>O seu carrinho</h1>
+  <div id="aviso"></div>
   <div id="lista"></div>
+  <div id="rodape"></div>
 </main>
-<div class="rodape" id="rodape" hidden>
-  <div class="rodape-in">
-    <div class="totais" id="totais"></div>
-    <a class="finalizar" href="checkout.html">Finalizar compra</a>
-  </div>
-</div>
 
 <script>
+const SUPA_URL = "https://dsfoqoeawvjafypycldz.supabase.co";
+const SUPA_KEY = "sb_publishable_BN4NiVcDab9CqdTY_odgDA_uUOhjja0";
+const CHAVE = "carrinho";
+
+const CONHECIDOS = ["id","produto_id","product_id","nome","name","cor","tamanho","qtd","preco","moeda","foto","opcoes","specs","detalhes"];
+
+let itens = [];
+let online = false;
+let stockPorProduto = {}; // id -> variants
+
 function ler(){
-  try{ return JSON.parse(localStorage.getItem("carrinho")) || []; }catch(e){ return []; }
+  try{ const r = JSON.parse(localStorage.getItem(CHAVE)||"[]"); return Array.isArray(r)?r:[]; }
+  catch(e){ return []; }
 }
-function gravar(c){
-  try{ localStorage.setItem("carrinho", JSON.stringify(c)); }catch(e){}
+function gravar(){ localStorage.setItem(CHAVE, JSON.stringify(itens)); }
+
+function idDe(i){ return i.id || i.produto_id || i.product_id || ""; }
+function textoOpcoes(o){
+  if(!o) return [];
+  if(typeof o === "string") return [o];
+  if(Array.isArray(o)) return o.map(x=>typeof x==="object"?Object.values(x).join(": "):String(x));
+  if(typeof o === "object") return Object.entries(o).filter(([k,v])=>v!==""&&v!=null).map(([k,v])=>k+": "+(typeof v==="object"?JSON.stringify(v):v));
+  return [String(o)];
 }
-function dinheiro(v,m){
-  var n = Number(v)||0;
-  return n.toLocaleString("pt-PT",{minimumFractionDigits:0,maximumFractionDigits:2}) + " " + (m||"MZN");
+function chaveLinha(i){
+  return [idDe(i)||i.nome, (i.cor||"").toLowerCase(), String(i.tamanho||"").toLowerCase(), JSON.stringify(i.opcoes||i.detalhes||"")].join("|");
 }
-function esc(t){
-  return String(t==null?"":t).replace(/[&<>"']/g,function(c){
-    return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
+
+// junta linhas iguais (mesmo produto, cor, tamanho e opções)
+function juntar(){
+  const mapa = {};
+  itens.forEach(i=>{
+    i.qtd = Math.max(1, parseInt(i.qtd)||1);
+    const k = chaveLinha(i);
+    if(mapa[k]) mapa[k].qtd += i.qtd; else mapa[k] = i;
   });
+  itens = Object.values(mapa);
+  gravar();
 }
-function mudarQtd(i,d){
-  var c = ler();
-  if(!c[i]) return;
-  c[i].qtd = Math.max(1,(Number(c[i].qtd)||1)+d);
-  gravar(c); render();
+
+function stockDe(i){
+  const v = stockPorProduto[idDe(i)];
+  if(!Array.isArray(v)) return null;
+  const cor = (i.cor||"").toLowerCase(), tam = String(i.tamanho||"").toLowerCase();
+  const achado = v.find(x=>{
+    const c = String(x.cor ?? x.color ?? "").toLowerCase();
+    const t = String(x.tamanho ?? x.size ?? "").toLowerCase();
+    return c===cor && t===tam;
+  });
+  if(!achado) return null;
+  const s = achado.stock ?? achado.quantity;
+  return (s===undefined||s===null)?null:Number(s);
 }
-function remover(i){
-  var c = ler();
-  c.splice(i,1);
-  gravar(c); render();
+
+async function verificarOnline(){
+  if(!navigator.onLine) return false;
+  try{
+    const ids = [...new Set(itens.map(idDe).filter(Boolean))];
+    if(!ids.length) { return true; }
+    const r = await fetch(SUPA_URL+"/rest/v1/products?select=id,variants&id=in.("+ids.join(",")+")",
+      {headers:{apikey:SUPA_KEY,Authorization:"Bearer "+SUPA_KEY}});
+    if(!r.ok) return false;
+    const dados = await r.json();
+    stockPorProduto = {};
+    dados.forEach(p=>{ stockPorProduto[p.id] = p.variants; });
+    return true;
+  }catch(e){ return false; }
 }
-function render(){
-  var c = ler();
-  var lista = document.getElementById("lista");
-  var rodape = document.getElementById("rodape");
-  if(!c.length){
-    lista.innerHTML = '<div class="vazio">O carrinho está vazio.<br><a href="/">Ver produtos</a></div>';
-    rodape.hidden = true;
-    return;
+
+function desenhar(){
+  const lista = document.getElementById("lista");
+  const rod = document.getElementById("rodape");
+  const aviso = document.getElementById("aviso");
+  if(!itens.length){
+    lista.innerHTML = '<div class="vazio">O carrinho está vazio.<br><br><a href="index.html">Voltar à loja</a></div>';
+    rod.innerHTML = ""; aviso.style.display="none"; return;
   }
-  var totais = {};
-  lista.innerHTML = c.map(function(it,i){
-    var q = Number(it.qtd)||1, p = Number(it.preco)||0, m = it.moeda||"MZN";
-    totais[m] = (totais[m]||0) + p*q;
-    var detalhes = [it.cor, it.tamanho].filter(Boolean).join(" · ");
-    return '<div class="item">'
-      + (it.foto ? '<img src="'+esc(it.foto)+'" alt="">' : '<img alt="">')
-      + '<div class="info">'
-      + '<p class="nome">'+esc(it.nome)+'</p>'
-      + '<p class="meta">'+esc(detalhes)+'</p>'
-      + '<div class="linha">'
-      + '<div class="qtd"><button onclick="mudarQtd('+i+',-1)" aria-label="Diminuir">−</button><span>'+q+'</span><button onclick="mudarQtd('+i+',1)" aria-label="Aumentar">+</button></div>'
-      + '<span class="preco">'+dinheiro(p*q,m)+'</span>'
-      + '</div>'
-      + '<button class="remover" onclick="remover('+i+')">Remover</button>'
-      + '</div></div>';
+  let problema = !online;
+  let msg = online ? "" : "Sem ligação à internet. Ligue-se para confirmar o stock e continuar a compra.";
+
+  lista.innerHTML = itens.map((i,idx)=>{
+    const s = online ? stockDe(i) : null;
+    let aviStock = "";
+    if(s!==null){
+      if(s<=0){ aviStock = "Esgotado – remova este item"; problema = true; msg = msg || "Há itens esgotados no carrinho."; }
+      else if(i.qtd>s){ aviStock = "Só há "+s+" em stock"; problema = true; msg = msg || "Reduza a quantidade dos itens indicados."; }
+    }
+    const extras = [];
+    if(i.cor) extras.push("Cor: "+i.cor);
+    if(i.tamanho) extras.push("Tamanho: "+i.tamanho);
+    textoOpcoes(i.opcoes).forEach(t=>extras.push(t));
+    textoOpcoes(i.detalhes).forEach(t=>extras.push(t));
+    Object.keys(i).filter(k=>!CONHECIDOS.includes(k)&&i[k]!==""&&i[k]!=null&&typeof i[k]!=="object").forEach(k=>extras.push(k+": "+i[k]));
+    const foto = i.foto ? '<img src="'+i.foto+'" alt="">' : '<div class="sem-foto">sem foto</div>';
+    const preco = Number(i.preco)||0;
+    return '<div class="item">'+foto+'<div class="info">'
+      +'<div class="nome">'+(i.nome||i.name||"Produto")+'</div>'
+      +extras.map(t=>'<div class="det">'+t+'</div>').join("")
+      +'<div class="preco">'+preco.toLocaleString("pt-PT")+" "+(i.moeda||"MZN")+' × '+i.qtd+'</div>'
+      +(aviStock?'<div class="stock">'+aviStock+'</div>':'')
+      +'<div class="linha"><button onclick="mudar('+idx+',-1)">−</button><b>'+i.qtd+'</b><button onclick="mudar('+idx+',1)">+</button>'
+      +'<button class="rem" onclick="remover('+idx+')">Remover</button></div>'
+      +'</div></div>';
   }).join("");
-  document.getElementById("totais").innerHTML = Object.keys(totais).map(function(m){
-    return '<div><span>Total</span><span>'+dinheiro(totais[m],m)+'</span></div>';
-  }).join("");
-  rodape.hidden = false;
+
+  // totais por moeda
+  const tot = {};
+  itens.forEach(i=>{ const m=i.moeda||"MZN"; tot[m]=(tot[m]||0)+(Number(i.preco)||0)*i.qtd; });
+  rod.innerHTML = '<div class="total">'+Object.entries(tot).map(([m,v])=>'<div><span>Total</span><span>'+v.toLocaleString("pt-PT")+' '+m+'</span></div>').join("")+'</div>'
+    +'<button id="btn" '+(problema?"disabled":"")+' onclick="location.href=\'finalizar.html\'">Finalizar compra</button>';
+
+  aviso.style.display = msg?"block":"none";
+  aviso.textContent = msg;
 }
-render();
+
+function mudar(idx,d){
+  itens[idx].qtd = Math.max(1,(parseInt(itens[idx].qtd)||1)+d);
+  gravar(); desenhar();
+}
+function remover(idx){
+  itens.splice(idx,1); gravar(); desenhar();
+}
+
+async function iniciar(){
+  itens = ler(); juntar(); desenhar();
+  online = await verificarOnline();
+  desenhar();
+}
+window.addEventListener("online", iniciar);
+window.addEventListener("offline", ()=>{ online=false; desenhar(); });
+iniciar();
 </script>
 </body>
 </html>
-<script>
-try{var c=JSON.parse(localStorage.getItem('carrinho')||'[]');if(Array.isArray(c)){var m={},o=[];c.forEach(function(i){var k=[i.nome,i.cor,i.tamanho].join('|');if(m[k]){m[k].qtd=(Number(m[k].qtd)||1)+(Number(i.qtd)||1);}else{m[k]=i;o.push(i);}});localStorage.setItem('carrinho',JSON.stringify(o));}}catch(e){}
-                                                                                                                      </script>
