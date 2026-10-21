@@ -4,7 +4,6 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Minhas moradas - BBabilônia</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <style>
 body{font-family:Arial,sans-serif;margin:0;background:#f5f5f5;color:#222}
 header{background:#111;color:#fff;padding:14px 16px;font-weight:bold}
@@ -24,7 +23,7 @@ small{color:#666}
 <body>
 <header>BBabilônia · Minhas moradas</header>
 
-<div id="login" class="box hide">
+<div id="login" class="box">
   <b>Entre na sua conta para ver as moradas</b>
   <label>Email</label><input id="le" type="email">
   <label>Palavra-passe</label><input id="lp" type="password">
@@ -38,7 +37,6 @@ small{color:#666}
     <b>Moradas guardadas</b>
     <div id="lista"><small>A carregar...</small></div>
   </div>
-
   <div class="box">
     <b>Nova morada</b>
     <label>Tipo</label>
@@ -57,12 +55,14 @@ small{color:#666}
     <input id="marca_envio" placeholder="A sua marca (a logística identifica o seu produto)">
     <small>Obrigatória quando o fornecedor está noutro país.</small>
     <button onclick="guardar()">Guardar morada</button>
+    <button class="sec" onclick="sair()">Sair da conta</button>
     <div id="m" class="msg"></div>
   </div>
 </div>
 
 <script>
-var sb=supabase.createClient("https://dsfoqoeawvjafypycldz.supabase.co","sb_publishable_BN4NiVcDab9CqdTY_odgDA_uUOhjja0");
+var URL_="https://dsfoqoeawvjafypycldz.supabase.co";
+var KEY="sb_publishable_BN4NiVcDab9CqdTY_odgDA_uUOhjja0";
 var P={
 "Moçambique":["Maputo Cidade","Maputo Província","Gaza","Inhambane","Sofala","Manica","Tete","Zambézia","Nampula","Cabo Delgado","Niassa"],
 "Angola":["Luanda","Bengo","Benguela","Bié","Cabinda","Cuando Cubango","Cuanza Norte","Cuanza Sul","Cunene","Huambo","Huíla","Lunda Norte","Lunda Sul","Malanje","Moxico","Namibe","Uíge","Zaire"],
@@ -76,51 +76,67 @@ var P={
 "Zâmbia":["Lusaka","Copperbelt","Central","Eastern","Luapula","Muchinga","Northern","North-Western","Southern","Western"],
 "Outro país":["Outra região"]
 };
-var user=null;
+var tok=null,uid=null;
 function $(i){return document.getElementById(i)}
 function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
 function paises(){var h="";Object.keys(P).forEach(function(k){h+="<option>"+k+"</option>"});$("pais").innerHTML=h;provs()}
 function provs(){var h="";P[$("pais").value].forEach(function(k){h+="<option>"+k+"</option>"});$("provincia").innerHTML=h}
+function H(extra){var h={"apikey":KEY,"Content-Type":"application/json"};if(tok)h["Authorization"]="Bearer "+tok;for(var k in (extra||{}))h[k]=extra[k];return h}
+function guardarSessao(d){tok=d.access_token;uid=d.user.id;try{localStorage.setItem("bb_tok",tok);localStorage.setItem("bb_uid",uid)}catch(e){}}
+async function auth(rota){
+  var corpo=JSON.stringify({email:$("le").value.trim(),password:$("lp").value});
+  var r=await fetch(URL_+"/auth/v1/"+rota,{method:"POST",headers:{"apikey":KEY,"Content-Type":"application/json"},body:corpo});
+  var d=await r.json();
+  return {ok:r.ok,d:d};
+}
 async function entrar(){
-  var r=await sb.auth.signInWithPassword({email:$("le").value.trim(),password:$("lp").value});
-  if(r.error){$("lm").textContent="Erro: "+r.error.message;return}
-  iniciar();
+  try{
+    var x=await auth("token?grant_type=password");
+    if(!x.ok){$("lm").textContent="Erro: "+(x.d.msg||x.d.error_description||"email ou palavra-passe errados");return}
+    guardarSessao(x.d);mostrar();
+  }catch(e){$("lm").textContent="Sem ligação à internet."}
 }
 async function registar(){
-  var r=await sb.auth.signUp({email:$("le").value.trim(),password:$("lp").value});
-  if(r.error){$("lm").textContent="Erro: "+r.error.message;return}
-  $("lm").textContent="Conta criada. Se pedir confirmação, abra o email; depois toque em Entrar.";
+  try{
+    var x=await auth("signup");
+    if(!x.ok){$("lm").textContent="Erro: "+(x.d.msg||x.d.error_description||"não foi possível criar");return}
+    if(x.d.access_token){guardarSessao(x.d);mostrar()}
+    else{$("lm").className="msg ok";$("lm").textContent="Conta criada. Confirme no seu email e depois toque em Entrar."}
+  }catch(e){$("lm").textContent="Sem ligação à internet."}
 }
-async function iniciar(){
-  var r=await sb.auth.getSession();
-  user=r.data.session?r.data.session.user:null;
-  if(!user){$("login").classList.remove("hide");$("app").classList.add("hide");return}
-  $("login").classList.add("hide");$("app").classList.remove("hide");
-  carregar();
-}
+function sair(){try{localStorage.removeItem("bb_tok");localStorage.removeItem("bb_uid")}catch(e){}tok=null;uid=null;$("app").classList.add("hide");$("login").classList.remove("hide")}
+function mostrar(){$("login").classList.add("hide");$("app").classList.remove("hide");carregar()}
 async function carregar(){
-  var r=await sb.from("moradas").select("*").order("created_at",{ascending:false});
-  if(r.error){$("lista").innerHTML='<div class="msg">Erro: '+esc(r.error.message)+'</div>';return}
-  if(!r.data.length){$("lista").innerHTML="<small>Ainda não tem moradas.</small>";return}
-  $("lista").innerHTML=r.data.map(function(m){
-    return '<div class="end"><span class="tag">'+(m.tipo==="internacional"?"Internacional":"Entrega")+'</span><br><b>'+esc(m.nome)+'</b> · '+esc(m.telefone)+'<br>'+esc(m.detalhe)+', '+esc(m.cidade)+', '+esc(m.provincia)+', '+esc(m.pais)+' '+esc(m.codigo_postal)+(m.marca_envio?'<br>Marca: '+esc(m.marca_envio):'')+'<button class="sec" onclick="apagar(\''+m.id+'\')">Apagar</button></div>';
-  }).join("");
+  try{
+    var r=await fetch(URL_+"/rest/v1/moradas?select=*&order=created_at.desc",{headers:H()});
+    if(r.status==401){sair();$("lm").textContent="Sessão expirada. Entre outra vez.";return}
+    var d=await r.json();
+    if(!r.ok){$("lista").innerHTML='<div class="msg">Erro: '+esc(d.message)+'</div>';return}
+    if(!d.length){$("lista").innerHTML="<small>Ainda não tem moradas.</small>";return}
+    $("lista").innerHTML=d.map(function(m){
+      return '<div class="end"><span class="tag">'+(m.tipo==="internacional"?"Internacional":"Entrega")+'</span><br><b>'+esc(m.nome)+'</b> · '+esc(m.telefone)+'<br>'+esc(m.detalhe)+', '+esc(m.cidade)+', '+esc(m.provincia)+', '+esc(m.pais)+' '+esc(m.codigo_postal)+(m.marca_envio?'<br>Marca: '+esc(m.marca_envio):'')+'<button class="sec" onclick="apagar(\''+m.id+'\')">Apagar</button></div>';
+    }).join("");
+  }catch(e){$("lista").innerHTML='<div class="msg">Sem ligação à internet.</div>'}
 }
 async function guardar(){
-  var d={user_id:user.id,tipo:$("tipo").value,nome:$("nome").value.trim(),telefone:$("telefone").value.trim(),pais:$("pais").value,provincia:$("provincia").value,cidade:$("cidade").value.trim(),codigo_postal:$("codigo_postal").value.trim(),detalhe:$("detalhe").value.trim(),marca_envio:$("marca_envio").value.trim()};
+  var d={user_id:uid,tipo:$("tipo").value,nome:$("nome").value.trim(),telefone:$("telefone").value.trim(),pais:$("pais").value,provincia:$("provincia").value,cidade:$("cidade").value.trim(),codigo_postal:$("codigo_postal").value.trim(),detalhe:$("detalhe").value.trim(),marca_envio:$("marca_envio").value.trim()};
   if(!d.nome||!d.telefone||!d.cidade||!d.detalhe){$("m").className="msg";$("m").textContent="Preencha nome, telemóvel, cidade e morada detalhada.";return}
-  var r=await sb.from("moradas").insert(d);
-  if(r.error){$("m").className="msg";$("m").textContent="Erro: "+r.error.message;return}
-  $("m").className="msg ok";$("m").textContent="Morada guardada.";
-  ["nome","telefone","cidade","codigo_postal","detalhe","marca_envio"].forEach(function(i){$(i).value=""});
-  carregar();
+  try{
+    var r=await fetch(URL_+"/rest/v1/moradas",{method:"POST",headers:H({"Prefer":"return=minimal"}),body:JSON.stringify(d)});
+    if(!r.ok){var e=await r.json();$("m").className="msg";$("m").textContent="Erro: "+(e.message||"não guardou");return}
+    $("m").className="msg ok";$("m").textContent="Morada guardada.";
+    ["nome","telefone","cidade","codigo_postal","detalhe","marca_envio"].forEach(function(i){$(i).value=""});
+    carregar();
+  }catch(e){$("m").className="msg";$("m").textContent="Sem ligação à internet."}
 }
 async function apagar(id){
   if(!confirm("Apagar esta morada?"))return;
-  await sb.from("moradas").delete().eq("id",id);
+  await fetch(URL_+"/rest/v1/moradas?id=eq."+id,{method:"DELETE",headers:H()});
   carregar();
 }
-paises();iniciar();
+paises();
+try{tok=localStorage.getItem("bb_tok");uid=localStorage.getItem("bb_uid")}catch(e){}
+if(tok&&uid)mostrar();
 </script>
 </body>
 </html>
