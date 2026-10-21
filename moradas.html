@@ -1,0 +1,18 @@
+create table if not exists moradas (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  tipo text not null default 'entrega',
+  nome text not null,
+  telefone text not null,
+  pais text not null,
+  provincia text not null,
+  cidade text not null,
+  codigo_postal text,
+  detalhe text not null,
+  marca_envio text,
+  created_at timestamptz default now()
+);
+alter table moradas enable row level security;
+create policy "ver as minhas moradas" on moradas for select using (auth.uid() = user_id);
+create policy "criar as minhas moradas" on moradas for insert with check (auth.uid() = user_id);
+create policy "apagar as minhas moradas" on moradas for delete using (auth.uid() = user_id);
