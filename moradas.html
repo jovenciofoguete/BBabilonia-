@@ -1,18 +1,126 @@
-create table if not exists moradas (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references auth.users(id) on delete cascade,
-  tipo text not null default 'entrega',
-  nome text not null,
-  telefone text not null,
-  pais text not null,
-  provincia text not null,
-  cidade text not null,
-  codigo_postal text,
-  detalhe text not null,
-  marca_envio text,
-  created_at timestamptz default now()
-);
-alter table moradas enable row level security;
-create policy "ver as minhas moradas" on moradas for select using (auth.uid() = user_id);
-create policy "criar as minhas moradas" on moradas for insert with check (auth.uid() = user_id);
-create policy "apagar as minhas moradas" on moradas for delete using (auth.uid() = user_id);
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Minhas moradas - BBabilônia</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<style>
+body{font-family:Arial,sans-serif;margin:0;background:#f5f5f5;color:#222}
+header{background:#111;color:#fff;padding:14px 16px;font-weight:bold}
+.box{background:#fff;margin:12px;padding:14px;border-radius:10px}
+label{display:block;font-size:13px;margin:10px 0 4px;font-weight:bold}
+input,select,textarea{width:100%;box-sizing:border-box;padding:10px;font-size:16px;border:1px solid #ccc;border-radius:8px}
+button{width:100%;padding:12px;font-size:16px;border:0;border-radius:8px;background:#e8590c;color:#fff;margin-top:14px}
+button.sec{background:#555}
+.end{border:1px solid #ddd;border-radius:8px;padding:10px;margin-top:10px;font-size:14px}
+.tag{display:inline-block;background:#eee;border-radius:6px;padding:2px 8px;font-size:12px;margin-bottom:6px}
+.msg{color:#c00;font-size:14px;margin-top:8px}
+.ok{color:#080}
+.hide{display:none}
+small{color:#666}
+</style>
+</head>
+<body>
+<header>BBabilônia · Minhas moradas</header>
+
+<div id="login" class="box hide">
+  <b>Entre na sua conta para ver as moradas</b>
+  <label>Email</label><input id="le" type="email">
+  <label>Palavra-passe</label><input id="lp" type="password">
+  <button onclick="entrar()">Entrar</button>
+  <button class="sec" onclick="registar()">Criar conta</button>
+  <div id="lm" class="msg"></div>
+</div>
+
+<div id="app" class="hide">
+  <div class="box">
+    <b>Moradas guardadas</b>
+    <div id="lista"><small>A carregar...</small></div>
+  </div>
+
+  <div class="box">
+    <b>Nova morada</b>
+    <label>Tipo</label>
+    <select id="tipo">
+      <option value="entrega">Morada de entrega</option>
+      <option value="internacional">Endereço internacional de recebimento final</option>
+    </select>
+    <label>Nome do destinatário</label><input id="nome">
+    <label>Telemóvel</label><input id="telefone" type="tel">
+    <label>País</label><select id="pais" onchange="provs()"></select>
+    <label>Província / Região (escolha na lista)</label><select id="provincia"></select>
+    <label>Cidade / Distrito</label><input id="cidade">
+    <label>Código postal</label><input id="codigo_postal">
+    <label>Morada detalhada (rua, bairro, andar, número)</label><textarea id="detalhe" rows="3"></textarea>
+    <label>Marca de envio</label>
+    <input id="marca_envio" placeholder="A sua marca (a logística identifica o seu produto)">
+    <small>Obrigatória quando o fornecedor está noutro país.</small>
+    <button onclick="guardar()">Guardar morada</button>
+    <div id="m" class="msg"></div>
+  </div>
+</div>
+
+<script>
+var sb=supabase.createClient("https://dsfoqoeawvjafypycldz.supabase.co","sb_publishable_BN4NiVcDab9CqdTY_odgDA_uUOhjja0");
+var P={
+"Moçambique":["Maputo Cidade","Maputo Província","Gaza","Inhambane","Sofala","Manica","Tete","Zambézia","Nampula","Cabo Delgado","Niassa"],
+"Angola":["Luanda","Bengo","Benguela","Bié","Cabinda","Cuando Cubango","Cuanza Norte","Cuanza Sul","Cunene","Huambo","Huíla","Lunda Norte","Lunda Sul","Malanje","Moxico","Namibe","Uíge","Zaire"],
+"África do Sul":["Gauteng","Western Cape","Eastern Cape","KwaZulu-Natal","Limpopo","Mpumalanga","North West","Northern Cape","Free State"],
+"Portugal":["Aveiro","Beja","Braga","Bragança","Castelo Branco","Coimbra","Évora","Faro","Guarda","Leiria","Lisboa","Portalegre","Porto","Santarém","Setúbal","Viana do Castelo","Vila Real","Viseu","Açores","Madeira"],
+"Brasil":["Acre","Alagoas","Amapá","Amazonas","Bahia","Ceará","Distrito Federal","Espírito Santo","Goiás","Maranhão","Mato Grosso","Mato Grosso do Sul","Minas Gerais","Pará","Paraíba","Paraná","Pernambuco","Piauí","Rio de Janeiro","Rio Grande do Norte","Rio Grande do Sul","Rondônia","Roraima","Santa Catarina","São Paulo","Sergipe","Tocantins"],
+"China":["Guangdong","Zhejiang","Jiangsu","Shanghai","Beijing","Fujian","Shandong","Henan","Hebei","Hubei","Hunan","Sichuan","Chongqing","Tianjin","Anhui","Jiangxi","Shaanxi","Liaoning","Guangxi","Yunnan","Hainan","Outra"],
+"Tanzânia":["Dar es Salaam","Arusha","Dodoma","Mwanza","Zanzibar","Mbeya","Outra"],
+"Zimbábue":["Harare","Bulawayo","Manicaland","Mashonaland Central","Mashonaland East","Mashonaland West","Masvingo","Matabeleland North","Matabeleland South","Midlands"],
+"Malawi":["Região Norte","Região Central","Região Sul"],
+"Zâmbia":["Lusaka","Copperbelt","Central","Eastern","Luapula","Muchinga","Northern","North-Western","Southern","Western"],
+"Outro país":["Outra região"]
+};
+var user=null;
+function $(i){return document.getElementById(i)}
+function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
+function paises(){var h="";Object.keys(P).forEach(function(k){h+="<option>"+k+"</option>"});$("pais").innerHTML=h;provs()}
+function provs(){var h="";P[$("pais").value].forEach(function(k){h+="<option>"+k+"</option>"});$("provincia").innerHTML=h}
+async function entrar(){
+  var r=await sb.auth.signInWithPassword({email:$("le").value.trim(),password:$("lp").value});
+  if(r.error){$("lm").textContent="Erro: "+r.error.message;return}
+  iniciar();
+}
+async function registar(){
+  var r=await sb.auth.signUp({email:$("le").value.trim(),password:$("lp").value});
+  if(r.error){$("lm").textContent="Erro: "+r.error.message;return}
+  $("lm").textContent="Conta criada. Se pedir confirmação, abra o email; depois toque em Entrar.";
+}
+async function iniciar(){
+  var r=await sb.auth.getSession();
+  user=r.data.session?r.data.session.user:null;
+  if(!user){$("login").classList.remove("hide");$("app").classList.add("hide");return}
+  $("login").classList.add("hide");$("app").classList.remove("hide");
+  carregar();
+}
+async function carregar(){
+  var r=await sb.from("moradas").select("*").order("created_at",{ascending:false});
+  if(r.error){$("lista").innerHTML='<div class="msg">Erro: '+esc(r.error.message)+'</div>';return}
+  if(!r.data.length){$("lista").innerHTML="<small>Ainda não tem moradas.</small>";return}
+  $("lista").innerHTML=r.data.map(function(m){
+    return '<div class="end"><span class="tag">'+(m.tipo==="internacional"?"Internacional":"Entrega")+'</span><br><b>'+esc(m.nome)+'</b> · '+esc(m.telefone)+'<br>'+esc(m.detalhe)+', '+esc(m.cidade)+', '+esc(m.provincia)+', '+esc(m.pais)+' '+esc(m.codigo_postal)+(m.marca_envio?'<br>Marca: '+esc(m.marca_envio):'')+'<button class="sec" onclick="apagar(\''+m.id+'\')">Apagar</button></div>';
+  }).join("");
+}
+async function guardar(){
+  var d={user_id:user.id,tipo:$("tipo").value,nome:$("nome").value.trim(),telefone:$("telefone").value.trim(),pais:$("pais").value,provincia:$("provincia").value,cidade:$("cidade").value.trim(),codigo_postal:$("codigo_postal").value.trim(),detalhe:$("detalhe").value.trim(),marca_envio:$("marca_envio").value.trim()};
+  if(!d.nome||!d.telefone||!d.cidade||!d.detalhe){$("m").className="msg";$("m").textContent="Preencha nome, telemóvel, cidade e morada detalhada.";return}
+  var r=await sb.from("moradas").insert(d);
+  if(r.error){$("m").className="msg";$("m").textContent="Erro: "+r.error.message;return}
+  $("m").className="msg ok";$("m").textContent="Morada guardada.";
+  ["nome","telefone","cidade","codigo_postal","detalhe","marca_envio"].forEach(function(i){$(i).value=""});
+  carregar();
+}
+async function apagar(id){
+  if(!confirm("Apagar esta morada?"))return;
+  await sb.from("moradas").delete().eq("id",id);
+  carregar();
+}
+paises();iniciar();
+</script>
+</body>
+</html>
