@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Produto – BBabilônia</title>
+<style>
+:root{--azul:#1d3a6b;--ouro:#c8932e;--fundo:#fbfbfd;--texto:#1a1f2b;--cinza:#6b7385;--linha:#e2e5ec;--card:#fff}
+@media (prefers-color-scheme:dark){:root{--fundo:#12151c;--texto:#eef0f5;--cinza:#9aa2b5;--linha:#2a3040;--card:#1a1f2b;--azul:#7fa2e8}}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--fundo);color:var(--texto);padding:env(safe-area-inset-top,0) 0 120px}
+header{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid var(--linha)}
+header a{color:var(--azul);font-weight:700;text-decoration:none}
+#galeria{display:flex;gap:8px;overflow-x:auto;padding:12px 16px;scroll-snap-type:x mandatory}
+#galeria img{height:280px;max-width:85vw;object-fit:cover;border-radius:10px;scroll-snap-align:start;flex:none}
+.info{padding:0 16px}
+h1{font-size:1.25rem;margin:8px 0 4px}
+.preco{font-size:1.4rem;font-weight:800;color:var(--ouro)}
+.cor{display:flex;gap:12px;margin:14px 16px;padding:12px;border:1px solid var(--linha);border-radius:12px;background:var(--card)}
+.cor>img,.cor>.sem{width:96px;height:120px;object-fit:cover;border-radius:8px;flex:none;background:var(--linha)}
+.sem{display:flex;align-items:center;justify-content:center;font-size:.75rem;color:var(--cinza);text-align:center}
+.dir{flex:1;min-width:0}
+.nome-cor{font-weight:700;margin-bottom:8px}
+.tam{display:flex;align-items:center;gap:6px;margin-bottom:6px}
+.tam b{width:44px;font-size:.9rem}
+.tam small{color:var(--cinza);font-size:.7rem;flex:1}
+.tam input{width:52px;padding:6px;border:1px solid var(--linha);border-radius:6px;text-align:center;font-size:1rem;background:var(--fundo);color:var(--texto)}
+.tam button{width:34px;height:34px;border:0;border-radius:6px;background:var(--azul);color:#fff;font-size:1.2rem}
+.barra{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--linha);padding:10px 16px calc(10px + env(safe-area-inset-bottom,0));display:flex;align-items:center;gap:12px}
+.barra div{flex:1}
+.barra strong{font-size:1.1rem;display:block}
+.barra span{font-size:.75rem;color:var(--cinza)}
+.barra button{padding:13px 18px;border:0;border-radius:10px;background:var(--ouro);color:#1a1200;font-weight:800;font-size:1rem}
+.barra button:disabled{opacity:.4}
+#msg{padding:24px 16px;color:var(--cinza)}
+.bloco{margin:14px 16px;padding:12px;border:1px solid var(--linha);border-radius:12px;background:var(--card)}
+.bloco h3{margin:0 0 8px;font-size:.95rem}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{padding:8px 12px;border:1px solid var(--linha);border-radius:20px;background:var(--fundo);color:var(--texto);font-size:.9rem}
+.chip.on{background:var(--azul);color:#fff;border-color:var(--azul)}
+.lin{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--linha);font-size:.9rem}
+.lin span:first-child{color:var(--cinza)}
+.falta{color:#c0392b}
+.med{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:6px;font-size:.9rem}
+.med input{width:90px;padding:6px;border:1px solid var(--linha);border-radius:6px;background:var(--fundo);color:var(--texto)}
+.aviso{margin:10px 16px;padding:10px;border-radius:8px;background:#fdecea;color:#a93226;font-size:.85rem}
+</style>
+</head>
+<body>
+<header><a href="index.html">BBabilônia</a><a href="carrinho.html">Carrinho (<span id="nc">0</span>)</a></header>
+<div id="msg">A carregar…</div>
+<div id="galeria"></div>
+<div class="info"><h1 id="nome"></h1><div class="preco" id="preco"></div></div>
+<div id="opcoes"></div>
+<div id="cores"></div>
+<div id="detalhes"></div>
+<div class="barra"><div><strong id="total">0</strong><span id="resumo">Escolha as quantidades</span></div><button id="add" disabled>Adicionar ao carrinho</button></div>
+
+<script src="categorias-detalhes.js"></script>
+<script>
+var SB="https://dsfoqoeawvjafypycldz.supabase.co";
+var KEY="sb_publishable_BN4NiVcDab9CqdTY_odgDA_uUOhjja0";
+var ordem=["XS","S","M","L","XL","2XL","3XL","4XL","5XL","6XL","7XL","8XL"];
+var P=null,grupos=[],preco=0,moeda="MZN",perfil=null,escolha={},medidas={};
+
+function cart(){try{return JSON.parse(localStorage.getItem("carrinho")||"[]")}catch(e){return[]}}
+function contar(){var n=0;cart().forEach(function(i){n+=Number(i.qtd)||0});document.getElementById("nc").textContent=n}
+function urlDe(x){if(!x)return"";if(typeof x==="string")return x;return x.url||x.src||x.image_url||x.foto||""}
+
+function norm(s){return String(s==null?"":s).toLowerCase().replace(/[\s.·]+$/g,"").trim()}
+function achaUrl(o){
+  if(!o)return"";
+  if(typeof o==="string")return /^https?:\/\/\S+/i.test(o)?o:"";
+  if(typeof o==="object"){
+    var ks=Object.keys(o);
+    for(var i=0;i<ks.length;i++){
+      var v=o[ks[i]];
+      if(typeof v==="string"&&/^https?:\/\/\S+/i.test(v)&&/(\.(jpe?g|png|webp|gif|avif)|\/storage\/|image|foto)/i.test(v))return v;
+    }
+  }
+  return"";
+}
+function parse(x){
+  if(typeof x==="string"){var t=x.trim();if(t[0]==="["||t[0]==="{"){try{return JSON.parse(t)}catch(e){}}}
+  return x;
+}
+function procura(x,cor,prof){
+  x=parse(x);
+  if(!x||typeof x!=="object"||prof>5)return"";
+  var i,k,u,r;
+  if(Array.isArray(x)){
+    for(i=0;i<x.length;i++){r=procura(x[i],cor,prof+1);if(r)return r}
+    return"";
+  }
+  var ks=Object.keys(x);
+  for(i=0;i<ks.length;i++){
+    k=ks[i];
+    if(typeof x[k]==="string"&&/^(cor|color|colour|name|nome|label)$/i.test(k)&&norm(x[k])===norm(cor)){
+      u=achaUrl(x);if(u)return u;
+    }
+  }
+  for(i=0;i<ks.length;i++){
+    if(norm(ks[i])===norm(cor)){u=achaUrl(parse(x[ks[i]]));if(u)return u}
+  }
+  for(i=0;i<ks.length;i++){
+    if(ks[i]==="variants")continue;
+    r=procura(x[ks[i]],cor,prof+1);if(r)return r;
+  }
+  return"";
+}
+
+function normalizar(v){
+  var cor=v.cor||v.color||v.colour||"Única";
+  var tam=v.tamanho!=null?v.tamanho:(v.size!=null?v.size:"");
+  var st=v.stock!=null?v.stock:(v.quantity!=null?v.quantity:v.qtd);
+  var foto=urlDe(v.foto||v.image||v.imagem||v.image_url||v.img)||achaUrl(v);
+  return{cor:String(cor),tam:String(tam),stock:(st==null?9999:Number(st)||0),foto:foto};
+}
+
+function montar(){
+  var vs=P.variants;
+  if(typeof vs==="string"){try{vs=JSON.parse(vs)}catch(e){vs=[]}}
+  var bruto=vs||[];
+  vs=bruto.map(normalizar).filter(function(v){return v.stock>0});
+  if(!bruto.length){
+    var s0=P.stock!=null?P.stock:(P.quantity!=null?P.quantity:P.qtd);
+    s0=(s0==null||isNaN(Number(s0)))?9999:Number(s0);
+    if(s0>0)vs=[{cor:"",tam:"",stock:s0,foto:""}];
+  }
+  var mapa={};
+  vs.forEach(function(v){
+    var g=mapa[v.cor]||(mapa[v.cor]={cor:v.cor,foto:"",tams:[]});
+    if(!g.foto&&v.foto)g.foto=v.foto;
+    g.tams.push(v);
+  });
+  var imgs=P.images;
+  if(typeof imgs==="string"){try{imgs=JSON.parse(imgs)}catch(e){imgs=[]}}
+  imgs=imgs||[];
+  var chaves=Object.keys(mapa);
+  var distintas={};
+  chaves.forEach(function(k){if(mapa[k].foto)distintas[mapa[k].foto]=1});
+  if(chaves.length>1&&Object.keys(distintas).length<2){chaves.forEach(function(k){mapa[k].foto=""})}
+  grupos=chaves.map(function(k){
+    var g=mapa[k];
+    if(!g.foto&&k)g.foto=procura(P,k,0);
+    if(!g.foto&&!k)g.foto=urlDe(imgs[0])||P.image_url||"";
+    if(g.foto&&chaves.length>1&&g.foto===(P.image_url||"")&&Object.keys(distintas).length<2)g.foto="";
+    g.tams.sort(function(a,b){
+      var ia=ordem.indexOf(a.tam.toUpperCase()),ib=ordem.indexOf(b.tam.toUpperCase());
+      if(ia>-1&&ib>-1)return ia-ib;
+      var na=parseFloat(a.tam),nb=parseFloat(b.tam);
+      if(!isNaN(na)&&!isNaN(nb))return na-nb;
+      return a.tam<b.tam?-1:1;
+    });
+    return g;
+  });
+  var gal=document.getElementById("galeria");gal.innerHTML="";
+  var lista=[];
+  imgs.forEach(function(x){var u=urlDe(x);if(u)lista.push(u)});
+  if(!lista.length&&P.image_url)lista.push(P.image_url);
+  lista.forEach(function(u){var im=document.createElement("img");im.src=u;im.alt="";gal.appendChild(im)});
+  if(!lista.length)gal.style.display="none";
+
+  var box=document.getElementById("cores");box.innerHTML="";
+  grupos.forEach(function(g,gi){
+    var d=document.createElement("div");d.className="cor";
+    var f=g.foto?'<img src="'+g.foto+'" alt="">':'<div class="sem">sem foto</div>';
+    var h='<div class="dir"><div class="nome-cor"></div>';
+    g.tams.forEach(function(t,ti){
+      h+='<div class="tam"><b></b><small>'+(t.stock>=9999?'':t.stock+' disp.')+'</small>'+
+         '<input type="number" inputmode="numeric" min="0" max="'+t.stock+'" value="0" data-g="'+gi+'" data-t="'+ti+'">'+
+         '<button type="button" data-g="'+gi+'" data-t="'+ti+'">+</button></div>';
+    });
+    d.innerHTML=f+h+'</div>';
+    d.querySelector(".nome-cor").textContent=g.cor||"Quantidade";
+    var bs=d.querySelectorAll(".tam b");
+    g.tams.forEach(function(t,i){bs[i].textContent=t.tam||"Qtd"});
+    box.appendChild(d);
+  });
+  box.addEventListener("input",totais);
+  box.addEventListener("click",function(e){
+    var b=e.target.closest("button");if(!b)return;
+    var inp=box.querySelector('input[data-g="'+b.dataset.g+'"][data-t="'+b.dataset.t+'"]');
+    var max=Number(inp.max);
+    inp.value=Math.min(max,(Number(inp.value)||0)+1);
+    totais();
+  });
+  if(!grupos.length){document.getElementById("resumo").textContent="Sem stock disponível"}
+}
+
+function obj(x){x=parse(x);return(x&&typeof x==="object"&&!Array.isArray(x))?x:{}}
+function desenharOpcoes(){
+  var box=document.getElementById("opcoes");box.innerHTML="";
+  var op=obj(P.opcoes);
+  perfil.opc.forEach(function(o){
+    var vals=op[o.nome];
+    if(typeof vals==="string")vals=vals.split(",");
+    if(!Array.isArray(vals)||!vals.length)vals=(o.nome==="Modo")?o.sug:[];
+    if(!vals.length)return;
+    o.vals=vals;
+    var b=document.createElement("div");b.className="bloco";
+    var h=document.createElement("h3");h.textContent=o.nome;b.appendChild(h);
+    var c=document.createElement("div");c.className="chips";
+    vals.forEach(function(v){
+      var x=document.createElement("button");x.type="button";x.className="chip"+(escolha[o.nome]===v?" on":"");x.textContent=v;
+      x.onclick=function(){escolha[o.nome]=v;desenharOpcoes();totais()};
+      c.appendChild(x);
+    });
+    b.appendChild(c);box.appendChild(b);
+  });
+  if(perfil.medidas&&escolha["Modo"]==="Medidas personalizadas"){
+    var m=document.createElement("div");m.className="bloco";
+    m.innerHTML="<h3>As suas medidas (cm)</h3>";
+    MEDIDAS.forEach(function(n){
+      var l=document.createElement("div");l.className="med";
+      var t=document.createElement("span");t.textContent=n;
+      var i=document.createElement("input");i.type="number";i.inputMode="decimal";i.value=medidas[n]||"";
+      i.oninput=function(){medidas[n]=i.value;totais()};
+      l.appendChild(t);l.appendChild(i);m.appendChild(l);
+    });
+    box.appendChild(m);
+  }
+}
+function desenharDetalhes(){
+  var box=document.getElementById("detalhes");box.innerHTML="";
+  var sp=obj(P.specs),falta=[];
+  var b=document.createElement("div");b.className="bloco";
+  b.innerHTML="<h3>Detalhes do produto</h3>";
+  perfil.spec.forEach(function(s){
+    var v=sp[s.nome];
+    var l=document.createElement("div");l.className="lin";
+    var a=document.createElement("span");a.textContent=s.nome;
+    var c=document.createElement("span");
+    if(v==null||v===""){c.textContent="—";if(s.obrig){c.className="falta";falta.push(s.nome)}}
+    else c.textContent=v;
+    l.appendChild(a);l.appendChild(c);b.appendChild(l);
+  });
+  box.appendChild(b);
+  if(falta.length){
+    var w=document.createElement("div");w.className="aviso";
+    w.textContent="O fornecedor ainda não preencheu: "+falta.join(", ")+".";
+    box.appendChild(w);
+  }
+}
+function faltaEscolher(){
+  var f=[];
+  perfil.opc.forEach(function(o){if(o.vals&&o.vals.length&&!escolha[o.nome])f.push(o.nome)});
+  if(perfil.medidas&&escolha["Modo"]==="Medidas personalizadas"){
+    var sem=MEDIDAS.filter(function(n){return !medidas[n]});
+    if(sem.length)f.push("medidas ("+sem.length+" em falta)");
+  }
+  return f;
+}
+function resumoEscolha(){
+  var t=[];
+  perfil.opc.forEach(function(o){if(escolha[o.nome])t.push(o.nome+": "+escolha[o.nome])});
+  if(escolha["Modo"]==="Medidas personalizadas")t.push("Medidas: "+MEDIDAS.map(function(n){return n+" "+medidas[n]}).join(", "));
+  return t.join(" | ");
+}
+function escolhidos(){
+  var r=[];
+  document.querySelectorAll("#cores input").forEach(function(inp){
+    var g=grupos[inp.dataset.g],t=g.tams[inp.dataset.t];
+    var q=Math.min(Number(inp.max),Math.max(0,Math.floor(Number(inp.value)||0)));
+    if(q>0)r.push({g:g,t:t,q:q});
+  });
+  return r;
+}
+
+function totais(){
+  var e=escolhidos(),n=0;
+  e.forEach(function(x){n+=x.q});
+  document.getElementById("total").textContent=(n*preco).toLocaleString("pt-PT")+" "+moeda;
+  var fa=perfil?faltaEscolher():[];
+  var rs=document.getElementById("resumo");
+  if(!grupos.length)rs.textContent="Sem stock disponível";
+  else if(fa.length)rs.textContent="Escolha: "+fa.join(", ");
+  else rs.textContent=n?(n+" peça(s) em "+e.length+" linha(s)"):"Escolha as quantidades";
+  document.getElementById("add").disabled=!n||fa.length>0;
+}
+
+document.getElementById("add").onclick=function(){
+  var e=escolhidos();if(!e.length)return;
+  var c=cart();
+  e.forEach(function(x){
+    var extra=resumoEscolha();
+    var ex=c.filter(function(i){return i.id===P.id&&i.cor===x.g.cor&&i.tamanho===x.t.tam&&(i.extra||"")===extra})[0];
+    if(ex){ex.qtd=(Number(ex.qtd)||0)+x.q}
+    else c.push({id:P.id,nome:P.nome_,cor:x.g.cor,tamanho:x.t.tam,qtd:x.q,preco:preco,moeda:moeda,foto:x.g.foto||P.image_url||"",extra:extra,opcoes:JSON.parse(JSON.stringify(escolha)),medidas:escolha["Modo"]==="Medidas personalizadas"?JSON.parse(JSON.stringify(medidas)):null});
+  });
+  localStorage.setItem("carrinho",JSON.stringify(c));
+  contar();
+  document.querySelectorAll("#cores input").forEach(function(i){i.value=0});
+  totais();
+  document.getElementById("resumo").textContent="Adicionado. Veja o carrinho.";
+};
+
+(function(){
+  contar();
+  var id=new URLSearchParams(location.search).get("id");
+  if(!id){document.getElementById("msg").textContent="Falta o ?id= do produto no endereço.";return}
+  fetch(SB+"/rest/v1/products?id=eq."+encodeURIComponent(id)+"&select=*",{headers:{apikey:KEY,Authorization:"Bearer "+KEY}})
+  .then(function(r){return r.json()})
+  .then(function(a){
+    if(!a||!a[0]){document.getElementById("msg").textContent="Produto não encontrado.";return}
+    P=a[0];
+    P.nome_=P.name||P.title||P.nome||"Produto";
+    preco=Number(P.price!=null?P.price:P.preco)||0;
+    moeda=P.currency||"MZN";
+    document.title=P.nome_+" – BBabilônia";
+    document.getElementById("nome").textContent=P.nome_;
+    document.getElementById("preco").textContent=preco.toLocaleString("pt-PT")+" "+moeda;
+    document.getElementById("msg").style.display="none";
+    return fetch(SB+"/rest/v1/categories?select=*&limit=1000",{headers:{apikey:KEY,Authorization:"Bearer "+KEY}})
+      .then(function(r){return r.json()}).catch(function(){return[]})
+      .then(function(cs){
+        perfil=perfilDe(caminhoDe(Array.isArray(cs)?cs:[],P.category_id));
+        desenharOpcoes();montar();desenharDetalhes();totais();
+      });
+  })
+  .catch(function(){document.getElementById("msg").textContent="Erro ao carregar o produto."});
+})();
+</script>
+</body>
+  </html>
