@@ -47,3 +47,11 @@ function caminhoDe(cats,id){
   while(c&&n++<6){out.unshift(c.name||c.nome||c.title||"");c=m[c.parent_id||c.parent]}
   return out.join(" > ");
   }
+/* Estado em todas as categorias */
+var perfilDeBase=perfilDe;
+perfilDe=function(caminho){
+  var p=perfilDeBase(caminho);
+  p.spec=p.spec.filter(function(s){return s.nome!=="Condição"});
+  p.spec.unshift({nome:"Condição",obrig:true,sug:["Novo","Usado","Usado e recondicionado"]});
+  return p;
+};
