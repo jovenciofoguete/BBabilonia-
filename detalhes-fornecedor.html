@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Detalhes do produto – Fornecedor</title>
+<style>
+:root{--fundo:#fbfbfd;--texto:#1a1f2b;--cinza:#6b7385;--linha:#e2e5ec;--card:#fff;--azul:#1d3a6b;--ouro:#c8932e}
+@media (prefers-color-scheme:dark){:root{--fundo:#12151c;--texto:#eef0f5;--cinza:#9aa2b5;--linha:#2a3040;--card:#1a1f2b;--azul:#7fa2e8}}
+*{box-sizing:border-box}
+body{margin:0;padding:16px 16px 40px;font-family:system-ui,-apple-system,sans-serif;background:var(--fundo);color:var(--texto)}
+h1{font-size:1.3rem;margin:0 0 12px}
+h3{margin:14px 0 6px;font-size:1rem}
+.card{background:var(--card);border:1px solid var(--linha);border-radius:12px;padding:12px;margin-bottom:12px}
+input,select{width:100%;padding:11px;border:1px solid var(--linha);border-radius:8px;background:var(--fundo);color:var(--texto);font-size:1rem;margin:4px 0 10px}
+label{font-size:.85rem;color:var(--cinza)}
+.obr{color:#c0392b}
+button.p{width:100%;padding:14px;border:0;border-radius:10px;background:var(--ouro);color:#1a1200;font-weight:800;font-size:1rem}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+.chip{padding:8px 12px;border:1px solid var(--linha);border-radius:20px;background:var(--fundo);color:var(--texto);font-size:.9rem}
+.chip.on{background:var(--azul);color:#fff;border-color:var(--azul)}
+.add{display:flex;gap:6px}
+.add input{margin:0}
+.add button{padding:0 14px;border:0;border-radius:8px;background:var(--azul);color:#fff}
+#msg{margin:10px 0;font-size:.9rem}
+.err{color:#c0392b}.ok{color:#1e8449}
+</style>
+</head>
+<body>
+<h1>Detalhes obrigatórios do produto</h1>
+<div id="login" class="card">
+  <label>Email</label><input id="em" type="email" autocomplete="username">
+  <label>Palavra-passe</label><input id="pw" type="password" autocomplete="current-password">
+  <button class="p" id="entrar">Entrar</button>
+</div>
+<div id="app" style="display:none">
+  <label>Escolha o produto</label><select id="prod"></select>
+  <div id="form"></div>
+</div>
+<div id="msg"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="categorias-detalhes.js"></script>
+<script>
+var SB="https://dsfoqoeawvjafypycldz.supabase.co";
+var KEY="sb_publishable_BN4NiVcDab9CqdTY_odgDA_uUOhjja0";
+var sb=supabase.createClient(SB,KEY),prods=[],cats=[],cur=null,perfil=null,vals={};
+function $(i){return document.getElementById(i)}
+function say(t,ok){var m=$("msg");m.textContent=t;m.className=ok?"ok":"err"}
+function nomeP(p){return p.name||p.title||p.nome||"Produto"}
+function obj(x){if(typeof x==="string"){try{x=JSON.parse(x)}catch(e){x={}}}return(x&&typeof x==="object"&&!Array.isArray(x))?x:{}}
+
+$("entrar").onclick=function(){
+  sb.auth.signInWithPassword({email:$("em").value.trim(),password:$("pw").value}).then(function(r){
+    if(r.error){say("Email ou palavra-passe errados.");return}
+    $("login").style.display="none";$("app").style.display="block";say("");carregar();
+  });
+};
+sb.auth.getSession().then(function(r){if(r.data&&r.data.session){$("login").style.display="none";$("app").style.display="block";carregar()}});
+
+function carregar(){
+  Promise.all([sb.from("products").select("*"),sb.from("categories").select("*").limit(1000)]).then(function(r){
+    if(r[0].error){say("Não consegui ler os produtos: "+r[0].error.message);return}
+    prods=r[0].data||[];cats=r[1].data||[];
+    var s=$("prod");s.innerHTML="";
+    prods.forEach(function(p,i){var o=document.createElement("option");o.value=i;o.textContent=nomeP(p);s.appendChild(o)});
+    s.onchange=abrir;if(prods.length)abrir();else say("Ainda não tem produtos.");
+  });
+}
+
+function abrir(){
+  cur=prods[$("prod").value];
+  perfil=perfilDe(caminhoDe(cats,cur.category_id));
+  var sp=obj(cur.specs),op=obj(cur.opcoes);vals={};
+  var f=$("form");f.innerHTML="";
+  var cat=document.createElement("div");cat.className="card";
+  cat.textContent="Categoria: "+(caminhoDe(cats,cur.category_id)||"sem categoria");
+  f.appendChild(cat);
+  var c1=document.createElement("div");c1.className="card";
+  c1.innerHTML="<h3 style='margin-top:0'>Especificações</h3>";
+  perfil.spec.forEach(function(s,i){
+    var l=document.createElement("label");l.innerHTML=s.nome+(s.obrig?" <span class='obr'>*</span>":"");
+    var el;
+    if(s.sug.length){
+      el=document.createElement("select");
+      var o0=document.createElement("option");o0.value="";o0.textContent="Escolher…";el.appendChild(o0);
+      s.sug.forEach(function(v){var o=document.createElement("option");o.value=v;o.textContent=v;el.appendChild(o)});
+    }else{el=document.createElement("input");el.type="text"}
+    el.value=sp[s.nome]||"";el.id="sp"+i;
+    c1.appendChild(l);c1.appendChild(el);
+  });
+  f.appendChild(c1);
+  if(perfil.opc.length){
+    var c2=document.createElement("div");c2.className="card";
+    c2.innerHTML="<h3 style='margin-top:0'>Opções que o cliente escolhe</h3><label>Toque nas que tem disponíveis. Pode acrescentar outras.</label>";
+    perfil.opc.forEach(function(o){
+      var lista=op[o.nome];if(typeof lista==="string")lista=lista.split(",");
+      vals[o.nome]=Array.isArray(lista)?lista.slice():[];
+      var todas=o.sug.slice();vals[o.nome].forEach(function(v){if(todas.indexOf(v)<0)todas.push(v)});
+      var t=document.createElement("h3");t.textContent=o.nome;
+      var ch=document.createElement("div");ch.className="chips";
+      function pinta(){
+        ch.innerHTML="";
+        todas.forEach(function(v){
+          var b=document.createElement("button");b.type="button";
+          b.className="chip"+(vals[o.nome].indexOf(v)>-1?" on":"");b.textContent=v;
+          b.onclick=function(){var a=vals[o.nome],k=a.indexOf(v);if(k>-1)a.splice(k,1);else a.push(v);pinta()};
+          ch.appendChild(b);
+        });
+      }
+      pinta();
+      var ad=document.createElement("div");ad.className="add";
+      var inp=document.createElement("input");inp.placeholder="Outro valor";
+      var bt=document.createElement("button");bt.type="button";bt.textContent="Adicionar";
+      bt.onclick=function(){var v=inp.value.trim();if(!v)return;if(todas.indexOf(v)<0)todas.push(v);if(vals[o.nome].indexOf(v)<0)vals[o.nome].push(v);inp.value="";pinta()};
+      ad.appendChild(inp);ad.appendChild(bt);
+      c2.appendChild(t);c2.appendChild(ch);c2.appendChild(ad);
+    });
+    f.appendChild(c2);
+  }
+  var g=document.createElement("button");g.className="p";g.textContent="Guardar detalhes";g.onclick=guardar;f.appendChild(g);
+}
+
+function guardar(){
+  var sp={},falta=[];
+  perfil.spec.forEach(function(s,i){
+    var v=$("sp"+i).value.trim();
+    if(v)sp[s.nome]=v;else if(s.obrig)falta.push(s.nome);
+  });
+  perfil.opc.forEach(function(o){if(!(vals[o.nome]||[]).length)falta.push(o.nome)});
+  if(falta.length){say("Falta preencher (obrigatório): "+falta.join(", "));return}
+  var op={};perfil.opc.forEach(function(o){op[o.nome]=vals[o.nome]});
+  sb.from("products").update({specs:sp,opcoes:op}).eq("id",cur.id).select().then(function(r){
+    if(r.error){say("Erro ao guardar: "+r.error.message);return}
+    if(!r.data||!r.data.length){say("Não foi guardado. Sem permissão para este produto.");return}
+    cur.specs=sp;cur.opcoes=op;say("Detalhes guardados.",true);
+  });
+}
+</script>
+</body>
+</html>
