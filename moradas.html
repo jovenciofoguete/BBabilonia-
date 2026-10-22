@@ -2,141 +2,224 @@
 <html lang="pt">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Minhas moradas - BBabilônia</title>
 <style>
-body{font-family:Arial,sans-serif;margin:0;background:#f5f5f5;color:#222}
-header{background:#111;color:#fff;padding:14px 16px;font-weight:bold}
-.box{background:#fff;margin:12px;padding:14px;border-radius:10px}
-label{display:block;font-size:13px;margin:10px 0 4px;font-weight:bold}
-input,select,textarea{width:100%;box-sizing:border-box;padding:10px;font-size:16px;border:1px solid #ccc;border-radius:8px}
-button{width:100%;padding:12px;font-size:16px;border:0;border-radius:8px;background:#e8590c;color:#fff;margin-top:14px}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,Roboto,sans-serif;background:#f4f4f4;color:#111}
+header{background:#111;color:#fff;padding:16px;font-size:20px;font-weight:600}
+.card{background:#fff;margin:12px;padding:16px;border-radius:16px}
+h2{margin:0 0 12px;font-size:22px}
+label{display:block;margin:14px 0 6px;font-weight:600}
+input,select{width:100%;padding:14px;font-size:17px;border:1px solid #ccc;border-radius:12px;background:#fff;color:#111}
+button{width:100%;padding:15px;font-size:17px;border:0;border-radius:12px;background:#111;color:#fff;margin-top:14px}
 button.sec{background:#555}
-.end{border:1px solid #ddd;border-radius:8px;padding:10px;margin-top:10px;font-size:14px}
-.tag{display:inline-block;background:#eee;border-radius:6px;padding:2px 8px;font-size:12px;margin-bottom:6px}
-.msg{color:#c00;font-size:14px;margin-top:8px}
-.ok{color:#080}
-.hide{display:none}
-small{color:#666}
+.tag{display:inline-block;background:#eee;padding:6px 12px;border-radius:10px;font-size:15px;margin-bottom:10px}
+.tag.ext{background:#dce9ff}
+.end{border:1px solid #ddd;border-radius:14px;padding:14px;margin-bottom:12px;line-height:1.5}
+.msg{padding:12px;border-radius:10px;margin-top:12px;display:none}
+.ok{background:#e3f7e8;color:#145a2a}
+.err{background:#fde8e8;color:#8a1c1c}
+.nota{font-size:14px;color:#555;margin-top:6px}
+.tel{display:flex;gap:8px}
+.tel span{padding:14px 12px;background:#eee;border-radius:12px;font-size:17px;white-space:nowrap}
+.oculto{display:none}
 </style>
 </head>
 <body>
 <header>BBabilônia · Minhas moradas</header>
 
-<div id="login" class="box">
-  <b>Entre na sua conta para ver as moradas</b>
-  <label>Email</label><input id="le" type="email">
-  <label>Palavra-passe</label><input id="lp" type="password">
-  <button onclick="entrar()">Entrar</button>
-  <button class="sec" onclick="registar()">Criar conta</button>
-  <div id="lm" class="msg"></div>
+<div class="card" id="boxLogin">
+  <h2>Entrar na conta</h2>
+  <label>Email</label>
+  <input id="email" type="email" autocomplete="email">
+  <label>Palavra-passe</label>
+  <input id="senha" type="password" autocomplete="current-password">
+  <button onclick="entrar(false)">Entrar</button>
+  <button class="sec" onclick="entrar(true)">Criar conta</button>
+  <div class="msg" id="msgLogin"></div>
 </div>
 
-<div id="app" class="hide">
-  <div class="box">
-    <b>Moradas guardadas</b>
-    <div id="lista"><small>A carregar...</small></div>
-  </div>
-  <div class="box">
-    <b>Nova morada</b>
-    <label>Tipo</label>
-    <select id="tipo">
-      <option value="entrega">Morada de entrega</option>
-      <option value="internacional">Endereço internacional de recebimento final</option>
-    </select>
-    <label>Nome do destinatário</label><input id="nome">
-    <label>Telemóvel</label><input id="telefone" type="tel">
-    <label>País</label><select id="pais" onchange="provs()"></select>
-    <label>Província / Região (escolha na lista)</label><select id="provincia"></select>
-    <label>Cidade / Distrito</label><input id="cidade">
-    <label>Código postal</label><input id="codigo_postal">
-    <label>Morada detalhada (rua, bairro, andar, número)</label><textarea id="detalhe" rows="3"></textarea>
-    <label>Marca de envio</label>
-    <input id="marca_envio" placeholder="A sua marca (a logística identifica o seu produto)">
-    <small>Obrigatória quando o fornecedor está noutro país.</small>
-    <button onclick="guardar()">Guardar morada</button>
+<div id="boxApp" class="oculto">
+  <div class="card">
+    <h2>Moradas guardadas</h2>
+    <div id="lista"></div>
     <button class="sec" onclick="sair()">Sair da conta</button>
-    <div id="m" class="msg"></div>
+  </div>
+
+  <div class="card">
+    <h2>Nova morada</h2>
+
+    <label>Tipo de envio</label>
+    <select id="tipo" onchange="mudarTipo()">
+      <option value="entrega">Envio interno (dentro do país)</option>
+      <option value="internacional">Envio externo (fora do país)</option>
+    </select>
+    <div class="nota" id="notaTipo"></div>
+
+    <label>Nome do destinatário</label>
+    <input id="nome" autocomplete="name">
+
+    <label>País</label>
+    <select id="pais" onchange="mudarPais()"></select>
+    <input id="paisOutro" class="oculto" placeholder="Escreva o nome do país" style="margin-top:8px">
+
+    <label>Telemóvel</label>
+    <div class="tel"><span id="prefixo">+258</span><input id="tel" type="tel" inputmode="numeric"></div>
+
+    <label>Província / Região (escolha na lista)</label>
+    <select id="provincia"></select>
+    <input id="provOutra" class="oculto" placeholder="Escreva a região" style="margin-top:8px">
+
+    <label>Distrito</label>
+    <input id="distrito">
+
+    <label>Cidade</label>
+    <input id="cidade">
+
+    <label>Código postal</label>
+    <input id="cp" inputmode="numeric">
+
+    <label>Morada completa (andar, rua, bairro…)</label>
+    <input id="endereco">
+
+    <label id="lblMarca">Marca de envio</label>
+    <input id="marca">
+    <div class="nota">A marca vai junto da morada para o fornecedor a escrever na caixa externa.</div>
+
+    <button onclick="guardarMorada()">Guardar morada</button>
+    <div class="msg" id="msg"></div>
   </div>
 </div>
 
 <script>
-var URL_="https://dsfoqoeawvjafypycldz.supabase.co";
-var KEY="sb_publishable_BN4NiVcDab9CqdTY_odgDA_uUOhjja0";
-var P={
-"Moçambique":["Maputo Cidade","Maputo Província","Gaza","Inhambane","Sofala","Manica","Tete","Zambézia","Nampula","Cabo Delgado","Niassa"],
-"Angola":["Luanda","Bengo","Benguela","Bié","Cabinda","Cuando Cubango","Cuanza Norte","Cuanza Sul","Cunene","Huambo","Huíla","Lunda Norte","Lunda Sul","Malanje","Moxico","Namibe","Uíge","Zaire"],
-"África do Sul":["Gauteng","Western Cape","Eastern Cape","KwaZulu-Natal","Limpopo","Mpumalanga","North West","Northern Cape","Free State"],
-"Portugal":["Aveiro","Beja","Braga","Bragança","Castelo Branco","Coimbra","Évora","Faro","Guarda","Leiria","Lisboa","Portalegre","Porto","Santarém","Setúbal","Viana do Castelo","Vila Real","Viseu","Açores","Madeira"],
-"Brasil":["Acre","Alagoas","Amapá","Amazonas","Bahia","Ceará","Distrito Federal","Espírito Santo","Goiás","Maranhão","Mato Grosso","Mato Grosso do Sul","Minas Gerais","Pará","Paraíba","Paraná","Pernambuco","Piauí","Rio de Janeiro","Rio Grande do Norte","Rio Grande do Sul","Rondônia","Roraima","Santa Catarina","São Paulo","Sergipe","Tocantins"],
-"China":["Guangdong","Zhejiang","Jiangsu","Shanghai","Beijing","Fujian","Shandong","Henan","Hebei","Hubei","Hunan","Sichuan","Chongqing","Tianjin","Anhui","Jiangxi","Shaanxi","Liaoning","Guangxi","Yunnan","Hainan","Outra"],
-"Tanzânia":["Dar es Salaam","Arusha","Dodoma","Mwanza","Zanzibar","Mbeya","Outra"],
-"Zimbábue":["Harare","Bulawayo","Manicaland","Mashonaland Central","Mashonaland East","Mashonaland West","Masvingo","Matabeleland North","Matabeleland South","Midlands"],
-"Malawi":["Região Norte","Região Central","Região Sul"],
-"Zâmbia":["Lusaka","Copperbelt","Central","Eastern","Luapula","Muchinga","Northern","North-Western","Southern","Western"],
-"Outro país":["Outra região"]
+var URL_SB='https://dsfoqoeawvjafypycldz.supabase.co';
+var KEY='sb_publishable_BN4NiVcDab9CqdTY_odgDA_uUOhjja0';
+
+var PAISES={
+ 'Moçambique':{tel:'+258',p:['Maputo Cidade','Maputo','Gaza','Inhambane','Sofala','Manica','Tete','Zambézia','Nampula','Cabo Delgado','Niassa']},
+ 'Angola':{tel:'+244',p:['Bengo','Benguela','Bié','Cabinda','Cuando','Cubango','Cuanza Norte','Cuanza Sul','Cunene','Huambo','Huíla','Icolo e Bengo','Luanda','Lunda Norte','Lunda Sul','Malanje','Moxico','Moxico Leste','Namibe','Uíge','Zaire']},
+ 'Portugal':{tel:'+351',p:['Aveiro','Beja','Braga','Bragança','Castelo Branco','Coimbra','Évora','Faro','Guarda','Leiria','Lisboa','Portalegre','Porto','Santarém','Setúbal','Viana do Castelo','Vila Real','Viseu','Açores','Madeira']},
+ 'Brasil':{tel:'+55',p:['Acre','Alagoas','Amapá','Amazonas','Bahia','Ceará','Distrito Federal','Espírito Santo','Goiás','Maranhão','Mato Grosso','Mato Grosso do Sul','Minas Gerais','Pará','Paraíba','Paraná','Pernambuco','Piauí','Rio de Janeiro','Rio Grande do Norte','Rio Grande do Sul','Rondônia','Roraima','Santa Catarina','São Paulo','Sergipe','Tocantins']},
+ 'África do Sul':{tel:'+27',p:['Eastern Cape','Free State','Gauteng','KwaZulu-Natal','Limpopo','Mpumalanga','North West','Northern Cape','Western Cape']},
+ 'China':{tel:'+86',p:['Anhui','Beijing','Chongqing','Fujian','Gansu','Guangdong','Guangxi','Guizhou','Hainan','Hebei','Heilongjiang','Henan','Hong Kong','Hubei','Hunan','Inner Mongolia','Jiangsu','Jiangxi','Jilin','Liaoning','Macau','Ningxia','Qinghai','Shaanxi','Shandong','Shanghai','Shanxi','Sichuan','Tianjin','Tibet','Xinjiang','Yunnan','Zhejiang']}
 };
-var tok=null,uid=null;
-function $(i){return document.getElementById(i)}
-function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
-function paises(){var h="";Object.keys(P).forEach(function(k){h+="<option>"+k+"</option>"});$("pais").innerHTML=h;provs()}
-function provs(){var h="";P[$("pais").value].forEach(function(k){h+="<option>"+k+"</option>"});$("provincia").innerHTML=h}
-function H(extra){var h={"apikey":KEY,"Content-Type":"application/json"};if(tok)h["Authorization"]="Bearer "+tok;for(var k in (extra||{}))h[k]=extra[k];return h}
-function guardarSessao(d){tok=d.access_token;uid=d.user.id;try{localStorage.setItem("bb_tok",tok);localStorage.setItem("bb_uid",uid)}catch(e){}}
-async function auth(rota){
-  var corpo=JSON.stringify({email:$("le").value.trim(),password:$("lp").value});
-  var r=await fetch(URL_+"/auth/v1/"+rota,{method:"POST",headers:{"apikey":KEY,"Content-Type":"application/json"},body:corpo});
-  var d=await r.json();
-  return {ok:r.ok,d:d};
+var OUTRO='Outro país';
+
+function $(id){return document.getElementById(id)}
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+function aviso(id,txt,ok){var m=$(id);m.textContent=txt;m.className='msg '+(ok?'ok':'err');m.style.display='block'}
+
+/* ---------- sessão (guardada em bb_sessao, igual para todas as páginas) ---------- */
+function sessao(){try{return JSON.parse(localStorage.getItem('bb_sessao'))}catch(e){return null}}
+function guardarSessao(d){
+  localStorage.setItem('bb_sessao',JSON.stringify({at:d.access_token,refresh:d.refresh_token,exp:Date.now()+(d.expires_in||3600)*1000,uid:d.user.id,email:d.user.email}));
 }
-async function entrar(){
-  try{
-    var x=await auth("token?grant_type=password");
-    if(!x.ok){$("lm").textContent="Erro: "+(x.d.msg||x.d.error_description||"email ou palavra-passe errados");return}
-    guardarSessao(x.d);mostrar();
-  }catch(e){$("lm").textContent="Sem ligação à internet."}
+async function token(){
+  var s=sessao(); if(!s) return null;
+  if(Date.now()>s.exp-60000){
+    var r=await fetch(URL_SB+'/auth/v1/token?grant_type=refresh_token',{method:'POST',headers:{apikey:KEY,'Content-Type':'application/json'},body:JSON.stringify({refresh_token:s.refresh})});
+    if(!r.ok){localStorage.removeItem('bb_sessao');return null}
+    var d=await r.json(); guardarSessao(d); return d.access_token;
+  }
+  return s.at;
 }
-async function registar(){
+async function entrar(criar){
+  var email=$('email').value.trim(), senha=$('senha').value;
+  if(!email||!senha){aviso('msgLogin','Escreva o email e a palavra-passe.');return}
   try{
-    var x=await auth("signup");
-    if(!x.ok){$("lm").textContent="Erro: "+(x.d.msg||x.d.error_description||"não foi possível criar");return}
-    if(x.d.access_token){guardarSessao(x.d);mostrar()}
-    else{$("lm").className="msg ok";$("lm").textContent="Conta criada. Confirme no seu email e depois toque em Entrar."}
-  }catch(e){$("lm").textContent="Sem ligação à internet."}
-}
-function sair(){try{localStorage.removeItem("bb_tok");localStorage.removeItem("bb_uid")}catch(e){}tok=null;uid=null;$("app").classList.add("hide");$("login").classList.remove("hide")}
-function mostrar(){$("login").classList.add("hide");$("app").classList.remove("hide");carregar()}
-async function carregar(){
-  try{
-    var r=await fetch(URL_+"/rest/v1/moradas?select=*&order=created_at.desc",{headers:H()});
-    if(r.status==401){sair();$("lm").textContent="Sessão expirada. Entre outra vez.";return}
+    var url=criar?'/auth/v1/signup':'/auth/v1/token?grant_type=password';
+    var r=await fetch(URL_SB+url,{method:'POST',headers:{apikey:KEY,'Content-Type':'application/json'},body:JSON.stringify({email:email,password:senha})});
     var d=await r.json();
-    if(!r.ok){$("lista").innerHTML='<div class="msg">Erro: '+esc(d.message)+'</div>';return}
-    if(!d.length){$("lista").innerHTML="<small>Ainda não tem moradas.</small>";return}
-    $("lista").innerHTML=d.map(function(m){
-      return '<div class="end"><span class="tag">'+(m.tipo==="internacional"?"Internacional":"Entrega")+'</span><br><b>'+esc(m.nome)+'</b> · '+esc(m.telefone)+'<br>'+esc(m.detalhe)+', '+esc(m.cidade)+', '+esc(m.provincia)+', '+esc(m.pais)+' '+esc(m.codigo_postal)+(m.marca_envio?'<br>Marca: '+esc(m.marca_envio):'')+'<button class="sec" onclick="apagar(\''+m.id+'\')">Apagar</button></div>';
-    }).join("");
-  }catch(e){$("lista").innerHTML='<div class="msg">Sem ligação à internet.</div>'}
+    if(!r.ok){aviso('msgLogin',d.msg||d.error_description||d.message||'Não foi possível entrar.');return}
+    if(!d.access_token){aviso('msgLogin','Conta criada. Confirme o email que recebeu e depois toque em Entrar.',true);return}
+    guardarSessao(d); abrir();
+  }catch(e){aviso('msgLogin','Sem ligação à internet.')}
 }
-async function guardar(){
-  var d={user_id:uid,tipo:$("tipo").value,nome:$("nome").value.trim(),telefone:$("telefone").value.trim(),pais:$("pais").value,provincia:$("provincia").value,cidade:$("cidade").value.trim(),codigo_postal:$("codigo_postal").value.trim(),detalhe:$("detalhe").value.trim(),marca_envio:$("marca_envio").value.trim()};
-  if(!d.nome||!d.telefone||!d.cidade||!d.detalhe){$("m").className="msg";$("m").textContent="Preencha nome, telemóvel, cidade e morada detalhada.";return}
+function sair(){localStorage.removeItem('bb_sessao');location.reload()}
+
+/* ---------- base de dados ---------- */
+async function api(metodo,caminho,corpo){
+  var t=await token();
+  if(!t){$('boxApp').className='oculto';$('boxLogin').className='card';throw new Error('Entre na conta.')}
+  var r=await fetch(URL_SB+'/rest/v1/'+caminho,{method:metodo,headers:{apikey:KEY,Authorization:'Bearer '+t,'Content-Type':'application/json',Prefer:'return=minimal'},body:corpo?JSON.stringify(corpo):undefined});
+  if(!r.ok){var e={};try{e=await r.json()}catch(x){}throw new Error(e.message||('Erro '+r.status))}
+  return metodo==='GET'?r.json():null;
+}
+
+async function carregar(){
+  var el=$('lista');
   try{
-    var r=await fetch(URL_+"/rest/v1/moradas",{method:"POST",headers:H({"Prefer":"return=minimal"}),body:JSON.stringify(d)});
-    if(!r.ok){var e=await r.json();$("m").className="msg";$("m").textContent="Erro: "+(e.message||"não guardou");return}
-    $("m").className="msg ok";$("m").textContent="Morada guardada.";
-    ["nome","telefone","cidade","codigo_postal","detalhe","marca_envio"].forEach(function(i){$(i).value=""});
-    carregar();
-  }catch(e){$("m").className="msg";$("m").textContent="Sem ligação à internet."}
+    var l=await api('GET','moradas?select=*&order=created_at.desc');
+    if(!l.length){el.innerHTML='<p>Ainda não tem moradas guardadas.</p>';return}
+    el.innerHTML=l.map(function(m){
+      var ext=m.tipo==='internacional';
+      var partes=[m.endereco,m.cidade,m.distrito,m.provincia,m.pais].filter(Boolean).join(', ');
+      return '<div class="end"><span class="tag'+(ext?' ext':'')+'">'+(ext?'Envio externo':'Envio interno')+'</span><br>'
+        +'<b>'+esc(m.nome)+'</b> · '+esc(m.telefone)+'<br>'+esc(partes)+(m.codigo_postal?' '+esc(m.codigo_postal):'')
+        +(m.marca?'<br>Marca: '+esc(m.marca):'')
+        +'<button class="sec" onclick="apagar(\''+m.id+'\')">Apagar</button></div>';
+    }).join('');
+  }catch(e){el.innerHTML='<p>'+esc(e.message)+'</p>'}
 }
+
 async function apagar(id){
-  if(!confirm("Apagar esta morada?"))return;
-  await fetch(URL_+"/rest/v1/moradas?id=eq."+id,{method:"DELETE",headers:H()});
-  carregar();
+  if(!confirm('Apagar esta morada?'))return;
+  try{await api('DELETE','moradas?id=eq.'+id);carregar()}catch(e){aviso('msg',e.message)}
 }
-paises();
-try{tok=localStorage.getItem("bb_tok");uid=localStorage.getItem("bb_uid")}catch(e){}
-if(tok&&uid)mostrar();
+
+async function guardarMorada(){
+  var tipo=$('tipo').value, pais=$('pais').value;
+  var outro=pais===OUTRO;
+  if(outro) pais=$('paisOutro').value.trim();
+  var prov=outro?$('provOutra').value.trim():$('provincia').value;
+  var d={
+    tipo:tipo,
+    nome:$('nome').value.trim(),
+    telefone:($('prefixo').textContent+' '+$('tel').value.trim()).trim(),
+    pais:pais,
+    provincia:prov,
+    distrito:$('distrito').value.trim(),
+    cidade:$('cidade').value.trim(),
+    codigo_postal:$('cp').value.trim(),
+    endereco:$('endereco').value.trim(),
+    marca:$('marca').value.trim()
+  };
+  if(!d.nome||!$('tel').value.trim()||!d.pais||!d.provincia||!d.cidade||!d.codigo_postal||!d.endereco){aviso('msg','Preencha todos os campos obrigatórios e escolha a província na lista.');return}
+  if(tipo==='internacional'&&!d.marca){aviso('msg','No envio externo a marca de envio é obrigatória.');return}
+  try{
+    await api('POST','moradas',d);
+    aviso('msg','Morada guardada.',true);
+    ['nome','tel','distrito','cidade','cp','endereco','marca'].forEach(function(i){$(i).value=''});
+    carregar();
+  }catch(e){aviso('msg',e.message)}
+}
+
+/* ---------- formulário ---------- */
+function mudarTipo(){
+  var ext=$('tipo').value==='internacional';
+  $('lblMarca').textContent=ext?'Marca de envio (obrigatória)':'Marca de envio (opcional)';
+  $('notaTipo').textContent=ext
+    ?'Para receber encomendas vindas de outro país. Pode escolher esta morada ao pagar o transporte internacional.'
+    :'Para receber encomendas dentro do seu país.';
+}
+function mudarPais(){
+  var p=$('pais').value, s=$('provincia');
+  var outro=p===OUTRO;
+  $('paisOutro').className=outro?'':'oculto';
+  $('provOutra').className=outro?'':'oculto';
+  s.className=outro?'oculto':'';
+  if(outro){$('prefixo').textContent='+';return}
+  $('prefixo').textContent=PAISES[p].tel;
+  s.innerHTML='<option value="">Escolha na lista</option>'+PAISES[p].p.map(function(x){return '<option>'+esc(x)+'</option>'}).join('');
+}
+function abrir(){
+  $('boxLogin').className='oculto';
+  $('boxApp').className='';
+  $('pais').innerHTML=Object.keys(PAISES).concat([OUTRO]).map(function(x){return '<option>'+esc(x)+'</option>'}).join('');
+  mudarTipo(); mudarPais(); carregar();
+}
+if(sessao()) abrir();
 </script>
 </body>
 </html>
