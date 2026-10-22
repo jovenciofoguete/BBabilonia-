@@ -1,138 +1,188 @@
-(function(){
-var U="https://dsfoqoeawvjafypycldz.supabase.co";
-var K="sb_publishable_BN4NiVcDab9CqdTY_odgDA_uUOhjja0";
-var SK="sb-dsfoqoeawvjafypycldz-auth-token";
-var TIPOS={"Envio interno":"Entrega interna","Envio externo":"Entrega internacional (externa)"};
-var S=null;
-try{S=JSON.parse(localStorage.getItem(SK))}catch(e){}
-window.moradaEscolhida=null;
+/* BBabilônia - checkout-morada.js (versão única, sem bibliotecas, sem redirecionar)
+   Mostra no checkout as moradas guardadas na conta, deixa escolher e bloqueia o pagamento sem morada. */
+(function () {
+  var SB = 'https://dsfoqoeawvjafypycldz.supabase.co';
+  var KEY = 'sb_publishable_BN4NiVcDab9CqdTY_odgDA_uUOhjja0';
+  var SESSAO = 'bb_sessao_checkout';
+  var box, lista = [], sess = null;
 
-function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
-
-var box=document.createElement("div");
-box.id="box-morada";
-box.style.cssText="background:#fff;border:2px solid #e63946;border-radius:12px;padding:14px;margin:12px;font-family:system-ui,Arial,sans-serif;color:#222;font-size:15px";
-if(document.body.firstChild)document.body.insertBefore(box,document.body.firstChild);else document.body.appendChild(box);
-
-function setv(re,v){
-  var l=document.querySelectorAll("input,textarea");
-  for(var n=0;n<l.length;n++){
-    var i=l[n];if(box.contains(i)||i.type=="hidden"&&false)continue;
-    var k=((i.id||"")+" "+(i.name||"")).toLowerCase();
-    if(re.test(k)){i.value=v;i.dispatchEvent(new Event("input",{bubbles:true}));i.dispatchEvent(new Event("change",{bubbles:true}))}
-  }
-}function setv(re,v){
-  var l=document.querySelectorAll("input,textarea");
-  for(var n=0;n<l.length;n++){
-    var i=l[n]; if(box.contains(i))continue;
-    var k=((i.id||"")+" "+(i.name||"")+" "+(i.placeholder||"")+" "+(i.getAttribute("aria-label")||"")).toLowerCase();
-    if(re.test(k)){
-      var p=i.tagName==="TEXTAREA"?HTMLTextAreaElement.prototype:HTMLInputElement.prototype;
-      Object.getOwnPropertyDescriptor(p,"value").set.call(i,v);
-      i.dispatchEvent(new Event("input",{bubbles:true}));
-      i.dispatchEvent(new Event("change",{bubbles:true}));
-    }
-  }
-}
-function escolher(m){
-  window.moradaEscolhida=m;
-  try{localStorage.setItem("morada_entrega",JSON.stringify(m))}catch(e){}
-  var end=[m.endereco,m.cidade,m.distrito,m.provincia,m.pais,m.codigo_postal].filter(Boolean).join(", ");
-  if(m.marca)end+=" | Marca: "+m.marca;
-  setv(/nome|name/,m.nome||"");
-  setv(/tel|phone/,m.telefone||"");
-  var em=m.email||(S&&S.user&&S.user.email)||"";
-  if(em)setv(/mail/,em);
-  setv(/morada|address|endereco|endereço/,end);
-}
-
-function H(){return{apikey:K,Authorization:"Bearer "+((S&&S.access_token)||K)}}
-
-function login(msg){
-  box.innerHTML='<b>Entre na sua conta para escolher a morada de entrega</b>'
-   +'<input id="bm-e" type="email" placeholder="Email" style="width:100%;padding:11px;margin-top:10px;border:1px solid #ccc;border-radius:8px;font-size:15px">'
-   +'<input id="bm-p" type="password" placeholder="Palavra-passe" style="width:100%;padding:11px;margin-top:8px;border:1px solid #ccc;border-radius:8px;font-size:15px">'
-   +'<div id="bm-m" style="color:#b00020;font-size:14px;margin-top:6px">'+esc(msg||"")+'</div>'
-   +'<button id="bm-b" style="margin-top:8px;width:100%;padding:12px;border:0;border-radius:8px;background:#e63946;color:#fff;font-size:15px;font-weight:600">Entrar</button>';
-  document.getElementById("bm-b").onclick=function(){
-    fetch(U+"/auth/v1/token?grant_type=password",{method:"POST",headers:{apikey:K,"Content-Type":"application/json"},
-      body:JSON.stringify({email:document.getElementById("bm-e").value.trim(),password:document.getElementById("bm-p").value})})
-    .then(function(r){return r.json().then(function(j){return{ok:r.ok,j:j}})})
-    .then(function(x){
-      if(!x.ok){login("Email ou palavra-passe errados.");return}
-      S=x.j;localStorage.setItem(SK,JSON.stringify(S));carregar();
-    }).catch(function(){login("Sem ligação à internet.")});
-  };
-}
-
-function carregar(){
-  box.innerHTML="A carregar as suas moradas…";
-  fetch(U+"/rest/v1/moradas?select=*",{headers:H()}).then(function(r){
-    if(r.status==401){S=null;localStorage.removeItem(SK);login("Sessão expirada. Entre outra vez.");return null}
-    return r.json();
-  }).then(function(d){
-    if(!d)return;
-    if(!d.length){
-      box.innerHTML='<b>Ainda não tem moradas guardadas.</b><br><a href="moradas-v3.html" style="color:#e63946;font-weight:600">+ Criar endereço de entrega</a>';
-      return;
-    }
-    var html='<b>Escolha a morada de entrega</b>';
-    d.forEach(function(m,i){
-      html+='<label style="display:block;border:1px solid #ddd;border-radius:10px;padding:10px;margin-top:10px">'
-       +'<input type="radio" name="bm-r" value="'+i+'" style="margin-right:8px">'
-       +'<b>'+esc(m.nome)+'</b> <small style="color:#666">'+esc(TIPOS[m.tipo]||m.tipo)+'</small><br>'
-       +esc(m.endereco)+'<br>'+esc([m.cidade,m.distrito,m.provincia,m.pais].filter(Boolean).join(", "))+' '+esc(m.codigo_postal||"")
-       +(m.marca?'<br>Marca: '+esc(m.marca):'')+'</label>';
+  function esc(t) {
+    return String(t == null ? '' : t).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
     });
-    html+='<a href="moradas-v3.html" style="display:inline-block;margin-top:12px;color:#e63946;font-weight:600">Criar ou editar moradas</a>';
-    box.innerHTML=html;
-    var rs=box.querySelectorAll('input[name="bm-r"]');
-    for(var n=0;n<rs.length;n++)rs[n].onchange=function(){escolher(d[this.value])};
-  }).catch(function(){box.innerHTML="Sem ligação à internet. Não pode pagar sem escolher a morada."});
-}
-
-/* bloqueia o pagamento enquanto não houver morada escolhida */
-function bloquear(e){
-  if(window.moradaEscolhida)return;
-  e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();
-  alert("Escolha uma morada de entrega antes de pagar");
-  box.scrollIntoView({behavior:"smooth"});
-}
-document.addEventListener("click",function(e){
-  var b=e.target.closest&&e.target.closest("button,a,input[type=submit],input[type=button]");
-  if(!b||box.contains(b))return;
-  var t=((b.textContent||"")+" "+(b.value||"")).toLowerCase();
-  if(/pagar|finalizar|enviar pedido|confirmar/.test(t))bloquear(e);
-},true);
-document.addEventListener("submit",function(e){if(!box.contains(e.target))bloquear(e)},true);
-
-
-/* esconde os campos antigos (nome, telefone, país, morada): agora só se escolhe a morada guardada */
-function esconder(){
-  var re=/^(nome completo|telefone|país|pais|morada de entrega|email.*)\s*\*?$/i;
-  var els=document.querySelectorAll("label,div,p,span,h3,h4");
-  for(var n=0;n<els.length;n++){
-    var e=els[n];
-    if(box.contains(e))continue;
-    if(e.childNodes.length==1&&e.firstChild.nodeType==3&&re.test(e.textContent.trim())){
-      e.style.display="none";
-      var nx=e.nextElementSibling;
-      if(nx&&/^(INPUT|TEXTAREA|SELECT)$/.test(nx.tagName))nx.style.display="none";
-    }
   }
-  var l=document.querySelectorAll("input,textarea,select");
-  for(var m=0;m<l.length;m++){
-    var i=l[m];
-    if(box.contains(i)||/radio|checkbox|button|submit|hidden/.test(i.type||""))continue;
-    var k=((i.id||"")+" "+(i.name||"")).toLowerCase();
-    if(/nome|name|tel|phone|pais|country|morada|address|endereco|mail/.test(k)){
-      i.style.display="none";
-      if(i.parentElement&&i.parentElement.tagName=="LABEL")i.parentElement.style.display="none";
-      var pv=i.previousElementSibling;
-      if(pv&&pv.tagName=="LABEL")pv.style.display="none";
-    }
+  function agora() { return Math.floor(Date.now() / 1000); }
+  function guardarSess(d) {
+    if (!d || !d.access_token) return null;
+    var s = {
+      access_token: d.access_token,
+      refresh_token: d.refresh_token,
+      user_id: (d.user && d.user.id) || d.user_id,
+      exp: d.expires_at || (agora() + (d.expires_in || 3600))
+    };
+    try { localStorage.setItem(SESSAO, JSON.stringify(s)); } catch (e) {}
+    return s;
   }
-}
-esconder();setTimeout(esconder,600);setTimeout(esconder,1800);
-if(S&&S.access_token)carregar();else login("");
+
+  // procura uma sessão já existente (a do moradas ou a nossa)
+  function lerSess() {
+    var achada = null;
+    try {
+      for (var i = 0; i < localStorage.length; i++) {
+        var k = localStorage.key(i), v = localStorage.getItem(k);
+        if (!v || v.indexOf('access_token') < 0) continue;
+        try {
+          var o = JSON.parse(v);
+          if (o && o.currentSession) o = o.currentSession;
+          if (o && o.access_token && (o.user || o.user_id)) {
+            var s = { access_token: o.access_token, refresh_token: o.refresh_token,
+              user_id: (o.user && o.user.id) || o.user_id, exp: o.expires_at || 0 };
+            if (!achada || (s.exp || 0) > (achada.exp || 0)) achada = s;
+          }
+        } catch (e) {}
+      }
+    } catch (e) {}
+    return achada;
+  }
+
+  function api(path, opts, token) {
+    opts = opts || {};
+    opts.headers = Object.assign({ apikey: KEY, 'Content-Type': 'application/json',
+      Authorization: 'Bearer ' + (token || KEY) }, opts.headers || {});
+    return fetch(SB + path, opts).then(function (r) { return r.json().catch(function () { return null; }).then(function (j) { return { ok: r.ok, data: j }; }); });
+  }
+
+  function renovar(s) {
+    if (!s || !s.refresh_token) return Promise.resolve(null);
+    return api('/auth/v1/token?grant_type=refresh_token', { method: 'POST', body: JSON.stringify({ refresh_token: s.refresh_token }) })
+      .then(function (r) { return r.ok ? guardarSess(r.data) : null; });
+  }
+
+  function sessaoValida() {
+    var s = lerSess();
+    if (!s) return Promise.resolve(null);
+    if (!s.exp || s.exp > agora() + 30) return Promise.resolve(s);
+    return renovar(s);
+  }
+
+  function entrar(email, senha) {
+    return api('/auth/v1/token?grant_type=password', { method: 'POST', body: JSON.stringify({ email: email, password: senha }) })
+      .then(function (r) { return r.ok ? guardarSess(r.data) : null; });
+  }
+
+  function ehInternacional(m) {
+    var t = String(m.tipo || '').toLowerCase();
+    return t.indexOf('extern') >= 0 || t.indexOf('internac') >= 0;
+  }
+
+  function carregar() {
+    if (!sess) return Promise.resolve([]);
+    return api('/rest/v1/moradas?select=*&user_id=eq.' + encodeURIComponent(sess.user_id), {}, sess.access_token)
+      .then(function (r) { return Array.isArray(r.data) ? r.data : []; });
+  }
+
+  function lerEscolha(chave) { try { return JSON.parse(localStorage.getItem(chave) || 'null'); } catch (e) { return null; } }
+  function guardarEscolha(chave, m) {
+    try { m ? localStorage.setItem(chave, JSON.stringify(m)) : localStorage.removeItem(chave); } catch (e) {}
+    if (chave === 'morada_entrega') window.MORADA_ENTREGA = m;
+    else window.ENDERECO_INTERNACIONAL = m;
+  }
+
+  function cartao(m, grupo, marcado) {
+    var linha = [m.endereco, m.cidade, m.distrito, m.provincia, m.pais].filter(Boolean).join(', ');
+    return '<label style="display:block;border:1px solid ' + (marcado ? '#e91e63' : '#ddd') + ';border-radius:10px;padding:10px;margin:6px 0;cursor:pointer;background:#fff">' +
+      '<input type="radio" name="' + grupo + '" value="' + esc(m.id) + '"' + (marcado ? ' checked' : '') + ' style="margin-right:8px">' +
+      '<b>' + esc(m.nome) + '</b> · ' + esc(m.telefone) +
+      '<div style="font-size:13px;color:#444;margin-top:4px">' + esc(linha) + (m.codigo_postal ? ' · ' + esc(m.codigo_postal) : '') + '</div>' +
+      (m.marca ? '<div style="font-size:13px;color:#444">Marca de envio: ' + esc(m.marca) + '</div>' : '') +
+      '</label>';
+  }
+
+  function secao(titulo, itens, grupo, chave) {
+    var esc_ = lerEscolha(chave);
+    if (!itens.length) return '<div style="margin:8px 0"><b>' + titulo + '</b><div style="font-size:13px;color:#777;margin-top:4px">Ainda não tem nenhum guardado.</div></div>';
+    var marcado = esc_ && itens.some(function (m) { return String(m.id) === String(esc_.id); }) ? String(esc_.id) : (itens.length === 1 ? String(itens[0].id) : '');
+    if (marcado) guardarEscolha(chave, itens.filter(function (m) { return String(m.id) === marcado; })[0]);
+    else guardarEscolha(chave, null);
+    return '<div style="margin:8px 0"><b>' + titulo + '</b>' +
+      itens.map(function (m) { return cartao(m, grupo, String(m.id) === marcado); }).join('') + '</div>';
+  }
+
+  function desenhar() {
+    var interna = lista.filter(function (m) { return !ehInternacional(m); });
+    var externa = lista.filter(ehInternacional);
+    box.innerHTML =
+      '<div style="font-weight:700;font-size:16px;margin-bottom:6px">Endereço de entrega</div>' +
+      secao('Endereço de entrega interna', interna, 'bb_interna', 'morada_entrega') +
+      secao('Endereço de entrega internacional (externa)', externa, 'bb_externa', 'endereco_internacional') +
+      '<div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">' +
+      '<a href="/moradas-v3.html" target="_blank" style="padding:8px 12px;border:1px solid #e91e63;color:#e91e63;border-radius:8px;text-decoration:none;font-size:14px">Criar ou editar endereços</a>' +
+      '<button type="button" id="bbAtualizar" style="padding:8px 12px;border:0;background:#e91e63;color:#fff;border-radius:8px;font-size:14px">Atualizar lista</button></div>' +
+      '<div id="bbAviso" style="color:#c62828;font-size:14px;margin-top:8px"></div>';
+    box.querySelectorAll('input[type=radio]').forEach(function (r) {
+      r.addEventListener('change', function () {
+        var m = lista.filter(function (x) { return String(x.id) === r.value; })[0];
+        guardarEscolha(r.name === 'bb_interna' ? 'morada_entrega' : 'endereco_internacional', m);
+        desenhar();
+      });
+    });
+    var b = box.querySelector('#bbAtualizar');
+    if (b) b.addEventListener('click', iniciar);
+  }
+
+  function desenharLogin(msg) {
+    box.innerHTML =
+      '<div style="font-weight:700;font-size:16px;margin-bottom:6px">Entre para ver os seus endereços</div>' +
+      '<input id="bbEmail" type="email" placeholder="Email" style="width:100%;padding:10px;margin:4px 0;border:1px solid #ccc;border-radius:8px;box-sizing:border-box">' +
+      '<input id="bbSenha" type="password" placeholder="Palavra-passe" style="width:100%;padding:10px;margin:4px 0;border:1px solid #ccc;border-radius:8px;box-sizing:border-box">' +
+      '<button type="button" id="bbEntrar" style="width:100%;padding:10px;border:0;background:#e91e63;color:#fff;border-radius:8px;font-size:15px;margin-top:4px">Entrar</button>' +
+      '<div style="color:#c62828;font-size:14px;margin-top:6px">' + esc(msg || '') + '</div>';
+    box.querySelector('#bbEntrar').addEventListener('click', function () {
+      var e = box.querySelector('#bbEmail').value.trim(), s = box.querySelector('#bbSenha').value;
+      entrar(e, s).then(function (r) {
+        if (!r) return desenharLogin('Email ou palavra-passe incorretos.');
+        iniciar();
+      });
+    });
+  }
+
+  function iniciar() {
+    box.innerHTML = '<div style="color:#555">A carregar os seus endereços…</div>';
+    sessaoValida().then(function (s) {
+      sess = s;
+      if (!s) return desenharLogin('');
+      carregar().then(function (l) { lista = l; desenhar(); });
+    });
+  }
+
+  function textoDe(el) { return ((el.innerText || el.value || el.textContent || '') + '').toLowerCase(); }
+
+  // bloqueia o pagamento sem endereço escolhido
+  document.addEventListener('click', function (ev) {
+    var el = ev.target.closest && ev.target.closest('button, a, input[type=button], input[type=submit]');
+    if (!el || (box && box.contains(el))) return;
+    if (!/pagar|finalizar|enviar pedido|confirmar pedido/.test(textoDe(el))) return;
+    if (!lerEscolha('morada_entrega')) {
+      ev.preventDefault(); ev.stopImmediatePropagation();
+      var av = box && box.querySelector('#bbAviso');
+      if (av) av.textContent = 'Escolha um endereço de entrega antes de pagar.';
+      else if (box) box.insertAdjacentHTML('beforeend', '<div style="color:#c62828;font-size:14px;margin-top:8px">Escolha um endereço de entrega antes de pagar.</div>');
+      if (box) box.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, true);
+
+  function montar() {
+    if (document.getElementById('bbMoradaBox')) return;
+    box = document.createElement('div');
+    box.id = 'bbMoradaBox';
+    box.style.cssText = 'background:#fafafa;border:1px solid #eee;border-radius:12px;padding:12px;margin:12px 0;font-family:inherit';
+    var alvo = document.querySelector('form') || document.querySelector('main') || document.body;
+    alvo.insertBefore(box, alvo.firstChild);
+    window.MORADA_ENTREGA = lerEscolha('morada_entrega');
+    window.ENDERECO_INTERNACIONAL = lerEscolha('endereco_internacional');
+    iniciar();
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', montar);
+  else montar();
 })();
