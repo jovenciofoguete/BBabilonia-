@@ -18,7 +18,7 @@ input,select{width:100%;padding:11px;border:1px solid #ccc;border-radius:8px;fon
 button{padding:11px 16px;border:0;border-radius:8px;font-size:15px;background:#e63946;color:#fff;font-weight:600}
 button.c{background:#ddd;color:#222}
 button.s{padding:7px 12px;font-size:13px;margin-right:6px}
-#pl{max-height:170px;overflow:auto;border:1px solid #ccc;border-radius:8px;margin-top:4px;background:#fff}
+#pl{max-height:260px;overflow:auto;border:1px solid #ccc;border-radius:8px;margin-top:4px;background:#fff}
 #pl div{padding:10px;border-bottom:1px solid #eee;font-size:15px}
 #pl div:active{background:#fde}
 #modal{position:fixed;inset:0;background:#0007;overflow:auto;padding:12px}
@@ -63,7 +63,7 @@ button.s{padding:7px 12px;font-size:13px;margin-right:6px}
 <label>Email <i>(opcional)</i></label><input id="email" type="email">
 
 <label>País</label>
-<input id="pq" placeholder="🔍 Pesquise o país" autocomplete="off">
+<input id="pq" name="x-pais-busca" placeholder="🔍 Toque aqui e escolha o país" autocomplete="off">
 <div id="pl"></div>
 
 <label>Província</label>
@@ -144,14 +144,14 @@ $("novo").onclick=()=>abrir(null);
 $("cancel").onclick=()=>{$("modal").hidden=true};
 
 /* ---------- países ---------- */
-function listaPaises(){
-  const q=norm($("pq").value.trim());
+function listaPaises(todos){
+  const q=todos===true?"":norm($("pq").value.trim());
   const r=PAISES.filter(p=>!q||norm(p.n).includes(q));
   $("pl").innerHTML=r.length?r.map(p=>`<div data-c="${p.c}">${esc(p.n)}</div>`).join(""):'<div>Nenhum país encontrado</div>';
   $("pl").hidden=false;
 }
 $("pq").oninput=()=>{pais=null;cid="";listaPaises();for(let k=0;k<3;k++)reset(k)};
-$("pq").onfocus=listaPaises;
+$("pq").onfocus=function(){var el=this;el.select();listaPaises(true);setTimeout(function(){el.scrollIntoView({block:"start",behavior:"smooth"})},350)};
 $("pl").onclick=async e=>{
   const c=e.target.dataset.c;if(!c)return;
   pais=PAISES.find(p=>p.c==c);
@@ -177,6 +177,86 @@ async function escolherPais(sv){
 function reset(k){
   const s=$("s_"+L[k]),t=$("t_"+L[k]);
   s.hidden=false;t.hidden=true;t.value="";
+  s.innerHTML='<option value="">Escolha o nível anterior primeiro</option>';s.disabled=true;
+}
+async function filhos(id){
+  const r=await fetch("https://secure.geonames.org/childrenJSON?geonameId="+id+"&maxRows=1000&username="+GN);
+  const j=await r.json();
+  return (j.geonames||[]).map(g=>({id:g.geonameId,n:g.name})).sort((a,b)=>a.n.localeCompare(b.n));
+}
+async function carregar(lv,pid,saved){
+  const s=$("s_"+L[lv]),t=$("t_"+L[lv]);
+  for(let k=lv+1;k<3;k++)reset(k);
+  s.hidden=false;t.hidden=true;s.disabled=true;
+  s.innerHTML="<option>A carregar…</option>";
+  let it=[];
+  try{it=pid?await filhos(pid):[]}catch(e){}
+  if(!it.length){s.hidden=true;t.hidden=false;t.value=saved||"";return ""}
+  s.disabled=false;
+  s.innerHTML='<option value="">Escolha…</option>'+it.map(i=>`<option value="${i.id}">${esc(i.n)}</option>`).join("")+'<option value="__outro">✏️ Outro (escrever)</option>';
+  if(saved){
+    const o=[...s.options].find(o=>o.text==saved);
+    if(o){s.value=o.value;return o.value}
+    s.insertAdjacentHTML("beforeend",`<option value="" selected>${esc(saved)}</option>`);
+  }
+  return "";
+}
+function manual(lv){for(let k=lv;k<3;k++){$("s_"+L[k]).hidden=true;$("t_"+L[k]).hidden=false;if(k==lv)$("t_"+L[k]).focus()}}
+$("s_provincia").onchange=function(){if(this.value=="__outro")manual(0);else carregar(1,this.value)};
+$("s_distrito").onchange=function(){if(this.value=="__outro")manual(1);else carregar(2,this.value)};
+$("s_cidade").onchange=function(){if(this.value=="__outro")manual(2)};
+function val(lv){
+  const s=$("s_"+L[lv]),t=$("t_"+L[lv]);
+  if(!t.hidden)return t.value.trim();
+  const o=s.options[s.selectedIndex];
+  return o&&o.text&&!/^(Escolha|A carregar)/.test(o.text)?o.text:"";
+}
+
+/* ---------- janela ---------- */
+function marcaHint(){$("mh").textContent=$("tipo").value=="Envio externo"?"(obrigatória)":"(opcional)"}
+$("tipo").onchange=marcaHint;
+
+async function abrir(m){
+  edit=m;$("mm").textContent="";
+  $("mt").textContent=m?"Editar endereço de entrega":"Novo endereço de entrega";
+  $("tipo").value=m?m.tipo:"Envio interno";marcaHint();
+  $("nome").value=m?m.nome||"":"";$("tel").value=m?m.telefone||"":"";$("email").value=m?m.email||"":"";
+  $("cp").value=m?m.codigo_postal||"":"";$("end").value=m?m.endereco||"":"";$("marca").value=m?m.marca||"":"";
+  pais=null;cid="";$("pq").value="";
+  for(let k=0;k<3;k++)reset(k);
+  $("modal").hidden=false;
+  if(m&&m.pais){
+    pais=PAISES.find(p=>p.n==m.pais)||null;
+    $("pq").value=m.pais;$("pl").hidden=true;
+    if(pais)await escolherPais([m.provincia,m.distrito,m.cidade]);
+    else{for(let k=0;k<3;k++){$("s_"+L[k]).hidden=true;$("t_"+L[k]).hidden=false}
+      $("t_provincia").value=m.provincia||"";$("t_distrito").value=m.distrito||"";$("t_cidade").value=m.cidade||""}
+  }else listaPaises();
+}
+
+$("guardar").onclick=async()=>{
+  const mm=$("mm");mm.textContent="";
+  const d={
+    tipo:$("tipo").value,nome:$("nome").value.trim(),telefone:$("tel").value.trim(),
+    email:$("email").value.trim()||null,pais:pais?pais.n:"",
+    provincia:val(0),distrito:val(1),cidade:val(2),
+    codigo_postal:$("cp").value.trim(),endereco:$("end").value.trim(),marca:$("marca").value.trim()
+  };
+  if(!d.nome||!d.telefone||!d.pais||!d.provincia||!d.endereco){mm.textContent="Preencha: nome, telemóvel, país, província e endereço completo.";return}
+  if(d.email&&!/^\S+@\S+\.\S+$/.test(d.email)){mm.textContent="O email não está correto (ou deixe vazio).";return}
+  if(d.tipo=="Envio externo"&&!d.marca){mm.textContent="Na entrega internacional a Marca de envio é obrigatória.";return}
+  try{
+    if(edit)await api("moradas?id=eq."+encodeURIComponent(edit.id),{method:"PATCH",headers:Object.assign(H(),{Prefer:"return=minimal"}),body:JSON.stringify(d)});
+    else await api("moradas",{method:"POST",headers:Object.assign(H(),{Prefer:"return=minimal"}),body:JSON.stringify(d)});
+    $("modal").hidden=true;listar();
+  }catch(e){mm.textContent="Erro ao guardar: "+e.message}
+};
+
+show();
+</script>
+</body>
+</html>
+ s.hidden=false;t.hidden=true;t.value="";
   s.innerHTML='<option value="">Escolha o nível anterior primeiro</option>';s.disabled=true;
 }
 async function filhos(id){
