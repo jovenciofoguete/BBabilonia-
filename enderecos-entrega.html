@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Meus endereços de entrega – BBabilônia</title>
+<style>
+:root{--verde:#0b5d4b;--borda:#d4d4d0;--texto:#1b1b1b;--cinza:#6b6b6b;--erro:#b3261e;--fundo:#f4f4f2}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--texto);background:var(--fundo);font-size:16px}
+header{background:var(--verde);color:#fff;padding:14px 16px;display:flex;justify-content:space-between;align-items:center;gap:12px}
+header h1{font-size:18px;margin:0;font-weight:600}
+header a,header button{color:#fff;background:none;border:0;font-size:14px;text-decoration:underline;cursor:pointer;padding:4px}
+main{padding:16px;max-width:560px;margin:0 auto}
+.botao{display:block;width:100%;background:var(--verde);color:#fff;border:0;border-radius:10px;padding:14px;font-size:16px;font-weight:600;cursor:pointer}
+.botao.claro{background:#fff;color:var(--texto);border:1px solid var(--borda)}
+.cartao{background:#fff;border:1px solid var(--borda);border-radius:12px;padding:14px;margin-top:12px;line-height:1.45}
+.etiqueta{display:inline-block;background:#e4f1ed;color:var(--verde);border-radius:6px;padding:2px 8px;font-size:13px;margin-bottom:6px}
+.acoes{display:flex;gap:8px;margin-top:10px}
+.acoes button{flex:1;border:1px solid var(--borda);background:#fff;border-radius:8px;padding:10px;font-size:15px;cursor:pointer}
+.acoes .apagar{color:var(--erro)}
+.vazio{color:var(--cinza);text-align:center;margin:24px 0}
+.erro{color:var(--erro);font-size:14px;margin:10px 0 0}
+label{display:block;font-weight:600;margin:16px 0 6px}
+label small{font-weight:400;color:var(--cinza)}
+input,select{width:100%;font-size:16px;padding:13px 12px;border:1px solid var(--borda);border-radius:10px;background:#fff;color:var(--texto)}
+input:focus,select:focus{outline:2px solid #7cc4b1;border-color:#7cc4b1}
+select:disabled{background:#f0f0ee;color:var(--cinza)}
+.dica{font-size:13px;color:var(--cinza);margin:4px 0 0}
+#campo_pais{position:relative}
+#lista_pais{position:absolute;left:0;right:0;top:100%;z-index:5;background:#fff;border:1px solid var(--borda);border-radius:10px;max-height:240px;overflow:auto;margin-top:4px;box-shadow:0 6px 18px rgba(0,0,0,.12)}
+#lista_pais .op{padding:12px;border-bottom:1px solid #eee;cursor:pointer}
+#lista_pais .op:last-child{border-bottom:0}
+#lista_pais .op.vazio{color:var(--cinza);cursor:default;margin:0;text-align:left}
+#fundo_janela{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:flex-end;justify-content:center;z-index:10}
+#janela{background:#fff;width:100%;max-width:560px;max-height:94vh;overflow:auto;border-radius:18px 18px 0 0;padding:18px 18px 28px}
+#janela h2{margin:0 0 4px;font-size:22px}
+.linha-botoes{display:flex;gap:10px;margin-top:22px}
+#login{max-width:420px;margin:40px auto;padding:0 16px}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Meus endereços de entrega</h1>
+  <span><a href="index.html">Loja</a> <button id="b_sair" hidden>Sair</button></span>
+</header>
+
+<main id="vista_login" hidden>
+  <div id="login">
+    <label for="l_email">Email</label>
+    <input id="l_email" type="email" autocomplete="username">
+    <label for="l_senha">Palavra-passe</label>
+    <input id="l_senha" type="password" autocomplete="current-password">
+    <p class="erro" id="l_erro"></p>
+    <div style="margin-top:18px"><button class="botao" id="b_entrar">Entrar</button></div>
+  </div>
+</main>
+
+<main id="vista_app" hidden>
+  <button class="botao" id="b_novo">+ Novo endereço de entrega</button>
+  <div id="lista"></div>
+</main>
+
+<div id="fundo_janela" hidden>
+  <div id="janela">
+    <h2 id="j_titulo">Novo endereço de entrega</h2>
+
+    <label for="f_tipo">Tipo de endereço de entrega</label>
+    <select id="f_tipo">
+      <option value="Envio interno">Endereço de entrega interna</option>
+      <option value="Envio externo">Endereço de entrega internacional (externa)</option>
+    </select>
+
+    <label for="f_nome">Nome do destinatário</label>
+    <input id="f_nome" autocomplete="off">
+
+    <label for="f_tel">Telemóvel</label>
+    <input id="f_tel" type="tel" autocomplete="off">
+
+    <label for="f_email">Email <small>(opcional)</small></label>
+    <input id="f_email" type="email" autocomplete="off">
+
+    <label for="f_pais">País</label>
+    <div id="campo_pais">
+      <input id="f_pais" placeholder="🔍 Pesquisar e escolher o país" autocomplete="off">
+      <div id="lista_pais" hidden></div>
+    </div>
+
+    <label for="s_prov">Província / Estado</label>
+    <select id="s_prov" disabled><option value="">Escolha primeiro o país</option></select>
+    <input id="t_prov" placeholder="Escreva a província / estado" hidden>
+
+    <label for="s_dist">Distrito</label>
+    <select id="s_dist" disabled><option value="">Escolha primeiro a província</option></select>
+    <input id="t_dist" placeholder="Escreva o distrito" hidden>
+
+    <label for="s_cid">Cidade</label>
+    <select id="s_cid" disabled><option value="">Escolha primeiro o distrito</option></select>
+    <input id="t_cid" placeholder="Escreva a cidade" hidden>
+
+    <label for="f_cp">Código postal</label>
+    <input id="f_cp" autocomplete="off">
+
+    <label for="f_end">Endereço completo <small>(andar, rua, número…)</small></label>
+    <input id="f_end" autocomplete="off">
+
+    <label for="f_marca">Marca de envio</label>
+    <input id="f_marca" autocomplete="off">
+    <p class="dica">Texto que vai junto do endereço, para identificar o seu produto na caixa.</p>
+
+    <p class="erro" id="j_erro"></p>
+    <div class="linha-botoes">
+      <button class="botao claro" id="b_cancelar" type="button">Cancelar</button>
+      <button class="botao" id="b_guardar" type="button">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+var SB='https://dsfoqoeawvjafypycldz.supabase.co';
+var KEY='sb_publishable_BN4NiVcDab9CqdTY_odgDA_uUOhjja0';
+var GEO='https://secure.geonames.org/';
+var GEO_USER='JovencioFoguete';
+var TIPOS={'Envio interno':'Endereço de entrega interna','Envio externo':'Endereço de entrega internacional (externa)'};
+var N=['prov','dist','cid'];
+var sessao=null;
+try{sessao=JSON.parse(localStorage.getItem('bb_sessao')||'null');}catch(e){}
+var paises=[], paisSel=null, editId=null, lista=[];
+function $(id){return document.getElementById(id);}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+function norm(s){return String(s).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();}
+
+/* ---------- sessão ---------- */
+function guardarSessao(d){
+  sessao={access:d.access_token,refresh:d.refresh_token,uid:d.user&&d.user.id};
+  localStorage.setItem('bb_sessao',JSON.stringify(sessao));
+}
+async function entrar(email,senha){
+  var r=await fetch(SB+'/auth/v1/token?grant_type=password',{method:'POST',headers:{apikey:KEY,'Content-Type':'application/json'},body:JSON.stringify({email:email,password:senha})});
+  var d=await r.json();
+  if(!r.ok) throw new Error(d.error_description||d.msg||'Email ou palavra-passe incorretos.');
+  guardarSessao(d);
+}
+async function renovar(){
+  if(!sessao||!sessao.refresh) return false;
+  try{
+    var r=await fetch(SB+'/auth/v1/token?grant_type=refresh_token',{method:'POST',headers:{apikey:KEY,'Content-Type':'application/json'},body:JSON.stringify({refresh_token:sessao.refresh})});
+    if(!r.ok) return false;
+    guardarSessao(await r.json());
+    return true;
+  }catch(e){return false;}
+}
+async function api(path,opts,jaTentou){
+  opts=opts||{};
+  var h=Object.assign({apikey:KEY,Authorization:'Bearer '+(sessao?sessao.access:KEY),'Content-Type':'application/json'},opts.headers||{});
+  var r=await fetch(SB+'/rest/v1/'+path,Object.assign({},opts,{headers:h}));
+  if(r.status===401&&!jaTentou&&await renovar()) return api(path,opts,true);
+  if(r.status===401){sessao=null;localStorage.removeItem('bb_sessao');mostrar();throw new Error('A sessão terminou. Entre outra vez.');}
+  var txt=await r.text(), d=null;
+  try{d=txt?JSON.parse(txt):null;}catch(e){}
+  if(!r.ok) throw new Error((d&&(d.message||d.hint))||('Erro '+r.status));
+  return d;
+}
+
+/* ---------- ecrãs ---------- */
+function mostrar(){
+  $('vista_login').hidden=!!sessao;
+  $('vista_app').hidden=!sessao;
+  $('b_sair').hidden=!sessao;
+  if(sessao) carregar();
+}
+$('b_entrar').onclick=async function(){
+  $('l_erro').textContent='';
+  try{await entrar($('l_email').value.trim(),$('l_senha').value);mostrar();}
+  catch(e){$('l_erro').textContent=e.message;}
+};
+$('b_sair').onclick=function(){sessao=null;localStorage.removeItem('bb_sessao');mostrar();};
+
+/* ---------- lista de endereços ---------- */
+async function carregar(){
+  try{lista=await api('moradas?select=*');}
+  catch(e){$('lista').innerHTML='<p class="erro">'+esc(e.message)+'</p>';return;}
+  lista.sort(function(a,b){return String(b.created_at||'').localeCompare(String(a.created_at||''));});
+  desenhar();
+}
+function desenhar(){
+  if(!lista.length){$('lista').innerHTML='<p class="vazio">Ainda não tem endereços de entrega guardados.</p>';return;}
+  $('lista').innerHTML=lista.map(function(m){
+    return '<div class="cartao">'+
+      '<span class="etiqueta">'+esc(TIPOS[m.tipo]||m.tipo||'')+'</span>'+
+      '<div><b>'+esc(m.nome)+'</b> · '+esc(m.telefone)+'</div>'+
+      (m.email?'<div>'+esc(m.email)+'</div>':'')+
+      '<div>'+esc(m.endereco)+'</div>'+
+      '<div>'+esc([m.cidade,m.distrito,m.provincia].filter(Boolean).join(', '))+'</div>'+
+      '<div>'+esc([m.pais,m.codigo_postal].filter(Boolean).join(' · '))+'</div>'+
+      (m.marca?'<div>Marca de envio: '+esc(m.marca)+'</div>':'')+
+      '<div class="acoes"><button onclick="editar(\''+esc(m.id)+'\')">Editar</button><button class="apagar" onclick="apagar(\''+esc(m.id)+'\')">Apagar</button></div>'+
+    '</div>';
+  }).join('');
+}
+function achar(id){return lista.find(function(x){return String(x.id)===String(id);});}
+async function apagar(id){
+  if(!confirm('Apagar este endereço de entrega?')) return;
+  try{await api('moradas?id=eq.'+encodeURIComponent(id),{method:'DELETE'});await carregar();}
+  catch(e){alert(e.message);}
+}
+
+/* ---------- países ---------- */
+async function carregarPaises(){
+  if(paises.length) return;
+  var r=await fetch(GEO+'countryInfoJSON?lang=pt&username='+GEO_USER);
+  var d=await r.json();
+  if(!d.geonames) throw new Error((d.status&&d.status.message)||'Lista de países indisponível.');
+  paises=d.geonames.filter(function(p){return p.countryCode!=='KP';})
+    .map(function(p){return {id:p.geonameId,nome:p.countryName};})
+    .sort(function(a,b){return a.nome.localeCompare(b.nome,'pt');});
+}
+function mostrarPaises(){
+  if(!paises.length) return;
+  var q=norm($('f_pais').value);
+  var itens=paises.filter(function(p){return !q||norm(p.nome).indexOf(q)>=0;});
+  $('lista_pais').innerHTML=itens.length
+    ?itens.map(function(p){return '<div class="op" data-i="'+p.id+'">'+esc(p.nome)+'</div>';}).join('')
+    :'<div class="op vazio">Nenhum país encontrado</div>';
+  $('lista_pais').hidden=false;
+}
+$('f_pais').addEventListener('focus',async function(){
+  try{await carregarPaises();mostrarPaises();}catch(e){erro(e.message);}
+});
+$('f_pais').addEventListener('input',function(){
+  if(paisSel){paisSel=null;limpar(0);}
+  mostrarPaises();
+});
+$('lista_pais').addEventListener('click',function(e){
+  var d=e.target.closest('.op');
+  if(!d||!d.dataset.i) return;
+  escolherPais(paises.find(function(p){return String(p.id)===d.dataset.i;}));
+});
+document.addEventListener('click',function(e){
+  if(!e.target.closest('#campo_pais')) $('lista_pais').hidden=true;
+});
+async function escolherPais(p,valor){
+  paisSel=p;
+  $('f_pais').value=p.nome;
+  $('lista_pais').hidden=true;
+  limpar(0);
+  await nivel(0,p.id,valor);
+}
+
+/* ---------- província → distrito → cidade ---------- */
+var AVISO=['Escolha primeiro o país','Escolha primeiro a província','Escolha primeiro o distrito'];
+function limpar(de){
+  for(var i=de;i<3;i++){
+    var n=N[i];
+    $('s_'+n).innerHTML='<option value="">'+AVISO[i]+'</option>';
+    $('s_'+n).disabled=true;$('s_'+n).hidden=false;
+    $('t_'+n).hidden=true;$('t_'+n).value='';
+  }
+}
+async function filhos(id){
+  var r=await fetch(GEO+'childrenJSON?geonameId='+id+'&maxRows=1000&lang=pt&username='+GEO_USER);
+  var d=await r.json();
+  if(d.status) throw new Error(d.status.message);
+  return (d.geonames||[]).map(function(g){return {id:g.geonameId,nome:g.name||g.toponymName};})
+    .sort(function(a,b){return a.nome.localeCompare(b.nome,'pt');});
+}
+function idSel(n){var o=$('s_'+n).selectedOptions[0];return o&&o.dataset.id;}
+function textoDe(i){
+  for(var k=i;k<3;k++){$('s_'+N[k]).hidden=true;$('t_'+N[k]).hidden=false;}
+}
+async function nivel(i,paiId,valor){
+  var n=N[i],s=$('s_'+n);
+  s.innerHTML='<option value="">A carregar…</option>';s.disabled=true;
+  var itens=[];
+  try{itens=await filhos(paiId);}catch(e){erro(e.message);}
+  if(!itens.length){textoDe(i);$('t_'+n).value=valor||'';return;}
+  s.innerHTML='<option value="">Escolher…</option>'+itens.map(function(x){
+    return '<option value="'+esc(x.nome)+'" data-id="'+x.id+'">'+esc(x.nome)+'</option>';
+  }).join('');
+  s.disabled=false;s.hidden=false;$('t_'+n).hidden=true;
+  if(valor){
+    s.value=valor;
+    if(s.value!==valor){s.insertAdjacentHTML('beforeend','<option value="'+esc(valor)+'">'+esc(valor)+'</option>');s.value=valor;}
+  }
+}
+$('s_prov').onchange=function(){limpar(1);var id=idSel('prov');if(id) nivel(1,id);};
+$('s_dist').onchange=function(){limpar(2);var id=idSel('dist');if(id) nivel(2,id);};
+function val(n){return ($('s_'+n).hidden?$('t_'+n).value:$('s_'+n).value).trim();}
+
+/* ---------- janela criar / editar ---------- */
+function erro(t){$('j_erro').textContent=t||'';}
+function abrirJanela(){$('fundo_janela').hidden=false;}
+function fecharJanela(){$('fundo_janela').hidden=true;}
+$('b_cancelar').onclick=fecharJanela;
+
+$('b_novo').onclick=async function(){
+  editId=null;paisSel=null;erro('');
+  $('j_titulo').textContent='Novo endereço de entrega';
+  ['f_nome','f_tel','f_email','f_pais','f_cp','f_end','f_marca'].forEach(function(id){$(id).value='';});
+  $('f_tipo').value='Envio interno';
+  limpar(0);
+  abrirJanela();
+  try{await carregarPaises();}catch(e){erro(e.message);}
+};
+
+async function editar(id){
+  var m=achar(id);if(!m) return;
+  editId=m.id;paisSel=null;erro('');
+  $('j_titulo').textContent='Editar endereço de entrega';
+  $('f_tipo').value=m.tipo||'Envio interno';
+  $('f_nome').value=m.nome||'';
+  $('f_tel').value=m.telefone||'';
+  $('f_email').value=m.email||'';
+  $('f_pais').value=m.pais||'';
+  $('f_cp').value=m.codigo_postal||'';
+  $('f_end').value=m.endereco||'';
+  $('f_marca').value=m.marca||'';
+  limpar(0);
+  abrirJanela();
+  try{
+    await carregarPaises();
+    var p=paises.find(function(x){return x.nome===m.pais;});
+    if(!p) return;
+    await escolherPais(p,m.provincia);
+    var i1=idSel('prov');
+    if(i1){
+      await nivel(1,i1,m.distrito);
+      var i2=idSel('dist');
+      if(i2) await nivel(2,i2,m.cidade);
+      else if($('s_dist').hidden) $('t_cid').value=m.cidade||'';
+    }else if($('s_prov').hidden){
+      $('t_dist').value=m.distrito||'';$('t_cid').value=m.cidade||'';
+    }
+  }catch(e){erro(e.message);}
+}
+
+$('b_guardar').onclick=async function(){
+  erro('');
+  var nome=$('f_nome').value.trim(),tel=$('f_tel').value.trim(),email=$('f_email').value.trim();
+  var cp=$('f_cp').value.trim(),end=$('f_end').value.trim(),marca=$('f_marca').value.trim();
+  if(!nome) return erro('Escreva o nome do destinatário.');
+  if(!tel) return erro('Escreva o telemóvel.');
+  if(email&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return erro('O email não é válido. Corrija ou deixe vazio.');
+  if(!paisSel) return erro('Escolha o país na lista.');
+  var prov=val('prov'),dist=val('dist'),cid=val('cid');
+  if(!prov) return erro('Escolha a província / estado.');
+  if(!$('s_dist').hidden&&!dist) return erro('Escolha o distrito.');
+  if(!$('s_cid').hidden&&!cid) return erro('Escolha a cidade.');
+  if(!cp) return erro('Escreva o código postal.');
+  if(!end) return erro('Escreva o endereço completo.');
+
+  var p={tipo:$('f_tipo').value,nome:nome,telefone:tel,pais:paisSel.nome,provincia:prov,distrito:dist,cidade:cid,codigo_postal:cp,endereco:end,marca:marca};
+  if(email) p.email=email;
+  else if(editId){var atual=achar(editId);if(atual&&atual.email) p.email=null;}
+
+  $('b_guardar').disabled=true;
+  try{
+    if(editId){
+      await api('moradas?id=eq.'+encodeURIComponent(editId),{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify(p)});
+    }else{
+      var corpo=Object.assign({},p);
+      if(sessao&&sessao.uid) corpo.user_id=sessao.uid;
+      try{
+        await api('moradas',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify(corpo)});
+      }catch(e){
+        if(/user_id/.test(e.message)) await api('moradas',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify(p)});
+        else throw e;
+      }
+    }
+    fecharJanela();
+    await carregar();
+  }catch(e){
+    erro(/email/.test(e.message)?'Falta criar a coluna email no Supabase (passo 1).':e.message);
+  }
+  $('b_guardar').disabled=false;
+};
+
+mostrar();
+</script>
+</body>
+      </html>
+        
