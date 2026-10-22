@@ -14,6 +14,8 @@ label{display:block;margin:14px 0 6px;font-weight:600}
 input,select{width:100%;padding:14px;font-size:17px;border:1px solid #ccc;border-radius:12px;background:#fff;color:#111}
 button{width:100%;padding:15px;font-size:17px;border:0;border-radius:12px;background:#111;color:#fff;margin-top:14px}
 button.sec{background:#555}
+.par{display:flex;gap:8px}
+.par button{margin-top:10px}
 .tag{display:inline-block;background:#eee;padding:6px 12px;border-radius:10px;font-size:15px;margin-bottom:10px}
 .tag.ext{background:#dce9ff}
 .end{border:1px solid #ddd;border-radius:14px;padding:14px;margin-bottom:12px;line-height:1.5}
@@ -24,6 +26,9 @@ button.sec{background:#555}
 .tel{display:flex;gap:8px}
 .tel span{padding:14px 12px;background:#eee;border-radius:12px;font-size:17px;white-space:nowrap}
 .oculto{display:none}
+.extra{margin-top:8px}
+.janela{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.6);overflow-y:auto;z-index:10;padding:12px}
+.jbox{background:#fff;border-radius:16px;padding:16px;max-width:600px;margin:0 auto 24px}
 </style>
 </head>
 <body>
@@ -43,12 +48,16 @@ button.sec{background:#555}
 <div id="boxApp" class="oculto">
   <div class="card">
     <h2>Moradas guardadas</h2>
+    <div class="nota" style="margin:0 0 12px">Ao pagar, vai escolher uma destas moradas.</div>
     <div id="lista"></div>
+    <button onclick="abrirJanela()">+ Nova morada</button>
     <button class="sec" onclick="sair()">Sair da conta</button>
   </div>
+</div>
 
-  <div class="card">
-    <h2>Nova morada</h2>
+<div id="janela" class="janela oculto">
+  <div class="jbox">
+    <h2 id="jtitulo">Nova morada</h2>
 
     <label>Tipo de envio</label>
     <select id="tipo" onchange="mudarTipo()">
@@ -62,20 +71,20 @@ button.sec{background:#555}
 
     <label>País</label>
     <select id="pais" onchange="mudarPais()"></select>
-    <input id="paisOutro" class="oculto" placeholder="Escreva o nome do país" style="margin-top:8px">
 
     <label>Telemóvel</label>
     <div class="tel"><span id="prefixo">+258</span><input id="tel" type="tel" inputmode="numeric"></div>
 
     <label>Província / Região (escolha na lista)</label>
-    <select id="provincia"></select>
-    <input id="provOutra" class="oculto" placeholder="Escreva a região" style="margin-top:8px">
+    <select id="provincia" onchange="mudarProvincia()"></select>
+    <input id="provOutra" class="oculto extra" placeholder="Escreva a região">
 
-    <label>Distrito</label>
+    <label>Distrito / bairro (se tiver)</label>
     <input id="distrito">
 
-    <label>Cidade</label>
-    <input id="cidade">
+    <label>Cidade (escolha na lista)</label>
+    <select id="cidade" onchange="mudarCidade()"></select>
+    <input id="cidadeOutra" class="oculto extra" placeholder="Escreva a cidade">
 
     <label>Código postal</label>
     <input id="cp" inputmode="numeric">
@@ -88,6 +97,7 @@ button.sec{background:#555}
     <div class="nota">A marca vai junto da morada para o fornecedor a escrever na caixa externa.</div>
 
     <button onclick="guardarMorada()">Guardar morada</button>
+    <button class="sec" onclick="fechar()">Cancelar</button>
     <div class="msg" id="msg"></div>
   </div>
 </div>
@@ -95,22 +105,41 @@ button.sec{background:#555}
 <script>
 var URL_SB='https://dsfoqoeawvjafypycldz.supabase.co';
 var KEY='sb_publishable_BN4NiVcDab9CqdTY_odgDA_uUOhjja0';
+var GEO='https://countriesnow.space/api/v0.1/countries';
 
-var PAISES={
- 'Moçambique':{tel:'+258',p:['Maputo Cidade','Maputo','Gaza','Inhambane','Sofala','Manica','Tete','Zambézia','Nampula','Cabo Delgado','Niassa']},
- 'Angola':{tel:'+244',p:['Bengo','Benguela','Bié','Cabinda','Cuando','Cubango','Cuanza Norte','Cuanza Sul','Cunene','Huambo','Huíla','Icolo e Bengo','Luanda','Lunda Norte','Lunda Sul','Malanje','Moxico','Moxico Leste','Namibe','Uíge','Zaire']},
- 'Portugal':{tel:'+351',p:['Aveiro','Beja','Braga','Bragança','Castelo Branco','Coimbra','Évora','Faro','Guarda','Leiria','Lisboa','Portalegre','Porto','Santarém','Setúbal','Viana do Castelo','Vila Real','Viseu','Açores','Madeira']},
- 'Brasil':{tel:'+55',p:['Acre','Alagoas','Amapá','Amazonas','Bahia','Ceará','Distrito Federal','Espírito Santo','Goiás','Maranhão','Mato Grosso','Mato Grosso do Sul','Minas Gerais','Pará','Paraíba','Paraná','Pernambuco','Piauí','Rio de Janeiro','Rio Grande do Norte','Rio Grande do Sul','Rondônia','Roraima','Santa Catarina','São Paulo','Sergipe','Tocantins']},
- 'África do Sul':{tel:'+27',p:['Eastern Cape','Free State','Gauteng','KwaZulu-Natal','Limpopo','Mpumalanga','North West','Northern Cape','Western Cape']},
- 'China':{tel:'+86',p:['Anhui','Beijing','Chongqing','Fujian','Gansu','Guangdong','Guangxi','Guizhou','Hainan','Hebei','Heilongjiang','Henan','Hong Kong','Hubei','Hunan','Inner Mongolia','Jiangsu','Jiangxi','Jilin','Liaoning','Macau','Ningxia','Qinghai','Shaanxi','Shandong','Shanghai','Shanxi','Sichuan','Tianjin','Tibet','Xinjiang','Yunnan','Zhejiang']}
+var DIAL={AF:93,AL:355,DZ:213,AD:376,AO:244,AG:1268,AR:54,AM:374,AU:61,AT:43,AZ:994,BS:1242,BH:973,BD:880,BB:1246,BY:375,BE:32,BZ:501,BJ:229,BT:975,BO:591,BA:387,BW:267,BR:55,BN:673,BG:359,BF:226,BI:257,CV:238,KH:855,CM:237,CA:1,CF:236,TD:235,CL:56,CN:86,CO:57,KM:269,CG:242,CD:243,CR:506,CI:225,HR:385,CU:53,CY:357,CZ:420,DK:45,DJ:253,DM:1767,DO:1809,EC:593,EG:20,SV:503,GQ:240,ER:291,EE:372,SZ:268,ET:251,FJ:679,FI:358,FR:33,GA:241,GM:220,GE:995,DE:49,GH:233,GR:30,GD:1473,GT:502,GN:224,GW:245,GY:592,HT:509,HN:504,HU:36,IS:354,IN:91,ID:62,IR:98,IQ:964,IE:353,IL:972,IT:39,JM:1876,JP:81,JO:962,KZ:7,KE:254,KI:686,XK:383,KW:965,KG:996,LA:856,LV:371,LB:961,LS:266,LR:231,LY:218,LI:423,LT:370,LU:352,MG:261,MW:265,MY:60,MV:960,ML:223,MT:356,MH:692,MR:222,MU:230,MX:52,FM:691,MD:373,MC:377,MN:976,ME:382,MA:212,MZ:258,MM:95,NA:264,NR:674,NP:977,NL:31,NZ:64,NI:505,NE:227,NG:234,MK:389,NO:47,OM:968,PK:92,PW:680,PS:970,PA:507,PG:675,PY:595,PE:51,PH:63,PL:48,PT:351,QA:974,RO:40,RU:7,RW:250,KN:1869,LC:1758,VC:1784,WS:685,SM:378,ST:239,SA:966,SN:221,RS:381,SC:248,SL:232,SG:65,SK:421,SI:386,SB:677,SO:252,ZA:27,KR:82,SS:211,ES:34,LK:94,SD:249,SR:597,SE:46,CH:41,SY:963,TW:886,TJ:992,TZ:255,TH:66,TL:670,TG:228,TO:676,TT:1868,TN:216,TR:90,TM:993,TV:688,UG:256,UA:380,AE:971,GB:44,US:1,UY:598,UZ:998,VU:678,VA:379,VE:58,VN:84,YE:967,ZM:260,ZW:263,HK:852,MO:853};
+
+var ALIAS={US:'United States',GB:'United Kingdom',RU:'Russia',KR:'South Korea',IR:'Iran',SY:'Syria',VN:'Vietnam',LA:'Laos',TZ:'Tanzania',CD:'Democratic Republic of the Congo',CG:'Congo',CZ:'Czech Republic',CV:'Cape Verde',MM:'Myanmar',TL:'Timor-Leste',BN:'Brunei',MD:'Moldova',BO:'Bolivia',VE:'Venezuela',PS:'Palestine',FM:'Micronesia',TR:'Turkey',TW:'Taiwan',HK:'Hong Kong',MO:'Macau'};
+
+var LOCAL={
+ MZ:['Maputo Cidade','Maputo','Gaza','Inhambane','Sofala','Manica','Tete','Zambézia','Nampula','Cabo Delgado','Niassa'],
+ AO:['Bengo','Benguela','Bié','Cabinda','Cuando','Cubango','Cuanza Norte','Cuanza Sul','Cunene','Huambo','Huíla','Icolo e Bengo','Luanda','Lunda Norte','Lunda Sul','Malanje','Moxico','Moxico Leste','Namibe','Uíge','Zaire'],
+ PT:['Aveiro','Beja','Braga','Bragança','Castelo Branco','Coimbra','Évora','Faro','Guarda','Leiria','Lisboa','Portalegre','Porto','Santarém','Setúbal','Viana do Castelo','Vila Real','Viseu','Açores','Madeira'],
+ BR:['Acre','Alagoas','Amapá','Amazonas','Bahia','Ceará','Distrito Federal','Espírito Santo','Goiás','Maranhão','Mato Grosso','Mato Grosso do Sul','Minas Gerais','Pará','Paraíba','Paraná','Pernambuco','Piauí','Rio de Janeiro','Rio Grande do Norte','Rio Grande do Sul','Rondônia','Roraima','Santa Catarina','São Paulo','Sergipe','Tocantins'],
+ ZA:['Eastern Cape','Free State','Gauteng','KwaZulu-Natal','Limpopo','Mpumalanga','North West','Northern Cape','Western Cape'],
+ CN:['Anhui','Beijing','Chongqing','Fujian','Gansu','Guangdong','Guangxi','Guizhou','Hainan','Hebei','Heilongjiang','Henan','Hong Kong','Hubei','Hunan','Inner Mongolia','Jiangsu','Jiangxi','Jilin','Liaoning','Macau','Ningxia','Qinghai','Shaanxi','Shandong','Shanghai','Shanxi','Sichuan','Tianjin','Tibet','Xinjiang','Yunnan','Zhejiang']
 };
-var OUTRO='Outro país';
+
+var ptN=null, enN=null;
+try{ptN=new Intl.DisplayNames(['pt'],{type:'region'});enN=new Intl.DisplayNames(['en'],{type:'region'})}catch(e){}
+var PAISES=Object.keys(DIAL).map(function(c){
+  var pt=c, en=ALIAS[c]||c;
+  try{pt=ptN.of(c)||c;en=ALIAS[c]||enN.of(c)||c}catch(e){}
+  return {c:c,pt:pt,en:en,tel:'+'+DIAL[c]};
+}).sort(function(a,b){
+  if(a.c==='MZ')return -1; if(b.c==='MZ')return 1;
+  return a.pt.localeCompare(b.pt,'pt');
+});
+
+var MORADAS=[], editId=null;
 
 function $(id){return document.getElementById(id)}
 function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+function op(x){return '<option>'+esc(x)+'</option>'}
 function aviso(id,txt,ok){var m=$(id);m.textContent=txt;m.className='msg '+(ok?'ok':'err');m.style.display='block'}
+function pais(){return PAISES.filter(function(x){return x.c===$('pais').value})[0]}
 
-/* ---------- sessão (guardada em bb_sessao, igual para todas as páginas) ---------- */
+/* ---------- sessão ---------- */
 function sessao(){try{return JSON.parse(localStorage.getItem('bb_sessao'))}catch(e){return null}}
 function guardarSessao(d){
   localStorage.setItem('bb_sessao',JSON.stringify({at:d.access_token,refresh:d.refresh_token,exp:Date.now()+(d.expires_in||3600)*1000,uid:d.user.id,email:d.user.email}));
@@ -138,7 +167,7 @@ async function entrar(criar){
 }
 function sair(){localStorage.removeItem('bb_sessao');location.reload()}
 
-/* ---------- base de dados ---------- */
+/* ---------- base de dados da loja ---------- */
 async function api(metodo,caminho,corpo){
   var t=await token();
   if(!t){$('boxApp').className='oculto';$('boxLogin').className='card';throw new Error('Entre na conta.')}
@@ -151,6 +180,7 @@ async function carregar(){
   var el=$('lista');
   try{
     var l=await api('GET','moradas?select=*&order=created_at.desc');
+    MORADAS=l;
     if(!l.length){el.innerHTML='<p>Ainda não tem moradas guardadas.</p>';return}
     el.innerHTML=l.map(function(m){
       var ext=m.tipo==='internacional';
@@ -158,47 +188,156 @@ async function carregar(){
       return '<div class="end"><span class="tag'+(ext?' ext':'')+'">'+(ext?'Envio externo':'Envio interno')+'</span><br>'
         +'<b>'+esc(m.nome)+'</b> · '+esc(m.telefone)+'<br>'+esc(partes)+(m.codigo_postal?' '+esc(m.codigo_postal):'')
         +(m.marca?'<br>Marca: '+esc(m.marca):'')
-        +'<button class="sec" onclick="apagar(\''+m.id+'\')">Apagar</button></div>';
+        +'<div class="par"><button onclick="editar(\''+m.id+'\')">Editar</button><button class="sec" onclick="apagar(\''+m.id+'\')">Apagar</button></div></div>';
     }).join('');
   }catch(e){el.innerHTML='<p>'+esc(e.message)+'</p>'}
 }
 
 async function apagar(id){
   if(!confirm('Apagar esta morada?'))return;
-  try{await api('DELETE','moradas?id=eq.'+id);carregar()}catch(e){aviso('msg',e.message)}
+  try{await api('DELETE','moradas?id=eq.'+id);carregar()}catch(e){alert(e.message)}
+}
+
+/* ---------- janela criar / editar ---------- */
+function limparForm(){
+  ['nome','tel','distrito','cp','endereco','marca','provOutra','cidadeOutra'].forEach(function(i){$(i).value=''});
+  $('tipo').value='entrega';
+}
+function abrirJanela(){
+  editId=null;
+  $('jtitulo').textContent='Nova morada';
+  $('msg').style.display='none';
+  limparForm(); mudarTipo();
+  $('pais').value='MZ'; mudarPais();
+  $('janela').className='janela';
+}
+function fechar(){$('janela').className='janela oculto'}
+function poe(sel,outro,valor){
+  var s=$(sel), achou=false;
+  for(var i=0;i<s.options.length;i++){if(s.options[i].value===valor){achou=true;break}}
+  if(achou&&valor){s.value=valor;$(outro).value=''}
+  else{s.value='__outra';$(outro).value=valor||''}
+  $(outro).className=s.value==='__outra'?'extra':'oculto extra';
+}
+async function editar(id){
+  var m=MORADAS.filter(function(x){return x.id===id})[0]; if(!m) return;
+  editId=id;
+  $('jtitulo').textContent='Editar morada';
+  $('msg').style.display='none';
+  $('janela').className='janela';
+  limparForm();
+  $('tipo').value=m.tipo; mudarTipo();
+  $('nome').value=m.nome||'';
+  var pc=PAISES.filter(function(x){return x.pt===m.pais})[0]||PAISES[0];
+  $('pais').value=pc.c;
+  await mudarPais();
+  var tel=m.telefone||'';
+  if(tel.indexOf(pc.tel)===0) tel=tel.slice(pc.tel.length);
+  $('tel').value=tel.trim();
+  poe('provincia','provOutra',m.provincia);
+  await mudarProvincia();
+  poe('cidade','cidadeOutra',m.cidade);
+  $('distrito').value=m.distrito||'';
+  $('cp').value=m.codigo_postal||'';
+  $('endereco').value=m.endereco||'';
+  $('marca').value=m.marca||'';
 }
 
 async function guardarMorada(){
-  var tipo=$('tipo').value, pais=$('pais').value;
-  var outro=pais===OUTRO;
-  if(outro) pais=$('paisOutro').value.trim();
-  var prov=outro?$('provOutra').value.trim():$('provincia').value;
+  var tipo=$('tipo').value, pc=pais();
+  var prov=$('provincia').value==='__outra'?$('provOutra').value.trim():$('provincia').value;
+  var cid=$('cidade').value==='__outra'?$('cidadeOutra').value.trim():$('cidade').value;
   var d={
     tipo:tipo,
     nome:$('nome').value.trim(),
-    telefone:($('prefixo').textContent+' '+$('tel').value.trim()).trim(),
-    pais:pais,
+    telefone:(pc.tel+' '+$('tel').value.trim()).trim(),
+    pais:pc.pt,
     provincia:prov,
     distrito:$('distrito').value.trim(),
-    cidade:$('cidade').value.trim(),
+    cidade:cid,
     codigo_postal:$('cp').value.trim(),
     endereco:$('endereco').value.trim(),
     marca:$('marca').value.trim()
   };
-  if(!d.nome||!$('tel').value.trim()||!d.pais||!d.provincia||!d.cidade||!d.codigo_postal||!d.endereco){aviso('msg','Preencha todos os campos obrigatórios e escolha a província na lista.');return}
+  if(!d.nome||!$('tel').value.trim()||!d.provincia||!d.cidade||!d.codigo_postal||!d.endereco){aviso('msg','Preencha todos os campos obrigatórios e escolha a província e a cidade na lista.');return}
   if(tipo==='internacional'&&!d.marca){aviso('msg','No envio externo a marca de envio é obrigatória.');return}
   try{
-    await api('POST','moradas',d);
-    aviso('msg','Morada guardada.',true);
-    ['nome','tel','distrito','cidade','cp','endereco','marca'].forEach(function(i){$(i).value=''});
-    carregar();
+    if(editId) await api('PATCH','moradas?id=eq.'+editId,d);
+    else await api('POST','moradas',d);
+    fechar(); carregar();
   }catch(e){aviso('msg',e.message)}
 }
 
-/* ---------- formulário ---------- */
+/* ---------- país → província → cidade ---------- */
+var cache={};
+async function geo(caminho,corpo){
+  var k=caminho+JSON.stringify(corpo);
+  if(cache[k]) return cache[k];
+  var ctl=new AbortController();
+  var t=setTimeout(function(){ctl.abort()},15000);
+  try{
+    var r=await fetch(GEO+caminho,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(corpo),signal:ctl.signal});
+    var d=await r.json(); clearTimeout(t);
+    if(d.error||!d.data) return null;
+    cache[k]=d.data; return d.data;
+  }catch(e){clearTimeout(t);return null}
+}
+function ordenar(a){return a.slice().sort(function(x,y){return x.localeCompare(y,'pt')})}
+function limparCidade(){
+  $('cidade').innerHTML='<option value="">Escolha primeiro a província</option>';
+  $('cidadeOutra').className='oculto extra';
+}
+async function mudarPais(){
+  var c=pais(), s=$('provincia');
+  $('prefixo').textContent=c.tel;
+  $('provOutra').className='oculto extra';
+  s.innerHTML='<option value="">A carregar…</option>';
+  limparCidade();
+  var d=await geo('/states',{country:c.en});
+  var nomes=(d&&d.states)?d.states.map(function(x){return x.name}).filter(Boolean):[];
+  if(!nomes.length&&LOCAL[c.c]) nomes=LOCAL[c.c];
+  if($('pais').value!==c.c) return;
+  s.innerHTML='<option value="">Escolha na lista</option>'+ordenar(nomes).map(op).join('')+'<option value="__outra">Outra região (escrever)</option>';
+  s.value='';
+}
+async function mudarProvincia(){
+  var v=$('provincia').value, c=pais(), s=$('cidade');
+  $('provOutra').className=v==='__outra'?'extra':'oculto extra';
+  if(!v){limparCidade();return}
+  if(v==='__outra'){
+    s.innerHTML='<option value="__outra">Outra cidade (escrever)</option>';
+    s.value='__outra'; mudarCidade(); return;
+  }
+  s.innerHTML='<option value="">A carregar…</option>';
+  var d=await geo('/state/cities',{country:c.en,state:v});
+  if($('provincia').value!==v) return;
+  var n=Array.isArray(d)?d:[];
+  s.innerHTML='<option value="">Escolha na lista</option>'+ordenar(n).map(op).join('')+'<option value="__outra">Outra cidade (escrever)</option>';
+  s.value='';
+  $('cidadeOutra').className='oculto extra';
+}
+function mudarCidade(){
+  $('cidadeOutra').className=$('cidade').value==='__outra'?'extra':'oculto extra';
+}
+
 function mudarTipo(){
   var ext=$('tipo').value==='internacional';
   $('lblMarca').textContent=ext?'Marca de envio (obrigatória)':'Marca de envio (opcional)';
+  $('notaTipo').textContent=ext
+    ?'Para receber encomendas vindas de outro país. Pode escolher esta morada ao pagar o transporte internacional.'
+    :'Para receber encomendas dentro do seu país.';
+}
+function abrir(){
+  $('boxLogin').className='oculto';
+  $('boxApp').className='';
+  $('pais').innerHTML=PAISES.map(function(x){return '<option value="'+x.c+'">'+esc(x.pt)+'</option>'}).join('');
+  $('pais').value='MZ';
+  mudarTipo(); mudarPais(); carregar();
+}
+if(sessao()) abrir();
+</script>
+</body>
+</html>arca de envio (opcional)';
   $('notaTipo').textContent=ext
     ?'Para receber encomendas vindas de outro país. Pode escolher esta morada ao pagar o transporte internacional.'
     :'Para receber encomendas dentro do seu país.';
