@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Endereços de entrega - BBabilônia</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,Arial,sans-serif;background:#f4f4f6;color:#222}
+.w{max-width:560px;margin:0 auto;padding:16px}
+h1{font-size:20px;margin:8px 0 14px}
+.card{background:#fff;border-radius:12px;padding:14px;margin-bottom:12px;box-shadow:0 1px 3px #0002}
+.card b{display:block;margin-bottom:4px}
+.card small{color:#666;display:block;margin-bottom:6px}
+label{display:block;font-size:13px;font-weight:600;margin:12px 0 4px}
+label i{font-weight:400;color:#888;font-style:normal}
+input,select{width:100%;padding:11px;border:1px solid #ccc;border-radius:8px;font-size:15px;background:#fff}
+button{padding:11px 16px;border:0;border-radius:8px;font-size:15px;background:#e63946;color:#fff;font-weight:600}
+button.c{background:#ddd;color:#222}
+button.s{padding:7px 12px;font-size:13px;margin-right:6px}
+#pl{max-height:170px;overflow:auto;border:1px solid #ccc;border-radius:8px;margin-top:4px;background:#fff}
+#pl div{padding:10px;border-bottom:1px solid #eee;font-size:15px}
+#pl div:active{background:#fde}
+#modal{position:fixed;inset:0;background:#0007;overflow:auto;padding:12px}
+#modal .box{background:#fff;border-radius:14px;padding:16px;max-width:560px;margin:0 auto}
+#msg{color:#b00020;font-size:14px;margin:8px 0;min-height:18px}
+.row{display:flex;gap:8px;margin-top:16px}
+.row button{flex:1}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<div class="w">
+<a href="checkout.html" style="font-size:14px">← Voltar ao checkout</a>
+<h1>Endereços de entrega</h1>
+
+<div id="login" class="card" hidden>
+<b>Entre na sua conta</b>
+<label>Email</label><input id="le" type="email" autocomplete="username">
+<label>Palavra-passe</label><input id="lp" type="password" autocomplete="current-password">
+<div class="row"><button id="entrar">Entrar</button></div>
+</div>
+
+<div id="app" hidden>
+<div id="lista"></div>
+<button id="novo" style="width:100%">+ Novo endereço de entrega</button>
+</div>
+<p id="msg"></p>
+</div>
+
+<div id="modal" hidden>
+<div class="box">
+<b id="mt" style="font-size:17px">Novo endereço de entrega</b>
+
+<label>Tipo</label>
+<select id="tipo">
+<option value="Envio interno">Endereço de entrega interna</option>
+<option value="Envio externo">Endereço de entrega internacional (externa)</option>
+</select>
+
+<label>Nome completo</label><input id="nome">
+<label>Telemóvel (do país de destino)</label><input id="tel" type="tel">
+<label>Email <i>(opcional)</i></label><input id="email" type="email">
+
+<label>País</label>
+<input id="pq" placeholder="🔍 Pesquise o país" autocomplete="off">
+<div id="pl"></div>
+
+<label>Província</label>
+<select id="s_provincia"></select><input id="t_provincia" hidden placeholder="Escreva a província">
+<label>Distrito</label>
+<select id="s_distrito"></select><input id="t_distrito" hidden placeholder="Escreva o distrito">
+<label>Cidade</label>
+<select id="s_cidade"></select><input id="t_cidade" hidden placeholder="Escreva a cidade">
+
+<label>Código postal</label><input id="cp">
+<label>Endereço completo <i>(andar, rua, número…)</i></label><input id="end">
+<label>Marca de envio <i id="mh">(opcional)</i></label><input id="marca" placeholder="Marca para a caixa externa">
+
+<p id="mm" style="color:#b00020;font-size:14px;min-height:18px"></p>
+<div class="row"><button class="c" id="cancel">Cancelar</button><button id="guardar">Guardar</button></div>
+</div>
+</div>
+
+<script>
+const U="https://dsfoqoeawvjafypycldz.supabase.co";
+const K="sb_publishable_BN4NiVcDab9CqdTY_odgDA_uUOhjja0";
+const GN="JovencioFoguete";
+const SK="sb-dsfoqoeawvjafypycldz-auth-token";
+const TIPOS={"Envio interno":"Endereço de entrega interna","Envio externo":"Endereço de entrega internacional (externa)"};
+const PAISES="AF:Afeganistão|ZA:África do Sul|AL:Albânia|DE:Alemanha|AD:Andorra|AO:Angola|AG:Antígua e Barbuda|SA:Arábia Saudita|DZ:Argélia|AR:Argentina|AM:Arménia|AU:Austrália|AT:Áustria|AZ:Azerbaijão|BS:Baamas|BD:Bangladesh|BB:Barbados|BH:Bahrein|BE:Bélgica|BZ:Belize|BJ:Benim|BY:Bielorrússia|BO:Bolívia|BA:Bósnia e Herzegovina|BW:Botsuana|BR:Brasil|BN:Brunei|BG:Bulgária|BF:Burquina Faso|BI:Burundi|BT:Butão|CV:Cabo Verde|CM:Camarões|KH:Camboja|CA:Canadá|QA:Catar|KZ:Cazaquistão|TD:Chade|CL:Chile|CN:China|CY:Chipre|CO:Colômbia|KM:Comores|CG:Congo|CD:Congo (RDC)|KR:Coreia do Sul|CI:Costa do Marfim|CR:Costa Rica|HR:Croácia|CU:Cuba|DK:Dinamarca|DJ:Jibuti|DM:Dominica|EG:Egito|SV:El Salvador|AE:Emirados Árabes Unidos|EC:Equador|ER:Eritreia|SK:Eslováquia|SI:Eslovénia|ES:Espanha|US:Estados Unidos|EE:Estónia|SZ:Essuatíni|ET:Etiópia|FJ:Fiji|PH:Filipinas|FI:Finlândia|FR:França|GA:Gabão|GM:Gâmbia|GH:Gana|GE:Geórgia|GD:Granada|GR:Grécia|GT:Guatemala|GY:Guiana|GN:Guiné|GQ:Guiné Equatorial|GW:Guiné-Bissau|HT:Haiti|HN:Honduras|HK:Hong Kong|HU:Hungria|YE:Iémen|MH:Ilhas Marshall|SB:Ilhas Salomão|IN:Índia|ID:Indonésia|IR:Irão|IQ:Iraque|IE:Irlanda|IS:Islândia|IL:Israel|IT:Itália|JM:Jamaica|JP:Japão|JO:Jordânia|XK:Kosovo|KW:Kuwait|LA:Laos|LS:Lesoto|LV:Letónia|LB:Líbano|LR:Libéria|LY:Líbia|LI:Listenstaine|LT:Lituânia|LU:Luxemburgo|MO:Macau|MK:Macedónia do Norte|MG:Madagáscar|MY:Malásia|MW:Malawi|MV:Maldivas|ML:Mali|MT:Malta|MA:Marrocos|MU:Maurícia|MR:Mauritânia|MX:México|MM:Mianmar|FM:Micronésia|MZ:Moçambique|MD:Moldávia|MC:Mónaco|MN:Mongólia|ME:Montenegro|NA:Namíbia|NR:Nauru|NP:Nepal|NI:Nicarágua|NE:Níger|NG:Nigéria|NO:Noruega|NZ:Nova Zelândia|OM:Omã|NL:Países Baixos|PW:Palau|PS:Palestina|PA:Panamá|PG:Papua-Nova Guiné|PK:Paquistão|PY:Paraguai|PE:Peru|PL:Polónia|PR:Porto Rico|PT:Portugal|KE:Quénia|KG:Quirguistão|KI:Quiribati|GB:Reino Unido|CF:República Centro-Africana|CZ:República Checa|DO:República Dominicana|RO:Roménia|RW:Ruanda|RU:Rússia|WS:Samoa|LC:Santa Lúcia|KN:São Cristóvão e Nevis|SM:São Marinho|ST:São Tomé e Príncipe|VC:São Vicente e Granadinas|SN:Senegal|SL:Serra Leoa|RS:Sérvia|SG:Singapura|SY:Síria|SO:Somália|LK:Sri Lanka|SD:Sudão|SS:Sudão do Sul|SE:Suécia|CH:Suíça|SR:Suriname|TH:Tailândia|TW:Taiwan|TJ:Tajiquistão|TZ:Tanzânia|TL:Timor-Leste|TG:Togo|TO:Tonga|TT:Trinidad e Tobago|TN:Tunísia|TM:Turquemenistão|TR:Turquia|TV:Tuvalu|UA:Ucrânia|UG:Uganda|UY:Uruguai|UZ:Usbequistão|VU:Vanuatu|VA:Vaticano|VE:Venezuela|VN:Vietname|ZM:Zâmbia|ZW:Zimbabué"
+.split("|").map(s=>({c:s.slice(0,2),n:s.slice(3)}));
+
+const $=id=>document.getElementById(id);
+const L=["provincia","distrito","cidade"];
+const norm=s=>s.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
+const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+let S=null,edit=null,pais=null,cid="";
+try{S=JSON.parse(localStorage.getItem(SK))}catch(e){}
+
+function msg(t){$("msg").textContent=t||""}
+function H(){return{apikey:K,Authorization:"Bearer "+((S&&S.access_token)||K),"Content-Type":"application/json"}}
+async function api(path,opt){
+  const r=await fetch(U+"/rest/v1/"+path,Object.assign({headers:H()},opt||{}));
+  if(r.status==401){S=null;localStorage.removeItem(SK);show();throw new Error("Sessão expirada. Entre outra vez.")}
+  const t=await r.text();
+  if(!r.ok)throw new Error(t);
+  return t?JSON.parse(t):null;
+}
+
+$("entrar").onclick=async()=>{
+  msg("");
+  try{
+    const r=await fetch(U+"/auth/v1/token?grant_type=password",{method:"POST",headers:{apikey:K,"Content-Type":"application/json"},body:JSON.stringify({email:$("le").value.trim(),password:$("lp").value})});
+    const j=await r.json();
+    if(!r.ok){msg("Email ou palavra-passe errados.");return}
+    S=j;localStorage.setItem(SK,JSON.stringify(j));show();
+  }catch(e){msg("Sem ligação à internet.")}
+};
+
+function show(){
+  $("login").hidden=!!S;$("app").hidden=!S;
+  if(S)listar();
+}
+
+async function listar(){
+  try{
+    const d=await api("moradas?select=*");
+    $("lista").innerHTML=(d&&d.length)?d.map(m=>`<div class="card"><b>${esc(m.nome)}</b><small>${esc(TIPOS[m.tipo]||m.tipo)}</small>
+${esc(m.endereco)}<br>${esc([m.cidade,m.distrito,m.provincia,m.pais].filter(Boolean).join(", "))} ${esc(m.codigo_postal||"")}<br>${esc(m.telefone)}${m.email?" · "+esc(m.email):""}${m.marca?"<br>Marca: "+esc(m.marca):""}
+<div style="margin-top:10px"><button class="s" data-e="${esc(m.id)}">Editar</button><button class="s c" data-d="${esc(m.id)}">Apagar</button></div></div>`).join(""):'<div class="card">Ainda não tem endereços guardados.</div>';
+    window._m=d||[];
+  }catch(e){msg("Erro ao ler os endereços: "+e.message)}
+}
+
+$("lista").onclick=async e=>{
+  const b=e.target;
+  if(b.dataset.e)abrir(window._m.find(m=>String(m.id)==b.dataset.e));
+  if(b.dataset.d&&confirm("Apagar este endereço?")){
+    try{await api("moradas?id=eq."+encodeURIComponent(b.dataset.d),{method:"DELETE"});listar()}catch(x){msg(x.message)}
+  }
+};
+$("novo").onclick=()=>abrir(null);
+$("cancel").onclick=()=>{$("modal").hidden=true};
+
+/* ---------- países ---------- */
+function listaPaises(){
+  const q=norm($("pq").value.trim());
+  const r=PAISES.filter(p=>!q||norm(p.n).includes(q));
+  $("pl").innerHTML=r.length?r.map(p=>`<div data-c="${p.c}">${esc(p.n)}</div>`).join(""):'<div>Nenhum país encontrado</div>';
+  $("pl").hidden=false;
+}
+$("pq").oninput=()=>{pais=null;cid="";listaPaises();for(let k=0;k<3;k++)reset(k)};
+$("pq").onfocus=listaPaises;
+$("pl").onclick=async e=>{
+  const c=e.target.dataset.c;if(!c)return;
+  pais=PAISES.find(p=>p.c==c);
+  $("pq").value=pais.n;$("pl").hidden=true;
+  await escolherPais(null);
+};
+
+async function escolherPais(sv){
+  cid="";
+  for(let k=0;k<3;k++)reset(k);
+  try{
+    const r=await fetch("https://secure.geonames.org/countryInfoJSON?country="+pais.c+"&username="+GN);
+    const j=await r.json();
+    cid=j.geonames&&j.geonames[0]?j.geonames[0].geonameId:"";
+  }catch(e){}
+  if(sv){
+    let id=cid;
+    for(let lv=0;lv<3;lv++)id=await carregar(lv,id,sv[lv]);
+  }else await carregar(0,cid);
+}
+
+/* ---------- província / distrito / cidade ---------- */
+function reset(k){
+  const s=$("s_"+L[k]),t=$("t_"+L[k]);
+  s.hidden=false;t.hidden=true;t.value="";
+  s.innerHTML='<option value="">Escolha o nível anterior primeiro</option>';s.disabled=true;
+}
+async function filhos(id){
+  const r=await fetch("https://secure.geonames.org/childrenJSON?geonameId="+id+"&maxRows=1000&username="+GN);
+  const j=await r.json();
+  return (j.geonames||[]).map(g=>({id:g.geonameId,n:g.name})).sort((a,b)=>a.n.localeCompare(b.n));
+}
+async function carregar(lv,pid,saved){
+  const s=$("s_"+L[lv]),t=$("t_"+L[lv]);
+  for(let k=lv+1;k<3;k++)reset(k);
+  s.hidden=false;t.hidden=true;s.disabled=true;
+  s.innerHTML="<option>A carregar…</option>";
+  let it=[];
+  try{it=pid?await filhos(pid):[]}catch(e){}
+  if(!it.length){s.hidden=true;t.hidden=false;t.value=saved||"";return ""}
+  s.disabled=false;
+  s.innerHTML='<option value="">Escolha…</option>'+it.map(i=>`<option value="${i.id}">${esc(i.n)}</option>`).join("")+'<option value="__outro">✏️ Outro (escrever)</option>';
+  if(saved){
+    const o=[...s.options].find(o=>o.text==saved);
+    if(o){s.value=o.value;return o.value}
+    s.insertAdjacentHTML("beforeend",`<option value="" selected>${esc(saved)}</option>`);
+  }
+  return "";
+}
+function manual(lv){for(let k=lv;k<3;k++){$("s_"+L[k]).hidden=true;$("t_"+L[k]).hidden=false;if(k==lv)$("t_"+L[k]).focus()}}
+$("s_provincia").onchange=function(){if(this.value=="__outro")manual(0);else carregar(1,this.value)};
+$("s_distrito").onchange=function(){if(this.value=="__outro")manual(1);else carregar(2,this.value)};
+$("s_cidade").onchange=function(){if(this.value=="__outro")manual(2)};
+function val(lv){
+  const s=$("s_"+L[lv]),t=$("t_"+L[lv]);
+  if(!t.hidden)return t.value.trim();
+  const o=s.options[s.selectedIndex];
+  return o&&o.text&&!/^(Escolha|A carregar)/.test(o.text)?o.text:"";
+}
+
+/* ---------- janela ---------- */
+function marcaHint(){$("mh").textContent=$("tipo").value=="Envio externo"?"(obrigatória)":"(opcional)"}
+$("tipo").onchange=marcaHint;
+
+async function abrir(m){
+  edit=m;$("mm").textContent="";
+  $("mt").textContent=m?"Editar endereço de entrega":"Novo endereço de entrega";
+  $("tipo").value=m?m.tipo:"Envio interno";marcaHint();
+  $("nome").value=m?m.nome||"":"";$("tel").value=m?m.telefone||"":"";$("email").value=m?m.email||"":"";
+  $("cp").value=m?m.codigo_postal||"":"";$("end").value=m?m.endereco||"":"";$("marca").value=m?m.marca||"":"";
+  pais=null;cid="";$("pq").value="";
+  for(let k=0;k<3;k++)reset(k);
+  $("modal").hidden=false;
+  if(m&&m.pais){
+    pais=PAISES.find(p=>p.n==m.pais)||null;
+    $("pq").value=m.pais;$("pl").hidden=true;
+    if(pais)await escolherPais([m.provincia,m.distrito,m.cidade]);
+    else{for(let k=0;k<3;k++){$("s_"+L[k]).hidden=true;$("t_"+L[k]).hidden=false}
+      $("t_provincia").value=m.provincia||"";$("t_distrito").value=m.distrito||"";$("t_cidade").value=m.cidade||""}
+  }else listaPaises();
+}
+
+$("guardar").onclick=async()=>{
+  const mm=$("mm");mm.textContent="";
+  const d={
+    tipo:$("tipo").value,nome:$("nome").value.trim(),telefone:$("tel").value.trim(),
+    email:$("email").value.trim()||null,pais:pais?pais.n:"",
+    provincia:val(0),distrito:val(1),cidade:val(2),
+    codigo_postal:$("cp").value.trim(),endereco:$("end").value.trim(),marca:$("marca").value.trim()
+  };
+  if(!d.nome||!d.telefone||!d.pais||!d.provincia||!d.endereco){mm.textContent="Preencha: nome, telemóvel, país, província e endereço completo.";return}
+  if(d.email&&!/^\S+@\S+\.\S+$/.test(d.email)){mm.textContent="O email não está correto (ou deixe vazio).";return}
+  if(d.tipo=="Envio externo"&&!d.marca){mm.textContent="Na entrega internacional a Marca de envio é obrigatória.";return}
+  try{
+    if(edit)await api("moradas?id=eq."+encodeURIComponent(edit.id),{method:"PATCH",headers:Object.assign(H(),{Prefer:"return=minimal"}),body:JSON.stringify(d)});
+    else await api("moradas",{method:"POST",headers:Object.assign(H(),{Prefer:"return=minimal"}),body:JSON.stringify(d)});
+    $("modal").hidden=true;listar();
+  }catch(e){mm.textContent="Erro ao guardar: "+e.message}
+};
+
+show();
+</script>
+</body>
+</html>
