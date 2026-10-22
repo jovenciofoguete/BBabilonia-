@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Minhas moradas – BBabilônia</title>
+<style>
+:root{--bg:#f6f4ef;--card:#fff;--tx:#1d1b18;--mu:#6b665e;--ac:#0b5d4b;--bd:#ddd8cd;--er:#b3261e}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;padding:16px;max-width:640px;margin:auto}
+h1{font-size:22px;margin:4px 0 12px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:14px;margin-bottom:12px}
+.card b{display:block}
+.tag{display:inline-block;font-size:12px;border:1px solid var(--ac);color:var(--ac);border-radius:20px;padding:1px 8px;margin-bottom:6px}
+.mu{color:var(--mu);font-size:14px}
+button{font:inherit;border:0;border-radius:8px;padding:11px 16px;background:var(--ac);color:#fff;cursor:pointer}
+button.sec{background:#fff;color:var(--ac);border:1px solid var(--ac)}
+button.bad{background:#fff;color:var(--er);border:1px solid var(--er)}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid #7fc4b2;outline-offset:1px}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+label{display:block;font-size:14px;margin:12px 0 4px;font-weight:600}
+input,select,textarea{width:100%;font:inherit;padding:11px;border:1px solid var(--bd);border-radius:8px;background:#fff;color:var(--tx)}
+dialog{border:0;border-radius:12px;padding:16px;width:min(94vw,560px);max-height:92vh}
+dialog::backdrop{background:rgba(0,0,0,.45)}
+.msg{padding:10px;border-radius:8px;margin:10px 0;font-size:14px}
+.msg.er{background:#fbe9e7;color:var(--er)}
+.msg.ok{background:#e3f3ee;color:var(--ac)}
+.hide{display:none}
+</style>
+</head>
+<body>
+<h1>Minhas moradas</h1>
+<div id="msg"></div>
+
+<div id="login" class="card hide">
+  <b>Entre na sua conta</b>
+  <label for="em">Email</label><input id="em" type="email" autocomplete="email">
+  <label for="pw">Palavra-passe</label><input id="pw" type="password" autocomplete="current-password">
+  <div class="row"><button id="bEntrar">Entrar</button><button id="bCriar" class="sec">Criar conta</button></div>
+</div>
+
+<div id="app" class="hide">
+  <div class="row" style="margin:0 0 12px"><button id="bNova">Adicionar morada</button><button id="bSair" class="sec">Sair</button></div>
+  <div id="lista"></div>
+</div>
+
+<dialog id="dlg">
+  <b id="dTitulo" style="font-size:18px">Nova morada</b>
+  <div id="dMsg"></div>
+  <label for="tipo">Tipo de morada</label>
+  <select id="tipo"><option>Envio interno</option><option>Envio externo</option></select>
+  <label for="nome">Nome do destinatário</label><input id="nome" autocomplete="name">
+  <label for="tel">Telemóvel</label><input id="tel" type="tel" autocomplete="tel">
+  <label for="pais">País</label><select id="pais"><option value="">A carregar países…</option></select>
+  <label for="prov">Província / Estado</label><select id="prov" disabled><option value="">Escolha primeiro o país</option></select>
+  <input id="provT" class="hide" placeholder="Província / Estado">
+  <label for="dist">Distrito</label><select id="dist" disabled><option value="">Escolha primeiro a província</option></select>
+  <input id="distT" class="hide" placeholder="Distrito">
+  <label for="cid">Cidade</label><select id="cid" disabled><option value="">Escolha primeiro o distrito</option></select>
+  <input id="cidT" class="hide" placeholder="Cidade">
+  <label for="cp">Código postal</label><input id="cp" inputmode="text" autocomplete="postal-code">
+  <label for="end">Morada completa (andar, rua, número…)</label><textarea id="end" rows="3"></textarea>
+  <div id="marcaBox">
+    <label for="marca">Marca de envio <span id="marcaOb" class="mu"></span></label>
+    <input id="marca" placeholder="A sua marca (a logística identifica o seu produto)">
+  </div>
+  <div class="row"><button id="bGuardar">Guardar morada</button><button id="bFechar" class="sec">Cancelar</button></div>
+</dialog>
+
+<script>
+const SB='https://dsfoqoeawvjafypycldz.supabase.co';
+const KEY='sb_publishable_BN4NiVcDab9CqdTY_odgDA_uUOhjja0';
+const GEO='https://secure.geonames.org', GUSER='JovencioFoguete';
+const ESCOLHER=new URLSearchParams(location.search).get('escolher')==='1';
+const $=id=>document.getElementById(id);
+let sess=null, moradas=[], editId=null, paises=[];
+
+function aviso(el,t,tipo){el.innerHTML=t?`<div class="msg ${tipo||'er'}">${t}</div>`:''}
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+
+/* ---------- Supabase (sem biblioteca) ---------- */
+async function api(path,opt={}){
+  const h={apikey:KEY,'Content-Type':'application/json',Authorization:'Bearer '+(sess?sess.access_token:KEY)};
+  const r=await fetch(SB+path,{...opt,headers:{...h,...(opt.headers||{})}});
+  const t=await r.text(); let j=null; try{j=t?JSON.parse(t):null}catch(e){}
+  if(!r.ok){const m=(j&&(j.message||j.msg||j.error_description||j.error))||('Erro '+r.status);const e=new Error(m);e.status=r.status;throw e}
+  return j;
+}
+function guardarSessao(j){sess={access_token:j.access_token,user:j.user};localStorage.setItem('bb_sess',JSON.stringify(sess))}
+async function entrar(criar){
+  aviso($('msg'),'');
+  const email=$('em').value.trim(), password=$('pw').value;
+  if(!email||!password){aviso($('msg'),'Escreva o email e a palavra-passe.');return}
+  try{
+    if(criar){
+      const j=await api('/auth/v1/signup',{method:'POST',body:JSON.stringify({email,password})});
+      if(!j.access_token){aviso($('msg'),'Conta criada. Confirme o email que recebeu e depois entre.','ok');return}
+      guardarSessao(j);
+    }else{
+      const j=await api('/auth/v1/token?grant_type=password',{method:'POST',body:JSON.stringify({email,password})});
+      guardarSessao(j);
+    }
+    iniciar();
+  }catch(e){aviso($('msg'),e.message)}
+}
+function sair(){sess=null;localStorage.removeItem('bb_sess');iniciar()}
+
+/* ---------- Lista de moradas ---------- */
+async function carregar(){
+  try{
+    moradas=await api('/rest/v1/moradas?select=*&order=id.desc');
+  }catch(e){
+    if(e.status===401){sair();return}
+    aviso($('msg'),'Não foi possível carregar as moradas: '+e.message);moradas=[]
+  }
+  desenhar();
+}
+function desenhar(){
+  if(!moradas.length){$('lista').innerHTML='<div class="card mu">Ainda não tem moradas. Toque em “Adicionar morada”.</div>';return}
+  $('lista').innerHTML=moradas.map(m=>`
+  <div class="card">
+    <span class="tag">${esc(m.tipo)}</span>
+    <b>${esc(m.nome)}</b>
+    <div class="mu">${esc(m.telefone)}</div>
+    <div>${esc(m.endereco)}</div>
+    <div class="mu">${[m.cidade,m.distrito,m.provincia,m.codigo_postal,m.pais].filter(Boolean).map(esc).join(', ')}</div>
+    ${m.marca?`<div class="mu">Marca de envio: ${esc(m.marca)}</div>`:''}
+    <div class="row">
+      ${ESCOLHER?`<button data-a="usar" data-id="${m.id}">Usar esta morada</button>`:''}
+      <button class="sec" data-a="edit" data-id="${m.id}">Editar</button>
+      <button class="bad" data-a="del" data-id="${m.id}">Apagar</button>
+    </div>
+  </div>`).join('');
+}
+$('lista').addEventListener('click',async e=>{
+  const b=e.target.closest('button');if(!b)return;
+  const m=moradas.find(x=>String(x.id)===b.dataset.id);if(!m)return;
+  if(b.dataset.a==='edit')abrir(m);
+  if(b.dataset.a==='usar'){localStorage.setItem('morada_escolhida',JSON.stringify(m));location.href='checkout.html'}
+  if(b.dataset.a==='del'){
+    if(!confirm('Apagar esta morada?'))return;
+    try{await api('/rest/v1/moradas?id=eq.'+m.id,{method:'DELETE'});carregar()}catch(er){aviso($('msg'),er.message)}
+  }
+});
+
+/* ---------- GeoNames: país > província > distrito > cidade ---------- */
+async function geo(p){
+  const r=await fetch(`${GEO}/${p}${p.includes('?')?'&':'?'}username=${GUSER}&lang=pt`);
+  const j=await r.json();
+  if(j.status)throw new Error(j.status.message);
+  return j;
+}
+function preencher(sel,txt,lista,vazio){
+  sel.innerHTML=`<option value="">${vazio}</option>`+lista.map(x=>`<option value="${esc(x.nome)}" data-g="${x.id}">${esc(x.nome)}</option>`).join('');
+  sel.disabled=false;sel.classList.remove('hide');txt.classList.add('hide');txt.value='';
+}
+function semLista(sel,txt){sel.classList.add('hide');sel.value='';txt.classList.remove('hide');txt.value=''}
+function reset(sel,txt,msg){sel.innerHTML=`<option value="">${msg}</option>`;sel.disabled=true;sel.classList.remove('hide');txt.classList.add('hide');txt.value=''}
+function gid(sel){const o=sel.options[sel.selectedIndex];return o&&o.dataset.g}
+async function filhos(id){
+  const j=await geo(`childrenJSON?geonameId=${id}&maxRows=1000`);
+  return (j.geonames||[]).map(g=>({nome:g.name,id:g.geonameId})).sort((a,b)=>a.nome.localeCompare(b.nome,'pt'));
+}
+async function carregarPaises(){
+  if(paises.length)return;
+  try{
+    const j=await geo('countryInfoJSON?');
+    paises=j.geonames.filter(c=>c.countryCode!=='KP').map(c=>({nome:c.countryName,id:c.geonameId,cod:c.countryCode}))
+      .sort((a,b)=>a.nome.localeCompare(b.nome,'pt'));
+    preencher($('pais'),$('pais'),paises,'Escolha o país');
+  }catch(e){
+    $('pais').innerHTML='<option value="">Lista indisponível</option>';
+    aviso($('dMsg'),'A lista de países não carregou: '+esc(e.message)+'. Ative os serviços web gratuitos na conta GeoNames e tente de novo.');
+  }
+}
+async function nivel(origem,sel,txt,vazio,seguintes){
+  seguintes.forEach(([s,t,m])=>reset(s,t,m));
+  const id=gid(origem);if(!id)return;
+  sel.innerHTML='<option>A carregar…</option>';sel.disabled=true;
+  try{
+    const l=await filhos(id);
+    if(l.length)preencher(sel,txt,l,vazio);else semLista(sel,txt);
+  }catch(e){semLista(sel,txt);aviso($('dMsg'),esc(e.message))}
+}
+$('pais').onchange=()=>nivel($('pais'),$('prov'),$('provT'),'Escolha a província',[[$('prov'),$('provT'),'Escolha primeiro o país'],[$('dist'),$('distT'),'Escolha primeiro a província'],[$('cid'),$('cidT'),'Escolha primeiro o distrito']]);
+$('prov').onchange=()=>nivel($('prov'),$('dist'),$('distT'),'Escolha o distrito',[[$('dist'),$('distT'),'Escolha primeiro a província'],[$('cid'),$('cidT'),'Escolha primeiro o distrito']]);
+$('dist').onchange=()=>nivel($('dist'),$('cid'),$('cidT'),'Escolha a cidade',[[$('cid'),$('cidT'),'Escolha primeiro o distrito']]);
+
+function val(sel,txt){return sel.classList.contains('hide')?txt.value.trim():sel.value}
+function marcaRegra(){
+  const ext=$('tipo').value==='Envio externo';
+  $('marcaOb').textContent=ext?'(obrigatória)':'(opcional)';
+}
+$('tipo').onchange=marcaRegra;
+
+/* ---------- Janela criar / editar ---------- */
+async function abrir(m){
+  editId=m?m.id:null;
+  aviso($('dMsg'),'');
+  $('dTitulo').textContent=m?'Editar morada':'Nova morada';
+  $('tipo').value=m?m.tipo:'Envio interno';
+  $('nome').value=m?m.nome:'';$('tel').value=m?m.telefone:'';
+  $('cp').value=m?m.codigo_postal||'':'';$('end').value=m?m.endereco:'';$('marca').value=m?m.marca||'':'';
+  marcaRegra();
+  reset($('prov'),$('provT'),'Escolha primeiro o país');reset($('dist'),$('distT'),'Escolha primeiro a província');reset($('cid'),$('cidT'),'Escolha primeiro o distrito');
+  $('dlg').showModal();
+  await carregarPaises();
+  $('pais').value='';
+  if(m){
+    try{
+      $('pais').value=m.pais;
+      await nivel($('pais'),$('prov'),$('provT'),'Escolha a província',[]);
+      if(!$('prov').classList.contains('hide')){$('prov').value=m.provincia;}else{$('provT').value=m.provincia||''}
+      await nivel($('prov'),$('dist'),$('distT'),'Escolha o distrito',[]);
+      if(!$('dist').classList.contains('hide')){$('dist').value=m.distrito;}else{$('distT').value=m.distrito||''}
+      await nivel($('dist'),$('cid'),$('cidT'),'Escolha a cidade',[]);
+      if(!$('cid').classList.contains('hide')){$('cid').value=m.cidade;}else{$('cidT').value=m.cidade||''}
+    }catch(e){}
+  }
+}
+$('bNova').onclick=()=>abrir(null);
+$('bFechar').onclick=()=>$('dlg').close();
+
+$('bGuardar').onclick=async()=>{
+  const d={
+    tipo:$('tipo').value,nome:$('nome').value.trim(),telefone:$('tel').value.trim(),
+    pais:$('pais').value,provincia:val($('prov'),$('provT')),distrito:val($('dist'),$('distT')),cidade:val($('cid'),$('cidT')),
+    codigo_postal:$('cp').value.trim(),endereco:$('end').value.trim(),marca:$('marca').value.trim()
+  };
+  const falta=[];
+  if(!d.nome)falta.push('nome');if(!d.telefone)falta.push('telemóvel');if(!d.pais)falta.push('país');
+  if(!d.provincia)falta.push('província');if(!d.distrito)falta.push('distrito');if(!d.cidade)falta.push('cidade');
+  if(!d.codigo_postal)falta.push('código postal');if(!d.endereco)falta.push('morada completa');
+  if(d.tipo==='Envio externo'&&!d.marca)falta.push('marca de envio');
+  if(falta.length){aviso($('dMsg'),'Preencha: '+falta.join(', ')+'.');return}
+  try{
+    if(editId){
+      await api('/rest/v1/moradas?id=eq.'+editId,{method:'PATCH',body:JSON.stringify(d)});
+    }else{
+      d.user_id=sess.user.id;
+      await api('/rest/v1/moradas',{method:'POST',body:JSON.stringify(d)});
+    }
+    $('dlg').close();aviso($('msg'),'Morada guardada.','ok');carregar();
+  }catch(e){aviso($('dMsg'),'Não guardou: '+esc(e.message))}
+};
+
+/* ---------- Arranque ---------- */
+function iniciar(){
+  try{sess=JSON.parse(localStorage.getItem('bb_sess')||'null')}catch(e){sess=null}
+  $('login').classList.toggle('hide',!!sess);
+  $('app').classList.toggle('hide',!sess);
+  if(sess)carregar();
+}
+$('bEntrar').onclick=()=>entrar(false);
+$('bCriar').onclick=()=>entrar(true);
+$('bSair').onclick=sair;
+iniciar();
+</script>
+<script src="pesquisa-pais.js"></script>
+</body>
+  </html>
+  
