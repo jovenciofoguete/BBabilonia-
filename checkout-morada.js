@@ -21,6 +21,18 @@ function setv(re,v){
     var k=((i.id||"")+" "+(i.name||"")).toLowerCase();
     if(re.test(k)){i.value=v;i.dispatchEvent(new Event("input",{bubbles:true}));i.dispatchEvent(new Event("change",{bubbles:true}))}
   }
+}function setv(re,v){
+  var l=document.querySelectorAll("input,textarea");
+  for(var n=0;n<l.length;n++){
+    var i=l[n]; if(box.contains(i))continue;
+    var k=((i.id||"")+" "+(i.name||"")+" "+(i.placeholder||"")+" "+(i.getAttribute("aria-label")||"")).toLowerCase();
+    if(re.test(k)){
+      var p=i.tagName==="TEXTAREA"?HTMLTextAreaElement.prototype:HTMLInputElement.prototype;
+      Object.getOwnPropertyDescriptor(p,"value").set.call(i,v);
+      i.dispatchEvent(new Event("input",{bubbles:true}));
+      i.dispatchEvent(new Event("change",{bubbles:true}));
+    }
+  }
 }
 function escolher(m){
   window.moradaEscolhida=m;
