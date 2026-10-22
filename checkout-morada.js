@@ -18,6 +18,7 @@
       access_token: d.access_token,
       refresh_token: d.refresh_token,
       user_id: (d.user && d.user.id) || d.user_id,
+      email: (d.user && d.user.email) || d.email || '',
       exp: d.expires_at || (agora() + (d.expires_in || 3600))
     };
     try { localStorage.setItem(SESSAO, JSON.stringify(s)); } catch (e) {}
@@ -36,7 +37,7 @@
           if (o && o.currentSession) o = o.currentSession;
           if (o && o.access_token && (o.user || o.user_id)) {
             var s = { access_token: o.access_token, refresh_token: o.refresh_token,
-              user_id: (o.user && o.user.id) || o.user_id, exp: o.expires_at || 0 };
+              user_id: (o.user && o.user.id) || o.user_id, email: (o.user && o.user.email) || '', exp: o.expires_at || 0 };
             if (!achada || (s.exp || 0) > (achada.exp || 0)) achada = s;
           }
         } catch (e) {}
@@ -84,8 +85,69 @@
   function lerEscolha(chave) { try { return JSON.parse(localStorage.getItem(chave) || 'null'); } catch (e) { return null; } }
   function guardarEscolha(chave, m) {
     try { m ? localStorage.setItem(chave, JSON.stringify(m)) : localStorage.removeItem(chave); } catch (e) {}
-    if (chave === 'morada_entrega') window.MORADA_ENTREGA = m;
+    if (chave === 'morada_entrega') { window.MORADA_ENTREGA = m; preencher(m); }
     else window.ENDERECO_INTERNACIONAL = m;
+  }
+
+  // esconde os campos escritos à mão (nome, telefone, email, país, morada) e preenche-os sozinho com a morada escolhida
+  var CAMPOS = [
+    { re: /nome completo/i, k: 'nome' },
+    { re: /telefone/i, k: 'telefone' },
+    { re: /email/i, k: 'email' },
+    { re: /^\s*pa[ií]s\s*$/i, k: 'pais' },
+    { re: /morada de entrega/i, k: 'morada' }
+  ];
+  function rotuloDe(el) {
+    var l = el.id && document.querySelector('label[for="' + el.id + '"]');
+    if (l) return l;
+    var p = el.previousElementSibling;
+    if (p && (p.textContent || '').length < 80) return p;
+    return el.closest('label');
+  }
+  function acharCampos() {
+    var r = {};
+    document.querySelectorAll('input, textarea, select').forEach(function (el) {
+      if ((box && box.contains(el)) || el.type === 'radio' || el.type === 'checkbox' || el.type === 'hidden') return;
+      var l = rotuloDe(el);
+      if (!l) return;
+      var t = l.textContent || '';
+      CAMPOS.forEach(function (c) {
+        if (!r[c.k] && c.re.test(t)) r[c.k] = { el: el, l: l };
+      });
+    });
+    return r;
+  }
+  function esconder() {
+    var c = acharCampos();
+    Object.keys(c).forEach(function (k) {
+      c[k].el.required = false;
+      c[k].el.style.display = 'none';
+      if (c[k].l !== c[k].el && !c[k].l.contains(c[k].el)) c[k].l.style.display = 'none';
+      else if (c[k].l.contains(c[k].el)) c[k].l.style.display = 'none';
+    });
+    return c;
+  }
+  function pôr(el, v) {
+    if (!el) return;
+    v = v == null ? '' : String(v);
+    if (el.tagName === 'SELECT') {
+      for (var i = 0; i < el.options.length; i++) {
+        if ((el.options[i].text || '').trim().toLowerCase() === v.trim().toLowerCase() || el.options[i].value.toLowerCase() === v.toLowerCase()) { el.selectedIndex = i; break; }
+      }
+    } else el.value = v;
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+    el.dispatchEvent(new Event('change', { bubbles: true }));
+  }
+  function preencher(m) {
+    var c = esconder();
+    if (!m) { Object.keys(c).forEach(function (k) { pôr(c[k].el, ''); }); return; }
+    var morada = [m.endereco, m.cidade, m.distrito, m.provincia, m.codigo_postal, m.pais].filter(Boolean).join(', ') +
+      (m.marca ? '\nMarca de envio: ' + m.marca : '');
+    if (c.nome) pôr(c.nome.el, m.nome);
+    if (c.telefone) pôr(c.telefone.el, m.telefone);
+    if (c.email) pôr(c.email.el, m.email || (sess && sess.email) || '');
+    if (c.pais) pôr(c.pais.el, m.pais);
+    if (c.morada) pôr(c.morada.el, morada);
   }
 
   function cartao(m, grupo, marcado) {
@@ -180,6 +242,9 @@
     alvo.insertBefore(box, alvo.firstChild);
     window.MORADA_ENTREGA = lerEscolha('morada_entrega');
     window.ENDERECO_INTERNACIONAL = lerEscolha('endereco_internacional');
+    esconder();
+    setTimeout(esconder, 500);
+    setTimeout(esconder, 1500);
     iniciar();
   }
 
