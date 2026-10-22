@@ -250,6 +250,60 @@
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', montar);
   else montar();
+})();%;padding:10px;border:0;background:#e91e63;color:#fff;border-radius:8px;font-size:15px;margin-top:4px">Entrar</button>' +
+      '<div style="color:#c62828;font-size:14px;margin-top:6px">' + esc(msg || '') + '</div>';
+    box.querySelector('#bbEntrar').addEventListener('click', function () {
+      var e = box.querySelector('#bbEmail').value.trim(), s = box.querySelector('#bbSenha').value;
+      entrar(e, s).then(function (r) {
+        if (!r) return desenharLogin('Email ou palavra-passe incorretos.');
+        iniciar();
+      });
+    });
+  }
+
+  function iniciar() {
+    box.innerHTML = '<div style="color:#555">A carregar os seus endereços…</div>';
+    sessaoValida().then(function (s) {
+      sess = s;
+      if (!s) return desenharLogin('');
+      if (!s.email) api('/auth/v1/user', {}, s.access_token).then(function (r) { if (r.ok && r.data && r.data.email) { s.email = r.data.email; var m = lerEscolha('morada_entrega'); if (m) preencher(m); } });
+      carregar().then(function (l) { lista = l; desenhar(); });
+    });
+  }
+
+  function textoDe(el) { return ((el.innerText || el.value || el.textContent || '') + '').toLowerCase(); }
+
+  document.addEventListener('click', function (ev) {
+    var el = ev.target.closest && ev.target.closest('button, a, input[type=button], input[type=submit]');
+    if (!el || (box && box.contains(el))) return;
+    if (!/pagar|pagamento|finalizar|enviar pedido|confirmar pedido/.test(textoDe(el))) return;
+    if (!lerEscolha('morada_entrega')) {
+      ev.preventDefault(); ev.stopImmediatePropagation();
+      var av = box && box.querySelector('#bbAviso');
+      if (av) av.textContent = 'Escolha um endereço de entrega antes de pagar.';
+      if (box) box.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else {
+      preencher(lerEscolha('morada_entrega'));
+    }
+  }, true);
+
+  function montar() {
+    if (document.getElementById('bbMoradaBox')) return;
+    box = document.createElement('div');
+    box.id = 'bbMoradaBox';
+    box.style.cssText = 'background:#fafafa;border:1px solid #eee;border-radius:12px;padding:12px;margin:12px 0;font-family:inherit';
+    var alvo = document.querySelector('form') || document.querySelector('main') || document.body;
+    alvo.insertBefore(box, alvo.firstChild);
+    window.MORADA_ENTREGA = lerEscolha('morada_entrega');
+    window.ENDERECO_INTERNACIONAL = lerEscolha('endereco_internacional');
+    esconder();
+    setTimeout(esconder, 500);
+    setTimeout(esconder, 1500);
+    iniciar();
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', montar);
+  else montar();
 })();s seus endereços</div>' +
       '<input id="bbEmail" type="email" placeholder="Email" style="width:100%;padding:10px;margin:4px 0;border:1px solid #ccc;border-radius:8px;box-sizing:border-box">' +
       '<input id="bbSenha" type="password" placeholder="Palavra-passe" style="width:100%;padding:10px;margin:4px 0;border:1px solid #ccc;border-radius:8px;box-sizing:border-box">' +
