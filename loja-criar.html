@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="pt"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Criar loja • BBabilônia</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<style>
+:root{--bg:#111;--card:#1c1c1f;--line:#2c2c30;--tx:#f3f3f3;--mut:#9a9aa2;--ac:#ff4d6a;--ok:#2e9d62}
+*{box-sizing:border-box}
+body{margin:0 auto;background:var(--bg);color:var(--tx);font:16px system-ui,sans-serif;padding:16px 16px 70px;max-width:560px}
+h1{font-size:22px}h3{margin:24px 0 8px;font-size:16px}
+label{display:block;margin:12px 0 4px;color:var(--mut);font-size:14px}
+input,select,textarea{width:100%;padding:12px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--tx);font:inherit}
+button{padding:12px 16px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--tx);font:inherit}
+.p{background:var(--ac);border-color:var(--ac);color:#fff;width:100%;font-weight:600;margin-top:20px;height:50px}
+.box{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px;margin-top:8px;font-size:14px;color:var(--mut)}
+.ck{display:flex;gap:10px;align-items:center;margin:0;padding:8px 0;color:var(--tx);font-size:15px}
+.ck input{width:auto}
+.lista{max-height:220px;overflow:auto;border:1px solid var(--line);border-radius:10px;padding:4px 12px;margin-top:8px}
+.doc{margin-top:10px}.doc small{display:block;color:var(--mut);margin-top:4px}
+.doc.ok small{color:var(--ok)}
+#m{margin-top:12px;color:var(--ac)}.hide{display:none}
+.est{font-size:20px;font-weight:700;margin:6px 0}
+</style></head><body>
+<h1>Criar a minha loja</h1>
+<div class="box">Para vender na BBabilônia a loja é verificada. Os documentos ficam privados: só você e a equipa da BBabilônia os veem.</div>
+
+<div id="login" class="hide">
+ <label>Email</label><input id="em" type="email" autocomplete="email">
+ <label>Palavra-passe (mínimo 6)</label><input id="pw" type="password" autocomplete="current-password">
+ <button class="p" id="ent">Entrar</button>
+ <button class="p" id="cri" style="background:none;border-color:var(--line)">Criar conta</button>
+</div>
+
+<div id="estado" class="hide">
+ <h3>A sua loja</h3>
+ <div class="box"><div id="en" style="color:var(--tx);font-size:17px"></div><div class="est" id="ee"></div><div id="em2"></div></div>
+</div>
+
+<div id="form" class="hide">
+ <label>Tipo de vendedor</label>
+ <select id="tipo"><option value="empresa">Empresa</option><option value="individual">Pessoa individual</option></select>
+ <label>Nome da loja</label><input id="nome">
+ <label>País da loja</label><select id="pais"></select>
+ <label>Descrição da loja</label><textarea id="desc" rows="3"></textarea>
+
+ <h3>Para onde envia</h3>
+ <label class="ck"><input type="checkbox" id="mundo"> Envia para todo o mundo</label>
+ <div id="pbox">
+  <input id="busca" placeholder="Pesquisar país…" style="margin-top:8px">
+  <div class="lista" id="pl"></div>
+ </div>
+
+ <h3>Meios de envio</h3>
+ <div class="lista" style="max-height:none" id="ml"></div>
+ <label>Outro meio de envio (opcional)</label><input id="outro">
+
+ <h3>Documentos</h3>
+ <div id="docs"></div>
+
+ <button class="p" id="env">Enviar para análise</button>
+</div>
+<div id="m"></div>
+
+<script>
+const sb=supabase.createClient('https://dsfoqoeawvjafypycldz.supabase.co','sb_publishable_BN4NiVcDab9CqdTY_odgDA_uUOhjja0');
+const $=i=>document.getElementById(i);
+const msg=t=>$('m').textContent=t;
+let user=null,files={};
+const CODES='AF AL DZ AD AO AG AR AM AU AT AZ BS BH BD BB BY BE BZ BJ BT BO BA BW BR BN BG BF BI CV KH CM CA CF TD CL CN CO KM CG CD CR CI HR CU CY CZ DK DJ DM DO EC EG SV GQ ER EE SZ ET FJ FI FR GA GM GE DE GH GR GD GT GN GW GY HT HN HU IS IN ID IR IQ IE IL IT JM JP JO KZ KE KI XK KW KG LA LV LB LS LR LY LI LT LU MG MW MY MV ML MT MH MR MU MX FM MD MC MN ME MA MZ MM NA NR NP NL NZ NI NE NG MK NO OM PK PW PS PA PG PY PE PH PL PT QA RO RU RW KN LC VC WS SM ST SA SN RS SC SL SG SK SI SB SO ZA KR SS ES LK SD SR SE CH SY TW TJ TZ TH TL TG TO TT TN TR TM TV UG UA AE GB US UY UZ VU VA VE VN YE ZM ZW'.split(' ');
+const nomes=new Intl.DisplayNames(['pt'],{type:'region'});
+const PAISES=CODES.map(c=>({c:c,n:nomes.of(c)})).sort((a,b)=>a.n.localeCompare(b.n,'pt'));
+const MEIOS=['DHL','FedEx','Aramex','UPS','Correios / EMS','Transporte marítimo','Transporte aéreo','Entrega em mão (presencial)'];
+const DOCS={
+ individual:[['id','BI ou passaporte (frente e verso)',1],['morada','Comprovativo de morada',1],['banco','Comprovativo da conta bancária (em seu nome)',1]],
+ empresa:[['registo','Registo da empresa (alvará ou certidão)',1],['nuit','Identificação fiscal da empresa (NUIT)',1],['rep','BI ou passaporte do representante',1],['morada','Comprovativo de morada da empresa',1],['banco','Comprovativo da conta bancária (em nome da empresa)',1],['cert','Certificados dos produtos (se o produto exigir)',0]]
+};
+const ESTADOS={pendente:'Em análise',aprovada:'Aprovada ✓',rejeitada:'Rejeitada',suspensa:'Suspensa'};
+
+function montar(){
+ $('pais').innerHTML='<option value="">— Escolha o país —</option>'+PAISES.map(p=>`<option value="${p.c}">${p.n}</option>`).join('');
+ $('pl').innerHTML=PAISES.map(p=>`<label class="ck" data-n="${p.n.toLowerCase()}"><input type="checkbox" class="pe" value="${p.c}"> ${p.n}</label>`).join('');
+ $('ml').innerHTML=MEIOS.map(m=>`<label class="ck"><input type="checkbox" class="me" value="${m}"> ${m}</label>`).join('');
+ desenharDocs();
+}
+function desenharDocs(){
+ files={};
+ $('docs').innerHTML=DOCS[$('tipo').value].map(d=>`<div class="doc" id="d_${d[0]}"><label style="margin:0;color:var(--tx)">${d[1]}${d[2]?' *':' (opcional)'}</label><input type="file" accept="image/*,application/pdf" onchange="pick('${d[0]}',this)"><small>Nenhum ficheiro</small></div>`).join('');
+}
+function pick(k,el){
+ files[k]=el.files[0]||null;
+ const d=$('d_'+k);d.classList.toggle('ok',!!files[k]);
+ d.querySelector('small').textContent=files[k]?files[k].name:'Nenhum ficheiro';
+}
+$('tipo').onchange=desenharDocs;
+$('mundo').onchange=()=>$('pbox').classList.toggle('hide',$('mundo').checked);
+$('busca').oninput=()=>{const q=$('busca').value.trim().toLowerCase();
+ document.querySelectorAll('#pl .ck').forEach(l=>l.style.display=l.dataset.n.includes(q)?'':'none')};
+
+async function init(){
+ const {data}=await sb.auth.getSession();user=data.session&&data.session.user;
+ $('login').classList.toggle('hide',!!user);
+ $('form').classList.add('hide');$('estado').classList.add('hide');
+ if(!user)return;
+ const {data:l,error}=await sb.from('lojas').select('nome,estado,motivo').eq('dono_id',user.id).maybeSingle();
+ if(error){msg('Erro: '+error.message);return}
+ if(l){
+  $('estado').classList.remove('hide');
+  $('en').textContent=l.nome;$('ee').textContent=ESTADOS[l.estado]||l.estado;$('em2').textContent=l.motivo||'';
+  msg('');return;
+ }
+ $('form').classList.remove('hide');
+}
+$('ent').onclick=async()=>{const {error}=await sb.auth.signInWithPassword({email:$('em').value,password:$('pw').value});error?alert('Email ou palavra-passe errados.'):init()};
+$('cri').onclick=async()=>{const {error}=await sb.auth.signUp({email:$('em').value,password:$('pw').value});
+ if(error)return alert(error.message);alert('Conta criada. Toque em Entrar.');init()};
+
+$('env').onclick=async()=>{
+ const nome=$('nome').value.trim(),tipo=$('tipo').value;
+ if(!nome)return msg('Escreva o nome da loja.');
+ if(!$('pais').value)return msg('Escolha o país da loja.');
+ const mundo=$('mundo').checked;
+ const pe=[...document.querySelectorAll('.pe:checked')].map(x=>x.value);
+ if(!mundo&&!pe.length)return msg('Escolha os países para onde envia, ou marque "Envia para todo o mundo".');
+ const meios=[...document.querySelectorAll('.me:checked')].map(x=>x.value);
+ const outro=$('outro').value.trim();if(outro)meios.push(outro);
+ if(!meios.length)return msg('Escolha pelo menos um meio de envio.');
+ const falta=DOCS[tipo].find(d=>d[2]&&!files[d[0]]);
+ if(falta)return msg('Falta enviar: '+falta[1]);
+ $('env').disabled=true;
+ try{
+  const subidos=[];let i=0;
+  for(const d of DOCS[tipo]){
+   const f=files[d[0]];if(!f)continue;
+   msg('A enviar documentos ('+(++i)+')…');
+   const p=user.id+'/'+Date.now()+'-'+d[0]+'-'+Math.random().toString(36).slice(2)+'-'+f.name.replace(/[^\w.]/g,'_');
+   const {error}=await sb.storage.from('documentos-loja').upload(p,f);
+   if(error)throw error;
+   subidos.push({tipo:d[0],ficheiro:p});
+  }
+  msg('A criar a loja…');
+  const {data,error}=await sb.from('lojas').insert({dono_id:user.id,nome:nome,tipo:tipo,pais:$('pais').value,descricao:$('desc').value.trim(),envia_mundo:mundo,paises_entrega:mundo?[]:pe,meios_envio:meios}).select('id').single();
+  if(error)throw error;
+  const {error:e2}=await sb.from('loja_documentos').insert(subidos.map(s=>({loja_id:data.id,tipo:s.tipo,ficheiro:s.ficheiro})));
+  if(e2)throw e2;
+  init();
+ }catch(e){msg('Erro: '+(e.message||e));$('env').disabled=false}
+};
+montar();init();
+</script></body></html>
