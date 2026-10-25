@@ -1,0 +1,89 @@
+<!doctype html><html lang="pt"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Finalizar compra | B-Babilônia</title><style>*{box-sizing:border-box}body{margin:0;background:#0f1219;color:#e9ecf2;font-family:system-ui,sans-serif}header{background:#0f1a3d;padding:16px;font-weight:700;font-size:22px}header b{color:#d9a93f}main{max-width:520px;margin:auto;padding:16px}label{display:block;margin:12px 0 4px;font-size:14px;color:#aab}input,select,textarea{width:100%;padding:12px;border-radius:8px;border:1px solid #2b3350;background:#161b27;color:#fff;font-size:16px}button{width:100%;margin-top:18px;padding:14px;border:0;border-radius:8px;background:#d9a93f;color:#111;font-weight:700;font-size:17px}.box{background:#161b27;border-radius:10px;padding:14px;margin:12px 0}.ok{color:#2e9d62}.err{color:#ff7a7a}small{color:#99a}.op{display:flex;gap:8px}.op label{flex:1;margin:12px 0 0;padding:12px;border:1px solid #2b3350;border-radius:8px;color:#e9ecf2;text-align:center}.op input{display:none}.op label.on{border-color:#d9a93f;background:#1d2335}.aviso{background:#2a2110;border:1px solid #d9a93f;border-radius:8px;padding:12px;margin:12px 0}.aviso button{margin-top:10px}</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script><script src="https://js.stripe.com/v3/"></script></head><body>
+<header><b style="color:#fff">B-</b><b>Babilônia</b></header>
+<main>
+<h2>Pagamento</h2>
+<div class="box" id="resumo">A carregar…</div>
+<div id="dados">
+<label>Nome completo</label><input id="nome">
+<label>Telefone</label><input id="tel" type="tel">
+<label>Email (para receber a confirmação)</label><input id="email" type="email">
+<label>País</label><input id="pais">
+<label>Morada de entrega</label><textarea id="morada" rows="2"></textarea>
+<label>Forma de pagamento</label>
+<div class="op"><label id="lc" class="on"><input type="radio" name="m" value="cartao" checked>Cartão Visa / Mastercard</label><label id="lx"><input type="radio" name="m" value="cripto">Cripto (sem divisas)</label></div>
+<p id="dica" class="err" style="font-size:14px"></p>
+<button id="continuar">Continuar para o pagamento</button>
+</div>
+<div id="pag" hidden>
+<div id="cripto-sel" hidden><label>Moeda cripto e rede</label><select id="mc"></select></div>
+<div class="box" id="taxas"></div>
+<div id="aviso" class="aviso" hidden><span id="avt"></span><button id="paraCripto">Pagar por cripto</button></div>
+<div id="cartao"></div>
+<button id="pagar" hidden>Pagar</button>
+</div>
+<p id="msg" class="err"></p>
+<p><small>Os dados do cartão são registados numa área segura do gateway, nunca no nosso site. O valor dos produtos fica retido na B-Babilônia até o fornecedor entregar.</small></p>
+<p><a href="carrinho.html" style="color:#8ea2ff">Voltar ao carrinho</a></p>
+</main>
+<script>
+const sb=supabase.createClient('https://dsfoqoeawvjafypycldz.supabase.co','sb_publishable_BN4NiVcDab9CqdTY_odgDA_uUOhjja0');
+const $=i=>document.getElementById(i);
+// Países com falta de divisas (edite a lista à vontade): o cripto fica escolhido por defeito.
+const SEM_DIVISAS=['moçambique','mocambique','angola','nigéria','nigeria','venezuela','zimbabwe','etiópia','etiopia'];
+const BLOQUEIO=['do_not_honor','generic_decline','card_declined','currency_not_supported','call_issuer','restricted_card','transaction_not_allowed','not_permitted','issuer_not_available','try_again_later','card_not_supported'];
+const itens=JSON.parse(localStorage.getItem('carrinho')||'[]');
+const moeda=itens[0]?.moeda||'MZN';
+const sub=itens.reduce((t,i)=>t+Number(i.preco)*Number(i.qtd||1),0);
+$('resumo').innerHTML=itens.length?itens.map(i=>`${i.nome} (${i.cor||''} ${i.tamanho||''}) × ${i.qtd||1}`).join('<br>')+`<hr><b>Produtos: ${sub} ${moeda}</b>`:'Carrinho vazio.';
+const metodo=()=>document.querySelector('input[name=m]:checked').value;
+document.querySelectorAll('input[name=m]').forEach(r=>r.onchange=()=>{$('lc').className=metodo()==='cartao'?'on':'';$('lx').className=metodo()==='cripto'?'on':'';});
+$('pais').oninput=()=>{const p=$('pais').value.trim().toLowerCase();
+  if(SEM_DIVISAS.includes(p)){document.querySelector('input[value=cripto]').checked=true;document.querySelector('input[value=cripto]').onchange();$('dica').textContent='No seu país os cartões internacionais costumam ser bloqueados por falta de divisas. Escolhemos o pagamento por cripto.';}else $('dica').textContent='';};
+let id=null,stripe=null,elements=null;
+function taxas(d){$('taxas').innerHTML=`Produtos: ${d.subtotal} ${d.moeda}<br>Taxa da plataforma: ${d.taxa_plataforma} ${d.moeda}`+(d.taxa_cambio?`<br>Taxa da rede e troca de moeda (cripto): ${d.taxa_cambio} ${d.moeda}`:'')+`<hr><b>Total a pagar: ${d.total} ${d.moeda}</b>`;}
+async function preparar(m,extra){
+  const r=await fetch('/api/criar-pagamento',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.assign({order_id:id,metodo:m},extra||{}))});
+  const d=await r.json();if(d.erro)throw new Error(d.erro);taxas(d);return d;}
+async function cotar(){await preparar('cripto',{moeda_cripto:$('mc').value,acao:'cotar'});}
+async function iniciarCripto(){
+  const sel=$('mc');
+  if(!sel.options.length){
+    const {data}=await sb.from('taxas_cripto').select('*').eq('ativo',true).order('nome');
+    (data||[]).forEach(x=>{const o=document.createElement('option');o.value=x.codigo;o.textContent=x.nome+' (troca em '+x.destino+')';sel.appendChild(o);});
+    sel.onchange=()=>cotar().catch(e=>$('msg').textContent=e.message);
+  }
+  if(!sel.options.length)throw new Error('Pagamento por cripto indisponível de momento');
+  $('cripto-sel').hidden=false;await cotar();
+  $('pagar').hidden=false;$('pagar').disabled=false;$('pagar').textContent='Pagar com cripto';
+  $('pagar').onclick=async()=>{$('pagar').disabled=true;try{const d=await preparar('cripto',{moeda_cripto:sel.value,acao:'pagar'});localStorage.removeItem('carrinho');location.href=d.url;}catch(e){$('msg').textContent=e.message;$('pagar').disabled=false;}};
+}
+async function iniciar(m){
+  $('msg').textContent='';$('aviso').hidden=true;$('cartao').innerHTML='';$('cripto-sel').hidden=true;
+  if(m==='cripto'){await iniciarCripto();return;}
+  const d=await preparar(m);
+  stripe=Stripe(d.publishable_key);elements=stripe.elements({clientSecret:d.client_secret,appearance:{theme:'night'}});
+  elements.create('payment').mount('#cartao');$('pagar').hidden=false;$('pagar').textContent='Pagar '+d.total+' '+d.moeda;
+  $('pagar').onclick=async()=>{$('pagar').disabled=true;$('msg').textContent='';
+    const {error}=await stripe.confirmPayment({elements,confirmParams:{return_url:location.origin+'/pagamento-ok.html?pedido='+id},redirect:'if_required'});
+    if(!error){localStorage.removeItem('carrinho');location.href='pagamento-ok.html?pedido='+id;return;}
+    $('pagar').disabled=false;
+    if(error.type==='card_error'&&BLOQUEIO.includes(error.decline_code||error.code)){
+      $('avt').textContent='Seu cartão está bloqueado para pagamento global por falta de divisas. Use este método para pagar sem divisas.';$('aviso').hidden=false;
+    }else $('msg').textContent=error.message||'Não foi possível concluir o pagamento.';};}
+$('paraCripto').onclick=async()=>{try{$('cartao').innerHTML='';await iniciar('cripto');}catch(e){$('msg').textContent=e.message;}};
+$('continuar').onclick=async()=>{
+  const m=$('msg');m.textContent='';
+  if(!itens.length)return m.textContent='O carrinho está vazio.';
+  if(!$('nome').value||!$('tel').value||!$('email').value||!$('morada').value)return m.textContent='Preencha nome, telefone, email e morada.';
+  $('continuar').disabled=true;
+  id=crypto.randomUUID();
+  const {error}=await sb.from('orders').insert({id,customer_name:$('nome').value,customer_phone:$('tel').value,customer_email:$('email').value,country:$('pais').value,delivery_address:$('morada').value,items:itens,subtotal:sub,total:sub,currency:moeda,payment_method:metodo(),status:'pendente',payment_status:'pendente'});
+  if(error){m.textContent='Erro ao guardar o pedido: '+error.message;$('continuar').disabled=false;return;}
+  $('dados').hidden=true;$('pag').hidden=false;
+  try{await iniciar(metodo());}catch(e){m.textContent='Não foi possível abrir o pagamento: '+e.message;}
+};
+</script></body></html>
+<script src="checkout-morada.js"></script>
+<script src="taxas-visiveis-v2.js"></script>
+<script src="checkout-endereco-unico.js"></script>
