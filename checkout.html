@@ -82,7 +82,7 @@ $('continuar').onclick=async()=>{
   if(error){m.textContent='Erro ao guardar o pedido: '+error.message;$('continuar').disabled=false;return;}
   $('dados').hidden=true;$('pag').hidden=false;
   try{await iniciar(metodo());}catch(e){m.textContent='Não foi possível abrir o pagamento: '+e.message;}
-};
+};<script src="checkout-endereco-unico.js"></script>
 </script></body></html>
 <script src="checkout-morada.js"></script>
 <script src="taxas-visiveis-v2.js"></script>
