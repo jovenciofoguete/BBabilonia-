@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Chat - BBabilônia</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,sans-serif;background:#f4f4f4;color:#222;height:100vh;height:100dvh;display:flex;flex-direction:column}
+#topo{background:#111;color:#fff;padding:12px 14px;display:flex;align-items:center;gap:12px;font-size:16px}
+#topo button{background:none;border:0;color:#fff;font-size:22px;padding:0 6px}
+.sec{display:none;flex:1;overflow:auto}
+#login{padding:20px}
+#login input{width:100%;padding:12px;margin:6px 0;border:1px solid #bbb;border-radius:8px;font-size:16px}
+#login button,#modal button.fechar{width:100%;padding:12px;margin-top:8px;border:0;border-radius:8px;background:#111;color:#fff;font-size:16px}
+#lerro{color:#d93025;font-size:14px;min-height:18px}
+#lista{padding:10px}
+.item{background:#fff;border-radius:10px;padding:14px;margin-bottom:8px;box-shadow:0 1px 3px #0002}
+.item small{display:block;color:#666;margin-top:4px}
+.vazio{color:#666;text-align:center;margin-top:30px}
+#chat{flex-direction:column;overflow:hidden}
+#msgs{flex:1;overflow:auto;padding:12px}
+.m{max-width:82%;padding:9px 12px;border-radius:12px;margin:6px 0;font-size:15px;line-height:1.35;word-wrap:break-word;background:#fff;box-shadow:0 1px 2px #0002}
+.m.eu{margin-left:auto;background:#dcf8c6}
+.m small{display:block;color:#888;font-size:11px;margin-top:4px;text-align:right}
+.end{border-left:4px solid #111}
+.end b{display:block;margin-bottom:4px}
+#rodape{background:#fff;padding:8px 10px;border-top:1px solid #ddd}
+#partilhar{display:none;color:#0b57d0;font-size:14px;text-decoration:underline;margin-bottom:6px}
+#aviso{color:#d93025;font-size:13px;margin:0 0 6px;display:none}
+#linha{display:flex;gap:8px}
+#texto{flex:1;padding:11px;border:1px solid #bbb;border-radius:20px;font-size:16px}
+#enviar{padding:0 18px;border:0;border-radius:20px;background:#111;color:#fff;font-size:15px}
+#enviar:disabled{opacity:.4}
+#anexar{display:flex;align-items:center;justify-content:center;width:42px;font-size:22px;cursor:pointer;border-radius:50%;background:#eee}
+#estado{font-size:13px;color:#555;margin:0 0 6px;display:none}
+#estado.erro{color:#d93025}
+.foto{max-width:100%;border-radius:8px;display:block}
+#modal{display:none;position:fixed;inset:0;background:#000a;z-index:9;align-items:flex-end}
+#modal .caixa{background:#fff;width:100%;max-height:80vh;overflow:auto;border-radius:16px 16px 0 0;padding:14px}
+#modal .op{border:1px solid #ccc;border-radius:10px;padding:10px;margin:8px 0;font-size:14px}
+#modal .op button{margin-top:8px;padding:9px 14px;border:0;border-radius:8px;background:#111;color:#fff}
+</style>
+</head>
+<body>
+<div id="topo"><button id="voltar" style="display:none">&larr;</button><b id="titulo">Mensagens</b></div>
+
+<div id="login" class="sec">
+  <p>Entre na sua conta para ver as mensagens.</p>
+  <input id="em" type="email" placeholder="Email" autocomplete="username">
+  <input id="pw" type="password" placeholder="Palavra-passe" autocomplete="current-password">
+  <div id="lerro"></div>
+  <button id="entrar">Entrar</button>
+</div>
+
+<div id="lista" class="sec"></div>
+
+<div id="chat" class="sec">
+  <div id="msgs"></div>
+  <div id="rodape">
+    <a id="partilhar">Compartilhar endereço de entrega</a>
+    <div id="aviso"></div>
+    <div id="estado"></div>
+    <div id="linha">
+      <label id="anexar" title="Enviar imagem">&#128206;<input id="ficheiro" type="file" accept="image/jpeg,image/png,image/webp" style="display:none"></label>
+      <input id="texto" type="text" placeholder="Escreva a mensagem" autocomplete="off" data-filtro data-filtro-botao="#enviar" data-filtro-aviso="#aviso">
+      <button id="enviar">Enviar</button>
+    </div>
+  </div>
+</div>
+
+<div id="modal"><div class="caixa">
+  <b>Escolha o endereço para enviar</b>
+  <div id="moradas"></div>
+  <button class="fechar" id="fechar">Fechar</button>
+</div></div>
+
+<script src="filtro-contactos.js"></script>
+<script src="imagem-filtro.js"></script>
+<script>
+var U = 'https://dsfoqoeawvjafypycldz.supabase.co';
+var K = 'sb_publishable_BN4NiVcDab9CqdTY_odgDA_uUOhjja0';
+var SK = 'sb-dsfoqoeawvjafypycldz-auth-token';
+var $ = function (i) { return document.getElementById(i); };
+var eu = null, conv = null, ultimo = '', timer = null, vista = '';
+
+function esc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) {
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+  });
+}
+function ler() { try { return JSON.parse(localStorage.getItem(SK) || 'null'); } catch (e) { return null; } }
+function guardar(r) {
+  var s = {
+    access_token: r.access_token, refresh_token: r.refresh_token,
+    token_type: r.token_type || 'bearer', expires_in: r.expires_in,
+    expires_at: r.expires_at || Math.floor(Date.now() / 1000) + (r.expires_in || 3600),
+    user: r.user
+  };
+  localStorage.setItem(SK, JSON.stringify(s));
+  return s;
+}
+async function token() {
+  var s = ler();
+  if (!s || !s.access_token) return null;
+  if (s.expires_at && s.expires_at * 1000 < Date.now() + 30000) {
+    try {
+      var r = await fetch(U + '/auth/v1/token?grant_type=refresh_token', {
+        method: 'POST', headers: { apikey: K, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refresh_token: s.refresh_token })
+      });
+      var j = await r.json();
+      if (!r.ok || !j.access_token) { localStorage.removeItem(SK); return null; }
+      s = guardar(j);
+    } catch (e) { return null; }
+  }
+  return s.access_token;
+}
+async function api(path, metodo, corpo) {
+  var t = await token();
+  var r = await fetch(U + '/rest/v1/' + path, {
+    method: metodo || 'GET',
+    headers: { apikey: K, Authorization: 'Bearer ' + (t || K), 'Content-Type': 'application/json', Prefer: 'return=representation' },
+    body: corpo ? JSON.stringify(corpo) : undefined
+  });
+  var txt = await r.text(), j = null;
+  try { j = txt ? JSON.parse(txt) : null; } catch (e) {}
+  if (!r.ok) throw new Error((j && j.message) || ('Erro ' + r.status));
+  return j;
+}
+
+function mostrar(v) {
+  vista = v;
+  ['login', 'lista', 'chat'].forEach(function (id) { $(id).style.display = (id === v) ? (id === 'chat' ? 'flex' : 'block') : 'none'; });
+  $('voltar').style.display = (v === 'chat') ? 'inline' : 'none';
+  if (v !== 'chat') { pararPoll(); $('titulo').textContent = 'Mensagens'; }
+}
+function pararPoll() { if (timer) { clearInterval(timer); timer = null; } }
+
+$('entrar').onclick = async function () {
+  $('lerro').textContent = '';
+  try {
+    var r = await fetch(U + '/auth/v1/token?grant_type=password', {
+      method: 'POST', headers: { apikey: K, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: $('em').value.trim(), password: $('pw').value })
+    });
+    var j = await r.json();
+    if (!r.ok || !j.access_token) throw new Error('Email ou palavra-passe incorretos.');
+    guardar(j);
+    iniciar();
+  } catch (e) { $('lerro').textContent = e.message; }
+};
+
+async function iniciar() {
+  var t = await token(), s = ler();
+  if (!t || !s || !s.user) { mostrar('login'); return; }
+  eu = s.user.id;
+  var p = new URLSearchParams(location.search);
+  try {
+    if (p.get('conversa')) { await abrir(p.get('conversa')); return; }
+    if (p.get('vendedor')) { await novaConversa(p.get('vendedor'), p.get('produto'), p.get('assunto')); return; }
+    await listar();
+  } catch (e) { alert(e.message); }
+}
+
+async function listar() {
+  mostrar('lista');
+  var c = await api('conversas?select=*&or=(cliente_id.eq.' + eu + ',vendedor_id.eq.' + eu + ')&order=created_at.desc');
+  $('lista').innerHTML = c.length ? c.map(function (x) {
+    return '<div class="item" data-id="' + esc(x.id) + '"><b>' + esc(x.assunto || 'Conversa') + '</b><small>' +
+      (x.cliente_id === eu ? 'Você é o cliente' : 'Você é o fornecedor') + '</small></div>';
+  }).join('') : '<p class="vazio">Ainda não tem conversas.</p>';
+  Array.prototype.forEach.call($('lista').querySelectorAll('.item'), function (el) {
+    el.onclick = function () { abrir(el.getAttribute('data-id')).catch(function (e) { alert(e.message); }); };
+  });
+}
+
+async function novaConversa(v, prod, ass) {
+  var q = 'conversas?select=*&cliente_id=eq.' + eu + '&vendedor_id=eq.' + encodeURIComponent(v) +
+    (prod ? '&produto_id=eq.' + encodeURIComponent(prod) : '&produto_id=is.null');
+  var ex = await api(q);
+  if (ex.length) return abrir(ex[0].id);
+  var n = await api('conversas', 'POST', { tipo: 'cliente_vendedor', cliente_id: eu, vendedor_id: v, produto_id: prod || null, assunto: ass || 'Conversa com o fornecedor' });
+  return abrir(n[0].id);
+}
+
+async function abrir(id) {
+  var r = await api('conversas?select=*&id=eq.' + encodeURIComponent(id));
+  if (!r.length) { alert('Conversa não encontrada.'); return listar(); }
+  conv = r[0]; ultimo = '';
+  mostrar('chat');
+  $('titulo').textContent = conv.assunto || 'Conversa';
+  $('partilhar').style.display = (conv.cliente_id === eu) ? 'inline-block' : 'none';
+  await carregar(true);
+  pararPoll();
+  timer = setInterval(function () { if (vista === 'chat') carregar(false).catch(function () {}); }, 4000);
+}
+
+function hora(d) {
+  try { return new Date(d).toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' }); } catch (e) { return ''; }
+}
+function cartao(d) {
+  d = d || {};
+  var l = [];
+  if (d.nome) l.push(esc(d.nome));
+  if (d.telefone) l.push('Tel: ' + esc(d.telefone));
+  if (d.email) l.push(esc(d.email));
+  var loc = [d.endereco, d.cidade, d.distrito, d.provincia, d.pais].filter(Boolean).map(esc).join(', ');
+  if (loc) l.push(loc);
+  if (d.codigo_postal) l.push('Código postal: ' + esc(d.codigo_postal));
+  if (d.marca) l.push('Marca de envio: ' + esc(d.marca));
+  return '<b>Endereço de entrega' + (d.tipo ? ' (' + esc(d.tipo) + ')' : '') + '</b>' + l.join('<br>');
+}
+
+async function carregar(forcar) {
+  var m = await api('mensagens?select=*&conversa_id=eq.' + conv.id + '&order=created_at.asc');
+  var marca = m.length + ':' + (m.length ? m[m.length - 1].id : '');
+  if (!forcar && marca === ultimo) return;
+  ultimo = marca;
+  var box = $('msgs');
+  var perto = box.scrollHeight - box.scrollTop - box.clientHeight < 80;
+  box.innerHTML = m.map(function (x) {
+    var meu = x.remetente_id === eu;
+    var corpo = x.tipo === 'endereco' ? cartao(x.dados) : (x.tipo === 'imagem' ? '<a href="' + esc(x.anexo_url) + '" target="_blank"><img class="foto" loading="lazy" src="' + esc(x.anexo_url) + '"></a>' : esc(x.texto));
+    return '<div class="m' + (meu ? ' eu' : '') + (x.tipo === 'endereco' ? ' end' : '') + '">' + corpo + '<small>' + hora(x.created_at) + '</small></div>';
+  }).join('');
+  if (forcar || perto) box.scrollTop = box.scrollHeight;
+}
+
+async function mandar(msg) {
+  await api('mensagens', 'POST', msg);
+  await carregar(true);
+}
+
+$('enviar').onclick = async function () {
+  var t = $('texto').value.trim();
+  if (!t || !conv) return;
+  if (window.FiltroContactos && !window.FiltroContactos.verificar(t).ok) return;
+  $('enviar').disabled = true;
+  try {
+    await mandar({ conversa_id: conv.id, remetente_id: eu, tipo: 'texto', texto: t });
+    $('texto').value = '';
+  } catch (e) { alert(e.message); }
+  $('texto').dispatchEvent(new Event('input'));
+};
+$('texto').addEventListener('keydown', function (e) {
+  if (e.key === 'Enter') { e.preventDefault(); $('enviar').click(); }
+});
+
+function estado(t, erro) {
+  var e = $('estado');
+  e.textContent = t || '';
+  e.className = erro ? 'erro' : '';
+  e.style.display = t ? 'block' : 'none';
+}
+function aleatorio() {
+  var a = new Uint8Array(8);
+  crypto.getRandomValues(a);
+  return Array.prototype.map.call(a, function (b) { return ('0' + b.toString(16)).slice(-2); }).join('');
+}
+$('ficheiro').onchange = async function () {
+  var f = this.files && this.files[0];
+  this.value = '';
+  if (!f || !conv) return;
+  $('anexar').style.pointerEvents = 'none';
+  try {
+    if (!window.FiltroImagem) { estado('Não foi possível verificar a imagem.', true); return; }
+    var r = await window.FiltroImagem.verificar(f, function (t) { estado(t, false); });
+    if (!r.ok) { estado(r.motivo, true); return; }
+    estado('A enviar a imagem...', false);
+    var t = await token();
+    var ext = f.type === 'image/png' ? 'png' : (f.type === 'image/webp' ? 'webp' : 'jpg');
+    var caminho = conv.id + '/' + Date.now() + '-' + aleatorio() + '.' + ext;
+    var up = await fetch(U + '/storage/v1/object/chat-imagens/' + caminho, {
+      method: 'POST',
+      headers: { apikey: K, Authorization: 'Bearer ' + (t || K), 'Content-Type': f.type, 'x-upsert': 'false' },
+      body: f
+    });
+    if (!up.ok) throw new Error('Não foi possível enviar a imagem.');
+    await mandar({ conversa_id: conv.id, remetente_id: eu, tipo: 'imagem', texto: '', anexo_url: U + '/storage/v1/object/public/chat-imagens/' + caminho });
+    estado('');
+  } catch (e) { estado(e.message, true); }
+  finally { $('anexar').style.pointerEvents = ''; }
+};
+
+$('partilhar').onclick = async function () {
+  $('moradas').innerHTML = '<p>A carregar...</p>';
+  $('modal').style.display = 'flex';
+  try {
+    var m = await api('moradas?select=*&user_id=eq.' + eu);
+    if (!m.length) {
+      $('moradas').innerHTML = '<p>Ainda não tem endereços guardados. <a href="moradas-v3.html">Criar endereço</a></p>';
+      return;
+    }
+    $('moradas').innerHTML = m.map(function (x, i) {
+      return '<div class="op">' + cartao(x) + '<br><button data-i="' + i + '">Enviar este endereço</button></div>';
+    }).join('');
+    Array.prototype.forEach.call($('moradas').querySelectorAll('button'), function (b) {
+      b.onclick = async function () {
+        var x = m[Number(b.getAttribute('data-i'))];
+        b.disabled = true;
+        try {
+          await mandar({
+            conversa_id: conv.id, remetente_id: eu, tipo: 'endereco', texto: 'Endereço de entrega compartilhado',
+            dados: { tipo: x.tipo, nome: x.nome, telefone: x.telefone, email: x.email, pais: x.pais, provincia: x.provincia, distrito: x.distrito, cidade: x.cidade, codigo_postal: x.codigo_postal, endereco: x.endereco, marca: x.marca }
+          });
+          $('modal').style.display = 'none';
+        } catch (e) { alert(e.message); b.disabled = false; }
+      };
+    });
+  } catch (e) { $('moradas').innerHTML = '<p>' + esc(e.message) + '</p>'; }
+};
+$('fechar').onclick = function () { $('modal').style.display = 'none'; };
+$('voltar').onclick = function () { listar().catch(function (e) { alert(e.message); }); };
+
+iniciar();
+</script>
+</body>
+</html>
