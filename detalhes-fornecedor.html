@@ -59,7 +59,7 @@ $("entrar").onclick=function(){
 sb.auth.getSession().then(function(r){if(r.data&&r.data.session){$("login").style.display="none";$("app").style.display="block";carregar()}});
 
 function carregar(){
-  Promise.all([sb.from("products").select("*"),sb.from("categories").select("*").limit(1000)]).then(function(r){
+  Promise.all([sb.from("products").select("*"),sb.from("categories").select("*").limit(5000)]).then(function(r){
     if(r[0].error){say("Não consegui ler os produtos: "+r[0].error.message);return}
     prods=r[0].data||[];cats=r[1].data||[];
     var s=$("prod");s.innerHTML="";
