@@ -121,7 +121,7 @@ var BB_REG=[
 {id:"seguranca",re:/^seguranca/,m:0,s:[MR,TP,"Voltagem|12V,110V,220V,Bateria",G]},
 {id:"saude",re:/^saude/,m:0,s:[MA,TP,"Certificação|CE,ISO,Outra"]},
 {id:"viagem",re:/^viagem/,s:[TP,"Capacidade (L)"]},
-{id:"outros",re:/./,s:[MR,"Dimensões (cm)","Peso (kg)"]}
+{id:"logistica",re:/^transporte e logistica/,x:1,s:["País de origem*","País de destino*","Prazo de entrega (dias)*","Preço por*|kg,m³,Contentor 20 pés,Contentor 40 pés,Caixa,Envio,Viagem","Peso mínimo (kg)","Rastreamento|Sim,Não","Seguro|Sim,Não"]},{id:"outros",re:/./,s:[MR,"Dimensões (cm)","Peso (kg)"]}
 ];
 function semAcento(s){return String(s||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase()}
 function bbCampo(t){var p=t.split("|"),n=p[0],o=/\*$/.test(n);return{nome:n.replace(/\*$/,""),obrig:o,sug:p[1]?p[1].split(",").filter(Boolean):[]}}
