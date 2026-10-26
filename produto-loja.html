@@ -311,7 +311,7 @@ document.getElementById("add").onclick=function(){
     document.getElementById("nome").textContent=P.nome_;
     document.getElementById("preco").textContent=preco.toLocaleString("pt-PT")+" "+moeda;
     document.getElementById("msg").style.display="none";
-    return fetch(SB+"/rest/v1/categories?select=*&limit=1000",{headers:{apikey:KEY,Authorization:"Bearer "+KEY}})
+    return fetch(SB+"/rest/v1/categories?select=*&limit=5000",{headers:{apikey:KEY,Authorization:"Bearer "+KEY}})
       .then(function(r){return r.json()}).catch(function(){return[]})
       .then(function(cs){
         perfil=perfilDe(caminhoDe(Array.isArray(cs)?cs:[],P.category_id));
