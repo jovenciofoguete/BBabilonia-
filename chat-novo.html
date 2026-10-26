@@ -14,10 +14,13 @@ f.addEventListener("load",function(){
   try{
     var d=f.contentDocument;
     if(d.getElementById("bb-filtro"))return;
-    var s=d.createElement("script");
-    s.id="bb-filtro";
-    s.src="filtro-contactos-v2.js?v=2";
-    d.body.appendChild(s);
+    var l=["filtro-contactos-v2.js?v=3","imagem-rapida.js?v=1"];
+    for(var i=0;i<l.length;i++){
+      var s=d.createElement("script");
+      if(i===0)s.id="bb-filtro";
+      s.src=l[i];
+      d.body.appendChild(s);
+    }
   }catch(e){}
 });
 f.src="chat.html"+location.search+location.hash;
