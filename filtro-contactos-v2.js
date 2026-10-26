@@ -59,19 +59,26 @@ var SEL='input[placeholder^="Escreva"],textarea[placeholder^="Escreva"],input[pl
 function campo(){return document.querySelector(SEL);}
 function eEnviar(el){var b=el&&el.closest?el.closest("button,[role=button],input[type=submit],input[type=button]"):null;return !!b&&(b.value||b.textContent||"").trim()==="Enviar";}
 function botao(){var b=document.querySelectorAll("button,[role=button],input[type=submit],input[type=button]");for(var i=0;i<b.length;i++)if(eEnviar(b[i]))return b[i];return null;}
-var aviso=null,desativei=false;
-function verificar(){
- var inp=campo();
- if(!inp){if(aviso)aviso.style.display="none";return;}
- var mau=proibido(inp.value),btn=botao();
+var aviso=null,desativei=false,estavaMau=false,tAviso=null;
+function mostrar(){
+ var inp=campo();if(!inp)return;
  if(!aviso||!aviso.isConnected){aviso=document.createElement("div");
   aviso.style.cssText="display:none;position:fixed;left:8px;right:8px;z-index:99999;background:#fff;color:#c00;font-size:14px;padding:6px 10px;border-radius:8px";
   aviso.textContent="Não pode enviar contactos, links, redes sociais ou meios fora da plataforma.";
   document.body.appendChild(aviso);}
  aviso.style.bottom=(window.innerHeight-inp.getBoundingClientRect().top+6)+"px";
- aviso.style.display=mau?"block":"none";
+ aviso.style.display="block";
+ clearTimeout(tAviso);
+ tAviso=setTimeout(function(){if(aviso)aviso.style.display="none";},3500);}
+function verificar(){
+ var inp=campo();
+ if(!inp){if(aviso)aviso.style.display="none";estavaMau=false;return;}
+ var mau=proibido(inp.value),btn=botao();
+ if(mau&&!estavaMau)mostrar();
+ if(!mau&&aviso){aviso.style.display="none";clearTimeout(tAviso);}
+ estavaMau=mau;
  if(btn){if(mau){btn.disabled=true;desativei=true;}else if(desativei){btn.disabled=false;desativei=false;}}}
-function parar(e){e.preventDefault();e.stopImmediatePropagation();}
+function parar(e){e.preventDefault();e.stopImmediatePropagation();mostrar();}
 document.addEventListener("click",function(e){if(eEnviar(e.target)){var i=campo();if(i&&proibido(i.value))parar(e);}},true);
 ["keydown","keypress","keyup"].forEach(function(ev){document.addEventListener(ev,function(e){
  if((e.key==="Enter"||e.keyCode===13)&&e.target===campo()&&proibido(e.target.value))parar(e);},true);});
