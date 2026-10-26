@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pesquisar por imagem – BBabilônia</title>
+<style>
+  :root{--verde:#0a8f5a;--azul:#1565c0;--cinza:#6b7785;--borda:#dde3ea}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:Arial,sans-serif;background:#f4f7fa;color:#1d2733;padding-bottom:80px}
+  header{background:linear-gradient(90deg,var(--verde),var(--azul));color:#fff;padding:14px 16px}
+  header a{color:#fff;text-decoration:none;font-size:14px}
+  header h1{margin:6px 0 0;font-size:20px}
+  main{padding:16px;max-width:900px;margin:0 auto}
+  .caixa{background:#fff;border-radius:14px;padding:16px;box-shadow:0 1px 4px rgba(0,0,0,.06);margin-bottom:14px}
+  .botoes{display:flex;gap:10px}
+  .botoes label{flex:1;text-align:center;padding:14px 8px;border-radius:12px;font-weight:700;color:#fff;cursor:pointer}
+  .b1{background:var(--verde)} .b2{background:var(--azul)}
+  .botoes input{display:none}
+  #previa{display:none;margin-top:14px;text-align:center}
+  #previa img{max-width:100%;max-height:260px;border-radius:12px;border:1px solid var(--borda)}
+  #estado{margin-top:10px;color:var(--cinza);font-size:14px;text-align:center}
+  .barra{height:6px;background:#e3e9ef;border-radius:4px;overflow:hidden;margin-top:8px;display:none}
+  .barra i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--verde),var(--azul))}
+  #grelha{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+  @media(min-width:600px){#grelha{grid-template-columns:repeat(4,1fr)}}
+  .card{background:#fff;border-radius:12px;overflow:hidden;text-decoration:none;color:inherit;box-shadow:0 1px 4px rgba(0,0,0,.07)}
+  .card img{width:100%;aspect-ratio:1/1;object-fit:cover;display:block;background:#eef2f6}
+  .card div{padding:8px}
+  .card b{display:block;font-size:13px;line-height:1.3;max-height:2.6em;overflow:hidden}
+  .card span{display:block;color:var(--azul);font-weight:700;margin-top:4px}
+  .card em{display:inline-block;margin-top:4px;font-style:normal;font-size:11px;color:#fff;background:var(--verde);padding:2px 7px;border-radius:9px}
+  h2{font-size:16px;margin:4px 0 12px}
+</style>
+</head>
+<body>
+<header>
+  <a href="index.html">← Voltar à loja</a>
+  <h1>📷 Pesquisar por imagem</h1>
+</header>
+<main>
+  <div class="caixa">
+    <div class="botoes">
+      <label class="b1">📸 Tirar foto<input type="file" id="camara" accept="image/*" capture="environment"></label>
+      <label class="b2">🖼️ Escolher da galeria<input type="file" id="galeria" accept="image/*"></label>
+    </div>
+    <div id="previa"><img id="fotoCliente" alt="A sua foto"></div>
+    <div id="estado">Tire uma foto ou escolha uma imagem para encontrar produtos iguais ou parecidos na BBabilônia.</div>
+    <div class="barra" id="barra"><i id="progresso"></i></div>
+  </div>
+  <div id="resultados" style="display:none">
+    <h2 id="titulo">Produtos encontrados</h2>
+    <div id="grelha"></div>
+  </div>
+</main>
+
+<script>
+(function () {
+  var SUPABASE_URL = 'https://dsfoqoeawvjafypycldz.supabase.co';
+  var SUPABASE_KEY = 'sb_publishable_BN4NiVcDab9CqdTY_odgDA_uUOhjja0';
+  var PAGINA_PRODUTO = 'produto-bbabilonia.html?id=';
+  var CACHE = 'bb_hash_imagens_v1';
+
+  var estado = document.getElementById('estado');
+  var barra = document.getElementById('barra'), progresso = document.getElementById('progresso');
+  var produtosCache = null;
+
+  function msg(t) { estado.textContent = t; }
+
+  /* ---------- Ler todos os produtos do Supabase ---------- */
+  function lerProdutos() {
+    if (produtosCache) return Promise.resolve(produtosCache);
+    var todos = [], passo = 1000;
+    function pagina(ini) {
+      return fetch(SUPABASE_URL + '/rest/v1/products?select=*', {
+        headers: { apikey: SUPABASE_KEY, Range: ini + '-' + (ini + passo - 1), 'Range-Unit': 'items' }
+      }).then(function (r) {
+        if (!r.ok) throw new Error('Não foi possível ler os produtos (' + r.status + ')');
+        return r.json();
+      }).then(function (lista) {
+        todos = todos.concat(lista || []);
+        if (lista && lista.length === passo) return pagina(ini + passo);
+        produtosCache = todos; return todos;
+      });
+    }
+    return pagina(0);
+  }
+
+  /* Junta todas as fotos de um produto (foto principal, galeria e fotos por cor) */
+  function fotosDoProduto(p) {
+    var urls = [];
+    function andar(v, chave) {
+      if (v == null) return;
+      if (typeof v === 'string') {
+        var s = v.trim();
+        if ((s[0] === '[' || s[0] === '{') && s.length > 2) { try { andar(JSON.parse(s), chave); return; } catch (e) {} }
+        if (/^https?:\/\//i.test(s) && !/video/i.test(chave || '') && !/\.(mp4|mov|webm|m4v|avi)(\?|$)/i.test(s)) {
+          if (urls.indexOf(s) < 0) urls.push(s);
+        }
+        return;
+      }
+      if (Array.isArray(v)) { v.forEach(function (x) { andar(x, chave); }); return; }
+      if (typeof v === 'object') { Object.keys(v).forEach(function (k) { andar(v[k], k); }); }
+    }
+    ['image_url', 'images', 'variants', 'opcoes'].forEach(function (k) { andar(p[k], k); });
+    return urls;
+  }
+
+  /* ---------- "Impressão digital" de uma imagem ---------- */
+  function carregar(src, cors) {
+    return new Promise(function (ok, falha) {
+      var im = new Image();
+      if (cors) im.crossOrigin = 'anonymous';
+      im.onload = function () { ok(im); };
+      im.onerror = function () { falha(new Error('imagem')); };
+      im.src = src;
+    });
+  }
+
+  function assinatura(im, corte) {
+    var w = im.naturalWidth || im.width, h = im.naturalHeight || im.height;
+    var cx = 0, cy = 0, cw = w, ch = h;
+    if (corte) { cw = w * corte; ch = h * corte; cx = (w - cw) / 2; cy = (h - ch) / 2; }
+    var c = document.createElement('canvas'), g = c.getContext('2d', { willReadFrequently: true });
+
+    /* dHash 9x8 (forma da imagem) */
+    c.width = 9; c.height = 8; g.drawImage(im, cx, cy, cw, ch, 0, 0, 9, 8);
+    var d = g.getImageData(0, 0, 9, 8).data, cinz = [], bits = '';
+    for (var i = 0; i < 72; i++) cinz.push(d[i * 4] * 0.299 + d[i * 4 + 1] * 0.587 + d[i * 4 + 2] * 0.114);
+    for (var y = 0; y < 8; y++) for (var x = 0; x < 8; x++) bits += cinz[y * 9 + x] > cinz[y * 9 + x + 1] ? '1' : '0';
+
+    /* Histograma de cores 4x4x4 (cores da imagem) */
+    c.width = 32; c.height = 32; g.drawImage(im, cx, cy, cw, ch, 0, 0, 32, 32);
+    var p = g.getImageData(0, 0, 32, 32).data, hist = new Array(64).fill(0);
+    for (var k = 0; k < p.length; k += 4) hist[(p[k] >> 6) * 16 + (p[k + 1] >> 6) * 4 + (p[k + 2] >> 6)]++;
+    hist = hist.map(function (n) { return Math.round(n / 1024 * 1000) / 1000; });
+    return { d: bits, h: hist };
+  }
+
+  function semelhanca(a, b) {
+    var dif = 0; for (var i = 0; i < 64; i++) if (a.d[i] !== b.d[i]) dif++;
+    var forma = 1 - dif / 64, cor = 0;
+    for (var j = 0; j < 64; j++) cor += Math.min(a.h[j], b.h[j]);
+    return forma * 0.55 + cor * 0.45;
+  }
+
+  function lerCache() { try { return JSON.parse(localStorage.getItem(CACHE) || '{}'); } catch (e) { return {}; } }
+  function gravarCache(c) { try { localStorage.setItem(CACHE, JSON.stringify(c)); } catch (e) {} }
+
+  /* ---------- Pesquisa ---------- */
+  function pesquisar(ficheiro) {
+    if (!ficheiro) return;
+    var url = URL.createObjectURL(ficheiro);
+    document.getElementById('fotoCliente').src = url;
+    document.getElementById('previa').style.display = 'block';
+    document.getElementById('resultados').style.display = 'none';
+    msg('A analisar a sua foto…');
+
+    var minhas;
+    carregar(url, false).then(function (im) {
+      minhas = [assinatura(im), assinatura(im, 0.7), assinatura(im, 0.5)];
+      msg('A procurar na BBabilônia…');
+      return lerProdutos();
+    }).then(function (produtos) {
+      var tarefas = [];
+      produtos.forEach(function (p) {
+        fotosDoProduto(p).forEach(function (u) { tarefas.push({ p: p, u: u }); });
+      });
+      if (!tarefas.length) { msg('Ainda não há produtos com fotos na loja.'); return; }
+
+      var cache = lerCache(), feitos = 0, melhor = {}, idx = 0;
+      barra.style.display = 'block'; progresso.style.width = '0';
+
+      function compara(t, sig) {
+        var s = 0; minhas.forEach(function (m) { s = Math.max(s, semelhanca(m, sig)); });
+        var id = t.p.id;
+        if (!melhor[id] || s > melhor[id].s) melhor[id] = { s: s, p: t.p, foto: t.u };
+      }
+
+      function proxima() {
+        if (idx >= tarefas.length) return Promise.resolve();
+        var t = tarefas[idx++];
+        var feito = cache[t.u] ? Promise.resolve(cache[t.u]) :
+          carregar(t.u, true).then(function (im) { var sg = assinatura(im); cache[t.u] = sg; return sg; });
+        return feito.then(function (sig) { compara(t, sig); }, function () {}).then(function () {
+          feitos++; progresso.style.width = Math.round(feitos / tarefas.length * 100) + '%';
+          msg('A comparar fotos… ' + feitos + ' de ' + tarefas.length);
+          return proxima();
+        });
+      }
+
+      var filas = []; for (var n = 0; n < 6; n++) filas.push(proxima());
+      return Promise.all(filas).then(function () {
+        gravarCache(cache); barra.style.display = 'none';
+        mostrar(Object.keys(melhor).map(function (k) { return melhor[k]; }));
+      });
+    }).catch(function (e) {
+      barra.style.display = 'none';
+      msg('Erro: ' + e.message + '. Verifique a internet e tente de novo.');
+    });
+  }
+
+  function mostrar(lista) {
+    lista.sort(function (a, b) { return b.s - a.s; });
+    var bons = lista.filter(function (r) { return r.s >= 0.62; });
+    var mostrarLista = (bons.length ? bons : lista).slice(0, 40);
+    var grelha = document.getElementById('grelha'); grelha.innerHTML = '';
+    document.getElementById('titulo').textContent = bons.length
+      ? 'Produtos iguais ou parecidos (' + bons.length + ')'
+      : 'Não encontrámos iguais. Estes são os mais parecidos:';
+    mostrarLista.forEach(function (r) {
+      var p = r.p, nome = p.name || p.nome || p.title || p.titulo || 'Produto';
+      var preco = p.price != null ? p.price : (p.preco != null ? p.preco : '');
+      var moeda = p.currency || p.moeda || 'MZN';
+      var a = document.createElement('a'); a.className = 'card';
+      a.href = PAGINA_PRODUTO + encodeURIComponent(p.id);
+      var img = document.createElement('img'); img.src = r.foto; img.alt = ''; img.loading = 'lazy';
+      var dv = document.createElement('div');
+      var b = document.createElement('b'); b.textContent = nome;
+      var sp = document.createElement('span'); sp.textContent = preco !== '' ? Number(preco).toLocaleString('pt-PT') + ' ' + moeda : '';
+      var em = document.createElement('em'); em.textContent = Math.round(r.s * 100) + '% parecido';
+      dv.appendChild(b); dv.appendChild(sp); dv.appendChild(em);
+      a.appendChild(img); a.appendChild(dv); grelha.appendChild(a);
+    });
+    document.getElementById('resultados').style.display = 'block';
+    msg(mostrarLista.length ? 'Toque num produto para o abrir.' : 'Nenhum produto encontrado.');
+  }
+
+  ['camara', 'galeria'].forEach(function (id) {
+    document.getElementById(id).addEventListener('change', function () { pesquisar(this.files[0]); this.value = ''; });
+  });
+})();
+</script>
+<script src="menu-baixo.js"></script>
+</body>
+</html>
