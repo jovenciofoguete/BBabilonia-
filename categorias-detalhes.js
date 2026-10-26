@@ -1,57 +1,201 @@
-/* Detalhes por tipo de produto. Nome* = obrigatório. "Nome|a,b,c" = lista de sugestões. */
+/* categorias-detalhes.js — BBabilônia (versão 2)
+   UMA lista para todas as categorias: o que o fornecedor preenche ao REGISTAR,
+   que tamanhos usa (ou nenhum) e o que a página do produto mostra.
+   Nome* = obrigatório. "Nome|a,b,c" = lista de opções.
+   tam = tipos de tamanho (o primeiro é o normal): letras, numeros, idade, calcado, cabelo, anel, cinto, unico (sem tamanho). */
 var MEDIDAS=["Altura","Ombros","Peito","Cintura","Barriga","Ombro-pés","Ombro-cintura","Cintura-pés","Comprimento das mangas","Largura das mangas","Boca das mangas"];
 var TENS="110V,220V,380V,415V,440V";
-var PERFIS=[
-{id:"casamento",re:/noiv|casament|terno|fato/,medidas:1,
- opc:["Modo|Tamanho padrão,Medidas personalizadas"],spec:["Material*","Estilo*","Comprimento","Cor do forro"]},
-{id:"calcado",re:/calcad|sapat|tenis|sandal|chinel|bota/,opc:[],spec:["Material*","Solado*","Género*|Homem,Mulher,Criança,Unissexo","Estilo"]},
-{id:"cabelo",re:/cabelo|peruca|extens|tranca|lace/,
- opc:["Comprimento (polegadas)|8,10,12,14,16,18,20,22,24,26,28,30,32","Densidade|130%,150%,180%,200%,250%","Formato|Liso,Ondulado,Cacheado,Crespo"],
- spec:["Tipo*|Humano,Sintético","Origem*","Tipo de renda"]},
-{id:"anel",re:/alianc|\banel|\baneis/,opc:["Material|Prata 925,Banhado a ouro,Ouro 18k,Aço inoxidável","Tamanho do anel|5,6,7,8,9,10,11,12,13"],spec:["Material*","Pedra","Peso (g)","Garantia"]},
-{id:"joia",re:/joia|brinco|colar|pulseira|corrente/,opc:["Material|Prata 925,Banhado a ouro,Ouro 18k,Aço inoxidável"],spec:["Material*","Pedra","Peso (g)","Comprimento (cm)"]},
-{id:"pneu",re:/pneu/,opc:[],spec:["Marca*","Largura (mm)*|135,155,165,175,185,195,205,215,225,235,245,255,265,275,285,295,305,315","Perfil*|30,35,40,45,50,55,60,65,70,75,80","Aro*|R13,R14,R15,R16,R17,R18,R19,R20,R21,R22","Tipo*|Verão,Inverno,Todas as estações","Índice de carga","Índice de velocidade","Ano de fabrico"]},
-{id:"peca",re:/peca|trava|suspens|amortec|bateria de carro|filtro|embraia|radiador|farol/,opc:[],spec:["Marca compatível*","Modelo compatível*","Ano compatível*","Nº da peça (OEM)","Condição*|Nova,Usada,Recondicionada","Garantia"]},
-{id:"camiao",re:/camio|truck|basculante|trator|cisterna|reboque|autocarro|pickup/,opc:[],spec:["Marca*","Capacidade (toneladas)*","Eixos*","Combustível*|Diesel,Gasolina,Elétrico,Gás","Potência (cv)*","Ano*","Condição*|Novo,Usado","Transmissão|Manual,Automática","Quilometragem"]},
-{id:"carro",re:/carro|automov|veiculo|\bmota|\bmoto\b/,opc:[],spec:["Marca*","Modelo*","Ano*","Combustível*|Gasolina,Diesel,Elétrico,Híbrido","Transmissão*|Manual,Automática","Quilometragem","Cilindrada","Condição*|Novo,Usado"]},
-{id:"telemovel",re:/telem|telefon|celular|smartphone|iphone|tablet/,
- opc:["RAM|2GB,3GB,4GB,6GB,8GB,12GB,16GB","Memória|32GB,64GB,128GB,256GB,512GB,1TB","Rede|4G,5G","Versão|Global,China,Outra"],
- spec:["Marca*","Sistema*|Android,iOS","Ecrã (polegadas)","Bateria (mAh)","Câmara (MP)","Garantia"]},
-{id:"computador",re:/computad|portatil|laptop|notebook|desktop|\bpc\b/,
- opc:["RAM|4GB,8GB,16GB,32GB,64GB","SSD|128GB,256GB,512GB,1TB,2TB","Processador|Intel Core i3,Intel Core i5,Intel Core i7,Intel Core i9,AMD Ryzen 5,AMD Ryzen 7","Geração|8.ª,10.ª,11.ª,12.ª,13.ª,14.ª"],
- spec:["Marca*","Ecrã (polegadas)","Placa gráfica","Sistema operativo","Garantia"]},
-{id:"solar",re:/solar|inversor|fotovolt/,opc:["Potência (W)|100,200,300,400,450,550,600,700"],spec:["Tipo*|Monocristalino,Policristalino","Voltagem*","Eficiência (%)","Garantia (anos)*","Dimensões (mm)","Peso (kg)"]},
-{id:"industria",re:/industr|maquina|motor|dynamo|dinamo|moagem|moinho|gerador|bomba|compressor|solda|serra|prensa|torno|caldeira/,
- opc:["Voltagem|"+TENS,"Fase|Monofásico,Trifásico","Tipo de ficha|Tipo A,Tipo C,Tipo D,Tipo G,Sem ficha"],
- spec:["Potência (kW)*","Capacidade*","Material*","Peso (kg)*","Dimensões (mm)*","Garantia*","Marca"]},
-{id:"eletronico",re:/eletr|televis|audio|camara|auscult|coluna|carregador/,opc:["Voltagem|110V,220V,110-240V","Tipo de ficha|Tipo A,Tipo C,Tipo D,Tipo G"],spec:["Marca*","Modelo","Garantia*","Potência (W)"]},
-{id:"cinto",re:/cinto/,opc:[],spec:["Material*","Largura (cm)","Género*|Homem,Mulher,Criança,Unissexo"]},
-{id:"roupa",re:/roupa|vestid|blusa|t-shirt|shirt|saia|calcas|calcoes|conjunto|casaco|jacket|camis|homens|mulher|crianca|acess/,opc:[],spec:["Material*","Género*|Homem,Mulher,Criança,Unissexo","Estilo","Estação|Verão,Inverno,Meia-estação,Todas","Origem"]},
-{id:"geral",re:/./,opc:[],spec:["Marca","Material*","Origem","Peso (kg)","Dimensões (cm)","Garantia"]}
+var BB_TAMANHOS={
+ letras:{nome:"Letras (XS–5XL)",l:["XS","S","M","L","XL","2XL","3XL","4XL","5XL"]},
+ numeros:{nome:"Números (26–60)",l:["26","27","28","29","30","31","32","33","34","35","36","37","38","39","40","41","42","43","44","46","48","50","52","54","56","58","60"]},
+ idade:{nome:"Criança (altura e idade)",l:["56 cm (0-3 meses)","62 cm (3-6 meses)","68 cm (6-9 meses)","74 cm (9-12 meses)","80 cm (12-18 meses)","86 cm (18-24 meses)","92 cm (2 anos)","98 cm (3 anos)","104 cm (4 anos)","110 cm (5 anos)","116 cm (6 anos)","122 cm (7 anos)","128 cm (8 anos)","134 cm (9 anos)","140 cm (10 anos)","146 cm (11 anos)","152 cm (12 anos)","158 cm (13 anos)","164 cm (14 anos)"]},
+ calcado:{nome:"Números de calçado (16–48)",l:["16","17","18","19","20","21","22","23","24","25","26","27","28","29","30","31","32","33","34","35","36","37","38","39","40","41","42","43","44","45","46","47","48"]},
+ cabelo:{nome:"Comprimento (polegadas)",l:["8","10","12","14","16","18","20","22","24","26","28","30","32"]},
+ anel:{nome:"Tamanho do anel",l:["4","5","6","7","8","9","10","11","12","13","14"]},
+ cinto:{nome:"Tamanho do cinto (cm)",l:["65","70","75","80","85","90","95","100","105","110","115","120","125","130","140"]},
+ unico:{nome:"Sem tamanho",l:[""]}
+};
+var R_EST="Verão,Inverno,Meia-estação,Todas";
+var R_VOLT="110V,220V,110-240V,380V,415V";
+var R_FICHA="Tipo A,Tipo C,Tipo D,Tipo G,Sem ficha";
+var R_MAT_ROUPA="Algodão,Poliéster,Seda,Linho,Lã,Jeans,Couro,Malha,Nylon,Veludo,Renda,Cetim,Misto,Outro";
+var R_ROUPA=/^(roupa|homens|mulheres|criancas|conjuntos|calcas|camisas|casacos e jaquetas|saias|vestidos|fatos|roupa interior e pijamas|moda e acessorios|bebe|praia|produtos para criancas e bebes > roupas)/;
+var R_SERV=["Tipo de serviço*","Preço por*|Hora,Dia,Projeto,Mês,Evento","Localização*","Disponibilidade"];
+var R_MAQ=["Marca","Potência (kW)*","Voltagem*|"+R_VOLT,"Fase|Monofásico,Trifásico","Tipo de ficha|"+R_FICHA,"Capacidade*","Peso (kg)","Dimensões (mm)","Garantia"];
+var R_PECA=["Marca compatível*","Modelo compatível*","Ano compatível*","Nº da peça (OEM)","Garantia"];
+var L=["letras","numeros"],CAL=["calcado"];
+/* Ordem importa: a primeira que serve é usada. g = só se o caminho começar assim. cond:0 = sem Condição. mat:0 = sem Material */
+var BB_REG=[
+{id:"emprego",re:/^emprego e servicos > empregos/,cond:0,mat:0,spec:["Cargo*","Tipo de contrato*|Tempo inteiro,Part-time,Temporário,Estágio","Salário","Localização*"]},
+{id:"servico",re:/^(emprego e servicos|servicos para empresas|casamentos e eventos$|casamentos e eventos > (catering|decoracao|fotografia|som))/,cond:0,mat:0,spec:R_SERV},
+{id:"turismo",re:/^turismo e alojamento/,cond:0,mat:0,spec:["Tipo*|Hotel,Quarto,Apartamento,Casa,Excursão","Capacidade (pessoas)*","Preço por*|Noite,Pessoa,Dia","Localização*"]},
+{id:"terreno",re:/^imoveis > (terrenos|quintas)/,cond:0,mat:0,spec:["Tipo de negócio*|Venda,Aluguer","Área (m²)*","Localização*","Documentação*|DUAT,Título,Outra"]},
+{id:"imovel",re:/^imoveis/,cond:0,mat:0,spec:["Tipo de negócio*|Venda,Aluguer","Estado*|Novo,Usado,Em construção","Área (m²)*","Quartos*|0,1,2,3,4,5,6+","Casas de banho|1,2,3,4+","Localização*","Documentação|DUAT,Título,Outra"]},
+/* calçado: só números */
+{id:"calcado",re:/calcad|sapat|sandal|chinel|botas|tenis|sapatilh|salto/,tam:CAL,matSug:"Couro,Pele sintética,Tecido,Borracha,Lona,Camurça,Outro",spec:[]},
+/* casamento */
+{id:"noiva_acess",re:/acessorios de noiv|coroas|luvas|tiaras|veus|brincos de noiva|colares de noiva|bolsas de noiva/,spec:[]},
+{id:"fato",re:/fatos (de noivo|masculinos|femininos|para eventos|e blazers)|^fatos$|blazer/,tam:L,medidas:1,matSug:"Lã,Poliéster,Algodão,Linho,Misto,Outro",spec:[]},
+{id:"noiva",re:/noiv|madrinha|daminha|pajem/,tam:L,medidas:1,matSug:"Renda,Cetim,Tule,Organza,Seda,Crepe,Outro",spec:[]},
+{id:"casamento",re:/^roupa de casamento$/,tam:L,medidas:1,spec:[]},
+/* malas */
+{id:"bolsa",re:/bolsas|malas|bagagem/,matSug:"Couro,Pele sintética,Tecido,Nylon,Lona,Outro",spec:[]},
+/* roupa: só Condição + tamanhos */
+{g:R_ROUPA,id:"bebe",re:/roupa de bebe|roupas de bebe|^bebe$/,tam:["idade"],spec:[]},
+{g:R_ROUPA,id:"banho",re:/banho|biquini|^praia/,tam:L,spec:[]},
+{g:R_ROUPA,id:"interior",re:/interior|lingerie|meias|pijama/,tam:L,spec:[]},
+{g:R_ROUPA,id:"uniforme",re:/uniforme/,tam:["idade","letras","numeros"],spec:[]},
+{g:R_ROUPA,id:"calca",re:/calca|jeans|calcoes|shorts|leggings|saia/,tam:["numeros","letras"],spec:[]},
+{g:R_ROUPA,id:"capulana",re:/capulana|lenco/,spec:[]},
+{id:"anel",re:/\banel|\baneis|alianc/,tam:["anel"],mat:0,spec:["Material*|Prata 925,Banhado a ouro,Ouro 18k,Ouro 14k,Aço inoxidável,Bijuteria"]},
+{id:"joia",re:/joias/,mat:0,tam:["unico","anel"],spec:["Material*|Prata 925,Banhado a ouro,Ouro 18k,Ouro 14k,Aço inoxidável,Bijuteria"]},
+{id:"cinto",re:/cinto/,tam:["cinto"],matSug:"Couro,Pele sintética,Tecido,Metal,Outro",spec:[]},
+{g:R_ROUPA,id:"relogio",re:/relogio|oculos/,matSug:"Aço inoxidável,Plástico,Couro,Metal,Outro",spec:["Marca"]},
+{g:R_ROUPA,id:"roupa_acess",re:/acessorios/,tam:["unico","cinto","letras"],matSug:"Couro,Algodão,Poliéster,Metal,Outro",spec:[]},
+{g:R_ROUPA,id:"roupa",re:/./,tam:L,spec:[]},
+/* cabelo: comprimento + densidade + formato */
+{id:"peruca",re:/peruca|extens|tranca|lace|cabelo humano/,tam:["cabelo"],mat:0,spec:["Tipo de cabelo*|Cabelo humano,Sintético,Misto","Tipo de renda|Lace front 13x4,Lace front 13x6,Full lace,Fechamento 4x4,Fechamento 5x5,Sem renda"],opc:["Densidade*|130%,150%,180%,200%,250%","Formato*|Liso,Ondulado,Body wave,Deep wave,Cacheado,Crespo"]},
+/* beleza */
+{id:"perfume",re:/perfume/,cond:0,mat:0,spec:["Volume (ml)*|30,50,75,100,150,200","Género*|Homem,Mulher,Unissexo","Tipo|Eau de parfum,Eau de toilette,Colónia","Validade"]},
+{id:"maquiagem",re:/maquiagem/,cond:0,mat:0,spec:["Tipo*|Base,Batom,Sombra,Máscara de pestanas,Pó,Outro","Tom ou cor*","Volume ou peso","Validade*"]},
+{id:"pele",re:/cuidados com a pele|cuidados pessoais|barbear/,cond:0,mat:0,spec:["Tipo*","Tipo de pele|Normal,Seca,Oleosa,Mista,Sensível,Todas","Volume (ml)*","Validade*"]},
+{id:"cabelo",re:/produtos para cabelo/,cond:0,mat:0,spec:["Tipo*|Shampoo,Condicionador,Óleo,Creme,Tinta,Outro","Volume (ml)*","Validade*"]},
+{id:"beleza",re:/^beleza/,cond:0,mat:0,spec:["Tipo*","Volume ou peso*","Validade*"]},
+/* alimentos e animais */
+{id:"alimento",re:/^(alimentacao e bebidas|carnes)/,cond:0,mat:0,spec:["Peso ou volume*","Validade*","Conservação*|Ambiente,Refrigerado,Congelado","Origem"]},
+{id:"racao",re:/racoes/,cond:0,mat:0,spec:["Animal*|Cão,Gato,Aves,Gado,Peixes,Outro","Peso (kg)*","Validade*"]},
+{id:"agro_topo",re:/^animais e agricultura$/,cond:0,mat:0,spec:["Tipo*|Animal,Equipamento,Fertilizante,Ração,Semente"]},
+{id:"semente",re:/sementes|fertilizantes/,cond:0,mat:0,spec:["Tipo*","Peso (kg)*","Validade"]},
+{id:"animal",re:/^animais (de estimacao|e agricultura > animais)|^animais de estimacao/,cond:0,mat:0,spec:["Espécie*","Raça","Idade","Sexo|Macho,Fêmea","Vacinado|Sim,Não"]},
+/* carros e peças */
+{id:"jante_pneu",re:/pneus/,mat:0,spec:["Produto*|Pneu,Jante","Marca*","Largura do pneu (mm)|135,155,165,175,185,195,205,215,225,235,245,255,265,275,285,295,305,315","Perfil do pneu|30,35,40,45,50,55,60,65,70,75,80","Aro*|R13,R14,R15,R16,R17,R18,R19,R20,R21,R22","Tipo de pneu|Verão,Inverno,Todas as estações","Índice de carga","Índice de velocidade","Ano de fabrico","Furação da jante (PCD)|4x100,4x114.3,5x100,5x112,5x114.3,5x120,6x139.7"]},
+{id:"bateria_carro",re:/baterias( de carro)?$|bateria de carro/,g:/^(carros|pecas e acessorios auto)/,mat:0,spec:["Voltagem*|12V,24V","Capacidade (Ah)*","Marca compatível","Garantia"]},
+{id:"vidro_auto",re:/vidro para automoveis/,mat:0,spec:["Posição*|Para-brisas,Vidro traseiro,Vidro lateral,Espelho","Marca compatível*","Modelo compatível*","Ano compatível*"]},
+{id:"acess_carro",re:/acessorios (de carro|auto)/,g:/^(carros|pecas e acessorios auto)/,spec:["Tipo*","Compatibilidade*|Universal,Marca e modelo específicos","Marca compatível","Modelo compatível"]},
+{id:"peca_carro",re:/pecas|carrocaria|eletronica automovel|escape|filtros e oleos|iluminacao|suspensao|transmissao|travoes|motores de carros/,g:/^(carros|pecas e acessorios auto|motores de carros)/,mat:0,spec:R_PECA},
+{id:"camiao",re:/camio|autocarros|minibus/,mat:0,spec:["Marca*","Modelo*","Ano*","Capacidade (toneladas)*","Eixos*|2,3,4,5+","Lugares*|2,3,15,18,25,30,50,60+","Combustível*|Diesel,Gasolina,Elétrico,Gás","Transmissão*|Manual,Automática","Potência (cv)","Quilometragem (km)","Volante|Esquerdo,Direito"]},
+{id:"mota",re:/motas|motorizadas/,mat:0,spec:["Marca*","Modelo*","Ano*","Cilindrada (cc)*|50,70,110,125,150,200,250,300,400,500,Outra","Combustível*|Gasolina,Elétrico","Transmissão|Manual,Automática","Quilometragem (km)"]},
+{id:"carro",re:/^(carros|automovel)/,mat:0,spec:["Marca*","Modelo*","Ano*","Combustível*|Gasolina,Diesel,Elétrico,Híbrido","Transmissão*|Manual,Automática","Lugares*|2,4,5,7,8,9,12,15","Quilometragem (km)*","Cilindrada (cc)","Tração|2WD,4WD,AWD","Volante|Esquerdo,Direito"]},
+{id:"barco",re:/^barcos/,mat:0,spec:["Tipo*","Comprimento (m)*","Motor (cv)","Ano","Capacidade (pessoas)","Material do casco|Fibra,Alumínio,Madeira,Aço"]},
+/* telemóveis e informática */
+{id:"tel_acess",re:/(celulares|telemoveis).* > (capas|carregadores|peliculas|pecas|power)/,mat:0,spec:["Compatível com*","Tipo*","Potência (W)","Capacidade (mAh)"]},
+{id:"telemovel",re:/celulares|telemoveis|tablet/,mat:0,spec:["Marca*","Modelo*","Sistema*|Android,iOS","Ecrã (polegadas)","Bateria (mAh)","Câmara (MP)"],opc:["RAM*|2GB,3GB,4GB,6GB,8GB,12GB,16GB","Memória*|32GB,64GB,128GB,256GB,512GB,1TB","Rede*|4G,5G","Versão|Global,China,Outra"]},
+{id:"pc_acess",re:/laptops > acessorios|componentes|teclados|impressoras|monitores/,mat:0,spec:["Marca*","Modelo","Ligação|USB,Bluetooth,Wi-Fi,HDMI,Outra","Garantia"]},
+{id:"disco",re:/discos|ssd|memorias ram/,mat:0,spec:["Marca*","Capacidade*|4GB,8GB,16GB,32GB,128GB,256GB,512GB,1TB,2TB,4TB","Tipo*|SSD,HDD,DDR3,DDR4,DDR5","Garantia"]},
+{id:"pc",re:/laptops|portateis|computadores/,mat:0,spec:["Marca*|Dell,HP,Lenovo,Apple,Asus,Acer,Microsoft,Samsung,Toshiba,MSI,Outra","Modelo","Processador*|Intel Celeron,Intel Pentium,Intel Core i3,Intel Core i5,Intel Core i7,Intel Core i9,Intel Core Ultra 5,Intel Core Ultra 7,Intel Core Ultra 9,AMD Ryzen 3,AMD Ryzen 5,AMD Ryzen 7,AMD Ryzen 9,Apple M1,Apple M2,Apple M3,Apple M4,Outro","Geração|4.ª,5.ª,6.ª,7.ª,8.ª,9.ª,10.ª,11.ª,12.ª,13.ª,14.ª,15.ª","RAM*|4GB,8GB,12GB,16GB,32GB,64GB","Armazenamento*|128GB SSD,256GB SSD,512GB SSD,1TB SSD,2TB SSD,500GB HDD,1TB HDD","Ecrã (polegadas)|11.6,13.3,14,15.6,16,17.3","Placa gráfica|Integrada,NVIDIA,AMD","Sistema operativo|Windows 11,Windows 10,macOS,Linux,Chrome OS,Sem sistema","Garantia"]},
+{id:"informatica",re:/^informatica/,mat:0,spec:["Marca*","Modelo","Garantia"]},
+{id:"tv",re:/televisores/,mat:0,spec:["Marca*","Tamanho do ecrã*|24,32,43,50,55,65,75,85 polegadas","Resolução*|HD,Full HD,4K,8K","Smart TV|Sim,Não","Voltagem|110-240V,220V","Garantia"]},
+{id:"camara",re:/camaras/,mat:0,spec:["Marca*","Resolução (MP)","Visão noturna|Sim,Não","Ligação|Wi-Fi,Cabo,4G","Garantia"]},
+{id:"audio",re:/audio|auscult|colunas|microfones|amplificadores|projetores|equipamento dj/,mat:0,spec:["Marca*","Potência (W)","Ligação|Bluetooth,Cabo,Wi-Fi","Voltagem|110-240V,220V,Bateria","Garantia"]},
+{id:"carrinho",re:/carrinhos de bebe/,spec:["Tipo*|Carrinho,Cadeira de carro,Berço,Andador,Outro","Idade|0-6 meses,0-3 anos,3-6 anos","Peso máximo (kg)","Dobrável|Sim,Não"]},
+{id:"movel_inf",re:/mobiliario infantil/,spec:["Dimensões (cm)*","Idade recomendada|1-3 anos,3-6 anos,6-12 anos","Montagem|Montado,Desmontado"]},
+{id:"brinquedo",re:/brinquedos|produtos para criancas e bebes|^criancas/,mat:0,spec:["Idade recomendada*|0-12 meses,1-3 anos,3-6 anos,6-12 anos,12+ anos","Funciona a|Pilhas,Bateria,Sem bateria"]},
+{id:"jogo",re:/consolas|jogos|filmes|instrumentos/,mat:0,spec:["Marca","Plataforma|PlayStation,Xbox,Nintendo,PC,Outra","Tipo*"]},
+{id:"eletronico",re:/^(eletronica|eletronicos|eletrodomesticos)/,mat:0,spec:["Marca*","Modelo","Voltagem*|110V,220V,110-240V","Tipo de ficha|"+R_FICHA,"Potência (W)","Garantia"]},
+/* energia, água, indústria */
+{id:"solar_painel",re:/painel solar|paineis solares/,mat:0,spec:["Potência (W)*|100,200,300,400,450,550,600,700","Tipo*|Monocristalino,Policristalino","Voltagem*","Eficiência (%)","Garantia (anos)*","Dimensões (mm)","Peso (kg)"]},
+{id:"solar_bateria",re:/baterias solares|inversores e baterias/,mat:0,spec:["Tipo*|Inversor,Bateria solar","Voltagem*|12V,24V,48V","Capacidade (Ah)","Potência (W)","Tipo de bateria|Lítio,Chumbo-ácido,Gel","Garantia (anos)*"]},
+{id:"solar_inversor",re:/inversores/,mat:0,spec:["Potência (W)*","Tensão de entrada*","Tensão de saída*|110V,220V","Tipo*|Onda pura,Onda modificada,Híbrido","Garantia (anos)*"]},
+{id:"solar_ctrl",re:/controladores/,mat:0,spec:["Corrente (A)*|10,20,30,40,60","Tipo*|MPPT,PWM","Voltagem*|12V,24V,48V","Garantia"]},
+{id:"energia",re:/^energia solar|energia e eletricidade|material eletrico|cabos e fios|quadros|transformadores/,mat:0,spec:["Marca","Voltagem*|"+R_VOLT,"Corrente (A)","Potência (kW)","Garantia"]},
+{id:"agua",re:/bombas de agua|filtros de agua/,mat:0,spec:["Marca","Potência (W)*","Caudal (L/min)","Altura máxima (m)","Voltagem*|110V,220V,380V","Garantia"]},
+{id:"reservatorio",re:/reservatorios|tanques|^agua e saneamento$/,spec:["Capacidade (L)*","Altura (cm)","Diâmetro (cm)"]},
+{id:"trator",re:/tratores|maquinas agricolas|equipamentos agricolas/,mat:0,spec:["Marca*","Potência (cv)*","Tração|2WD,4WD","Combustível|Diesel,Gasolina","Ano","Garantia"]},
+{id:"pagamento",re:/maquinas de pagamento/,mat:0,spec:["Marca*","Tipo*|Cartão,Móvel (POS),Fixo","Ligação|Wi-Fi,4G,Ethernet","Garantia"]},
+{id:"cabos",re:/cabos e adaptadores/,mat:0,spec:["Tipo*|HDMI,USB,Aux,Carregamento,Rede,Outro","Comprimento (m)","Marca"]},
+{id:"irrigacao",re:/irrigacao/,spec:["Tipo*|Gotejamento,Aspersão,Pivô,Mangueira,Outro","Cobertura (m²)","Comprimento (m)"]},
+{id:"gerador",re:/geradores/,mat:0,spec:["Marca","Potência (kVA)*","Combustível*|Diesel,Gasolina,Gás","Fase*|Monofásico,Trifásico","Tipo*|Aberto,Silencioso","Garantia"]},
+{id:"motor_diesel",re:/motor a diesel/,mat:0,spec:["Marca","Potência (kW)*","Cilindros|1,2,3,4,6","Rotação (rpm)","Arrefecimento|Ar,Água","Garantia"]},
+{id:"motor_eletrico",re:/motor eletrico|motor e dinamo/,mat:0,spec:["Marca","Potência (kW)*","Voltagem*|110V,220V,380V,415V","Fase*|Monofásico,Trifásico","Rotação (rpm)*","Frequência|50Hz,60Hz","Garantia"]},
+{id:"empilhadora",re:/empilhadoras/,mat:0,spec:["Marca","Capacidade de carga (kg)*","Altura de elevação (m)*","Tipo*|Elétrica,Diesel,Gás,Manual","Garantia"]},
+{id:"compressor",re:/compressores/,mat:0,spec:["Marca","Pressão (bar)*","Caudal (L/min)*","Potência (kW)*","Voltagem*|110V,220V,380V","Capacidade do depósito (L)","Garantia"]},
+{id:"soldadura",re:/soldadura/,mat:0,spec:["Marca","Tipo*|MIG,MMA,TIG,Plasma,Outro","Corrente (A)*","Voltagem*|110V,220V,380V","Garantia"]},
+{id:"rolamento",re:/rolamentos/,spec:["Marca","Tipo*","Diâmetro interno (mm)*","Diâmetro externo (mm)*","Largura (mm)*"]},
+{id:"valvula",re:/tubos e valvulas/,spec:["Tipo*|Tubo,Válvula","Diâmetro (mm)*","Pressão (bar)","Comprimento (m)"]},
+{id:"epi",re:/seguranca industrial/,tam:["unico","letras","calcado"],spec:["Tipo*|Capacete,Luvas,Botas,Óculos,Colete,Máscara,Outro","Norma|CE,EN,ANSI,Outra"]},
+{id:"metais",re:/aco e metais/,spec:["Tipo*","Espessura (mm)*","Dimensões*"]},
+{id:"moagem",re:/moagem/,mat:0,spec:["Marca","Capacidade (kg/h)*","Potência (kW)*","Voltagem*|110V,220V,380V","Garantia"]},
+{id:"movel",re:/^(moveis|casa e|decoracao|cozinha)|armarios|cadeiras|mesas|balcoes|vitrinas/,spec:["Dimensões (cm)*","Montagem|Montado,Desmontado"]},
+{id:"maquina",re:/^(industria|maquinas|equipamentos profissionais|comercio e negocios|ferramentas > ferramentas eletricas|ferramentas > equipamentos de oficina)/,mat:0,spec:R_MAQ},
+{id:"ferramenta",re:/^ferramentas/,mat:0,spec:["Marca","Tipo*","Voltagem|110V,220V,Bateria,Manual","Potência (W)","Garantia"]},
+/* construção */
+{id:"cimento",re:/cimento|blocos|areia/,cond:0,mat:0,spec:["Tipo*","Peso ou volume*","Dimensões (cm)"]},
+{id:"ferro",re:/^(ferros|vidros)/,spec:["Tipo*","Espessura (mm)*","Dimensões*"]},
+{id:"tubo",re:/canalizacao/,spec:["Diâmetro (mm)*","Comprimento (m)","Pressão (bar)"]},
+{id:"tinta",re:/tintas/,cond:0,mat:0,spec:["Volume (L)*|1,4,5,10,18,20","Cor*","Acabamento|Fosco,Brilhante,Acetinado"]},
+{id:"construcao",re:/^construcao/,spec:["Tipo*","Marca","Dimensões"]},
+/* casa, desporto, outros */
+{id:"cama",re:/camas/,spec:["Tamanho*|Solteiro,Casal,Queen,King","Montagem|Montado,Desmontado"]},
+{id:"sofa",re:/sofas/,spec:["Lugares*|1,2,3,4,5,6","Montagem|Montado,Desmontado"]},
+{id:"bicicleta",re:/bicicleta/,spec:["Tamanho do aro*|12,16,20,24,26,27.5,29","Mudanças|1,6,7,18,21,24","Tipo*|Montanha,Estrada,Urbana,Criança,Elétrica"]},
+{id:"desporto",re:/^(desporto|esportes)/,tam:["unico","letras","calcado"],spec:["Marca","Tipo*"]},
+{id:"livro",re:/^livros|material escolar/,mat:0,spec:["Tipo*","Autor ou marca","Idioma|Português,Inglês,Francês,Outro"]},
+{id:"seguranca",re:/^seguranca/,mat:0,spec:["Marca","Tipo*","Voltagem|12V,110V,220V,Bateria","Garantia"]},
+{id:"saude",re:/^saude/,mat:0,spec:["Marca*","Tipo*","Certificação|CE,ISO,Outra"]},
+{id:"viagem",re:/^viagem/,spec:["Tipo*","Capacidade (L)"]},
+{id:"outros",re:/./,spec:["Marca","Dimensões (cm)","Peso (kg)"]}
 ];
 function semAcento(s){return String(s||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase()}
-function lerSpec(t){var p=t.split("|"),n=p[0],o=/\*$/.test(n);return{nome:n.replace(/\*$/,""),obrig:o,sug:p[1]?p[1].split(","):[]}}
-function lerOpc(t){var p=t.split("|");return{nome:p[0],sug:p[1]?p[1].split(","):[]}}
+function bbCampo(t){var p=t.split("|"),n=p[0],o=/\*$/.test(n);return{nome:n.replace(/\*$/,""),obrig:o,sug:p[1]?p[1].split(",").filter(Boolean):[]}}
+/* Perfil completo de uma categoria (caminho "A > B > C") */
+function registoPerfil(caminho){
+  var c=semAcento(caminho).replace(/\s*>\s*/g," > ").trim(),R=BB_REG[BB_REG.length-1];
+  for(var i=0;i<BB_REG.length;i++){var r=BB_REG[i];if((!r.g||r.g.test(c))&&r.re.test(c)){R=r;break}}
+  var tam=(R.tam||["unico"]).slice();
+  var crianca=/crianca|infantis|bebe|menin|rapaz|rapariga/.test(c);
+  if(crianca&&(tam.indexOf("letras")>-1||tam.indexOf("numeros")>-1)&&tam.indexOf("idade")<0)tam.unshift("idade");
+  return{
+    id:R.id,cond:R.cond!==0,mat:R.mat!==0,medidas:!!R.medidas,tam:tam,
+    matSug:(R.matSug||R_MAT_ROUPA).split(","),
+    spec:(R.spec||[]).map(bbCampo),
+    opc:(R.opc||[]).map(bbCampo)
+  };
+}
+/* Para a página do produto e para detalhes-fornecedor.html */
 function perfilDe(caminho){
-  var c=semAcento(caminho);
-  for(var i=0;i<PERFIS.length;i++){
-    if(PERFIS[i].re.test(c)){
-      var P=PERFIS[i];
-      return{id:P.id,medidas:!!P.medidas,spec:P.spec.map(lerSpec),opc:P.opc.map(lerOpc)};
-    }
+  var r=registoPerfil(caminho),spec=[],opc=[];
+  if(r.cond)spec.push({nome:"Condição",obrig:true,sug:["Novo","Usado","Usado e recondicionado"]});
+  if(r.mat)spec.push({nome:"Material",obrig:false,sug:r.matSug});
+  var soDetalhes=/detalhes-fornecedor/.test(location.pathname);
+  if(!soDetalhes){
+    spec=spec.concat(r.spec);
+    if(r.medidas)opc.push({nome:"Modo",obrig:false,sug:["Tamanho padrão","Medidas personalizadas"]});
+    opc=opc.concat(r.opc);
   }
+  return{id:r.id,medidas:r.medidas,spec:spec,opc:opc,tam:r.tam};
 }
 function caminhoDe(cats,id){
   var m={};cats.forEach(function(c){m[c.id]=c});
   var out=[],n=0,c=m[id];
   while(c&&n++<6){out.unshift(c.name||c.nome||c.title||"");c=m[c.parent_id||c.parent]}
   return out.join(" > ");
-  }
-/* Estado em todas as categorias */
-var perfilDeBase=perfilDe;
-perfilDe=function(caminho){
-  var p=perfilDeBase(caminho);
-  p.spec=p.spec.filter(function(s){return s.nome!=="Condição"});
-  p.spec.unshift({nome:"Condição",obrig:true,sug:["Novo","Usado","Usado e recondicionado"]});
-  return p;
-};
+}
+/* detalhes-fornecedor.html: guardar Condição/Material sem apagar os detalhes do registo */
+(function(){
+  if(!/detalhes-fornecedor/.test(location.pathname)||!window.supabase||!supabase.createClient)return;
+  function obj(x){if(typeof x==="string"){try{x=JSON.parse(x)}catch(e){x={}}}return(x&&typeof x==="object"&&!Array.isArray(x))?x:{}}
+  var cheio={},oc=supabase.createClient;
+  supabase.createClient=function(){
+    var cl=oc.apply(this,arguments),of=cl.from.bind(cl);
+    cl.from=function(t){
+      var q=of(t);
+      if(t==="products"&&q.update){
+        var ou=q.update.bind(q);
+        q.update=function(row,o){
+          try{
+            var p=window.cur;
+            if(p&&row){
+              var b=cheio[p.id]||{specs:obj(p.specs),opcoes:obj(p.opcoes)};
+              if(row.specs)row.specs=Object.assign({},b.specs,row.specs);
+              if(row.opcoes)row.opcoes=Object.assign({},b.opcoes,row.opcoes);
+              cheio[p.id]={specs:row.specs||b.specs,opcoes:row.opcoes||b.opcoes};
+            }
+          }catch(e){}
+          return ou(row,o);
+        };
+      }
+      return q;
+    };
+    return cl;
+  };
+})();
