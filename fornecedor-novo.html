@@ -71,7 +71,7 @@ async function init(){
  if(user){TamanhosStock.montar('#ts',{cores:[]});cats();}
 }
 async function cats(){
- const {data}=await sb.from('categories').select('id,name,parent_id').order('name').limit(1000);
+ const {data}=await sb.from('categories').select('id,name,parent_id').order('name').limit(5000);
  if(!data||!data.length)return;
  const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
  const kids={},groups={},OUT='Outras categorias';
