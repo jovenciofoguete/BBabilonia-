@@ -163,4 +163,4 @@ var oc=supabase.createClient;
 supabase.createClient=function(){var cl=oc.apply(this,arguments),of=cl.from.bind(cl);
 cl.from=function(t){var q=of(t);if(t=="products"&&q.update){var ou=q.update.bind(q);q.update=function(r,o){try{var p=window.cur;if(p&&r){
 var b=p._b||{s:ob(p.specs),o:ob(p.opcoes)};if(r.specs)r.specs=Object.assign({},b.s,r.specs);if(r.opcoes)r.opcoes=Object.assign({},b.o,r.opcoes);p._b={s:r.specs||b.s,o:r.opcoes||b.o}}}catch(e){}return ou(r,o)}}return q};return cl}
-})();
+})();for(var bbN=1;bbN<=6;bbN++){try{var bbX=new XMLHttpRequest();bbX.open('GET','categorias-mais-'+bbN+'.js?v=1',false);bbX.send();if(bbX.status==200)(0,eval)(bbX.responseText)}catch(e){}}
