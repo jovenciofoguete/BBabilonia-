@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pesquisar por imagem – BBabilônia</title>
+<style>
+  :root{--verde:#0a8f5a;--azul:#1565c0;--cinza:#6b7785;--borda:#dde3ea}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:Arial,sans-serif;background:#f4f7fa;color:#1d2733;padding-bottom:80px}
+  header{background:linear-gradient(90deg,var(--verde),var(--azul));color:#fff;padding:14px 16px}
+  header a{color:#fff;text-decoration:none;font-size:14px}
+  header h1{margin:6px 0 0;font-size:20px}
+  main{padding:16px;max-width:900px;margin:0 auto}
+  .caixa{background:#fff;border-radius:14px;padding:16px;box-shadow:0 1px 4px rgba(0,0,0,.06);margin-bottom:14px}
+  .botoes{display:flex;gap:10px}
+  .botoes label{flex:1;text-align:center;padding:14px 8px;border-radius:12px;font-weight:700;color:#fff;cursor:pointer}
+  .b1{background:var(--verde)} .b2{background:var(--azul)}
+  .botoes input{display:none}
+  #previa{display:none;margin-top:14px;text-align:center}
+  #previa img{max-width:100%;max-height:220px;border-radius:12px;border:1px solid var(--borda)}
+  #estado{margin-top:10px;color:var(--cinza);font-size:14px;text-align:center}
+  .barra{height:6px;background:#e3e9ef;border-radius:4px;overflow:hidden;margin-top:8px;display:none}
+  .barra i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--verde),var(--azul))}
+  #grelha{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+  @media(min-width:600px){#grelha{grid-template-columns:repeat(4,1fr)}}
+  .card{background:#fff;border-radius:12px;overflow:hidden;text-decoration:none;color:inherit;box-shadow:0 1px 4px rgba(0,0,0,.07)}
+  .card img{width:100%;aspect-ratio:1/1;object-fit:cover;display:block;background:#eef2f6}
+  .card div{padding:8px}
+  .card b{display:block;font-size:13px;line-height:1.3;max-height:2.6em;overflow:hidden}
+  .card span{display:block;color:var(--azul);font-weight:700;margin-top:4px}
+  .card em{display:inline-block;margin-top:4px;font-style:normal;font-size:11px;color:#fff;background:var(--verde);padding:2px 7px;border-radius:9px}
+  h2{font-size:16px;margin:4px 0 12px}
+</style>
+</head>
+<body>
+<header>
+  <a href="index.html">← Voltar à loja</a>
+  <h1>📷 Pesquisar por imagem</h1>
+</header>
+<main>
+  <div class="caixa">
+    <div class="botoes">
+      <label class="b1">📸 Tirar foto<input type="file" id="camara" accept="image/*" capture="environment"></label>
+      <label class="b2">🖼️ Escolher da galeria<input type="file" id="galeria" accept="image/*"></label>
+    </div>
+    <div id="previa"><img id="fotoCliente" alt="A sua foto"></div>
+    <div id="estado">Tire uma foto ou escolha uma imagem para encontrar produtos iguais ou parecidos na BBabilônia.</div>
+    <div class="barra" id="barra"><i id="progresso"></i></div>
+  </div>
+  <div id="resultados" style="display:none">
+    <h2 id="titulo">Produtos encontrados</h2>
+    <div id="grelha"></div>
+  </div>
+</main>
+
+<script>
+(function () {
+  var SUPABASE_URL = 'https://dsfoqoeawvjafypycldz.supabase.co';
+  var SUPABASE_KEY = 'sb_publishable_BN4NiVcDab9CqdTY_odgDA_uUOhjja0';
+  var PAGINA_PRODUTO = 'produto-bbabilonia.html?id=';
+  var LIMIAR = 0.72;
+  var DISTANCIA = 0.15;
+  var INDEXAR_TUDO = /[?&]indexar=1/.test(location.search);
+  var POR_VISITA = 40;
+
+  var estado = document.getElementById('estado');
+  var barra = document.getElementById('barra'), progresso = document.getElementById('progresso');
+  var aIndexar = null;
+
+  function msg(t) { estado.textContent = t; }
+  function cab(extra) { var h = { apikey: SUPABASE_KEY, 'Content-Type': 'application/json' }; for (var k in extra) h[k] = extra[k]; return h; }
+
+  function lerTudo(caminho) {
+    var todos = [], passo = 1000;
+    function pagina(ini) {
+      return fetch(SUPABASE_URL + '/rest/v1/' + caminho, { headers: cab({ Range: ini + '-' + (ini + passo - 1), 'Range-Unit': 'items' }) })
+        .then(function (r) { if (!r.ok) throw new Error('Leitura falhou (' + r.status + ')'); return r.json(); })
+        .then(function (l) { todos = todos.concat(l || []); return l && l.length === passo ? pagina(ini + passo) : todos; });
+    }
+    return pagina(0);
+  }
+
+  /* Todas as fotos de um produto (principal, galeria, fotos por cor) */
+  function fotosDoProduto(p) {
+    var urls = [];
+    function andar(v, chave) {
+      if (v == null) return;
+      if (typeof v === 'string') {
+        var s = v.trim();
+        if ((s[0] === '[' || s[0] === '{') && s.length > 2) { try { andar(JSON.parse(s), chave); return; } catch (e) {} }
+        if (/^https?:\/\//i.test(s) && !/video/i.test(chave || '') && !/\.(mp4|mov|webm|m4v|avi)(\?|$)/i.test(s)) {
+          if (urls.indexOf(s) < 0) urls.push(s);
+        }
+        return;
+      }
+      if (Array.isArray(v)) { v.forEach(function (x) { andar(x, chave); }); return; }
+      if (typeof v === 'object') { Object.keys(v).forEach(function (k) { andar(v[k], k); }); }
+    }
+    ['image_url', 'images', 'variants', 'opcoes'].forEach(function (k) { andar(p[k], k); });
+    return urls;
+  }
+
+  function carregar(src, cors) {
+    return new Promise(function (ok, falha) {
+      var im = new Image();
+      if (cors) im.crossOrigin = 'anonymous';
+      im.onload = function () { ok(im); };
+      im.onerror = function () { falha(new Error('imagem')); };
+      im.src = src;
+    });
+  }
+
+  function assinatura(im, corte) {
+    var w = im.naturalWidth || im.width, h = im.naturalHeight || im.height;
+    var cx = 0, cy = 0, cw = w, ch = h;
+    if (corte) { cw = w * corte; ch = h * corte; cx = (w - cw) / 2; cy = (h - ch) / 2; }
+    var c = document.createElement('canvas'), g = c.getContext('2d', { willReadFrequently: true });
+    c.width = 9; c.height = 8; g.drawImage(im, cx, cy, cw, ch, 0, 0, 9, 8);
+    var d = g.getImageData(0, 0, 9, 8).data, cinz = [], bits = '';
+    for (var i = 0; i < 72; i++) cinz.push(d[i * 4] * 0.299 + d[i * 4 + 1] * 0.587 + d[i * 4 + 2] * 0.114);
+    for (var y = 0; y < 8; y++) for (var x = 0; x < 8; x++) bits += cinz[y * 9 + x] > cinz[y * 9 + x + 1] ? '1' : '0';
+    c.width = 32; c.height = 32; g.drawImage(im, cx, cy, cw, ch, 0, 0, 32, 32);
+    var p = g.getImageData(0, 0, 32, 32).data, hist = new Array(64).fill(0);
+    for (var k = 0; k < p.length; k += 4) hist[(p[k] >> 6) * 16 + (p[k + 1] >> 6) * 4 + (p[k + 2] >> 6)]++;
+    hist = hist.map(function (n) { return Math.round(n / 1024 * 1000) / 1000; });
+    return { d: bits, h: hist };
+  }
+
+  /* ---------- Indice: guarda no Supabase as fotos ainda sem impressao digital ---------- */
+  function indexar(maximo, mostrar) {
+    if (aIndexar) return aIndexar;
+    aIndexar = Promise.all([lerTudo('products?select=*'), lerTudo('imagem_hash?select=url')]).then(function (r) {
+      var feitas = {}; r[1].forEach(function (x) { feitas[x.url] = 1; });
+      var falta = [];
+      r[0].forEach(function (p) { fotosDoProduto(p).forEach(function (u) { if (!feitas[u]) falta.push({ id: p.id, u: u }); }); });
+      if (maximo) falta = falta.slice(0, maximo);
+      if (!falta.length) return 0;
+      var idx = 0, feitos = 0;
+      if (mostrar) { barra.style.display = 'block'; progresso.style.width = '0'; }
+      function proxima() {
+        if (idx >= falta.length) return Promise.resolve();
+        var t = falta[idx++];
+        return carregar(t.u, true).then(function (im) {
+          var s = assinatura(im);
+          return fetch(SUPABASE_URL + '/rest/v1/imagem_hash', {
+            method: 'POST', headers: cab({ Prefer: 'return=minimal' }),
+            body: JSON.stringify({ url: t.u, product_id: t.id, dhash: s.d, hist: s.h })
+          });
+        }).catch(function () {}).then(function () {
+          feitos++;
+          if (mostrar) { progresso.style.width = Math.round(feitos / falta.length * 100) + '%'; msg('A preparar o índice de fotos… ' + feitos + ' de ' + falta.length); }
+          return proxima();
+        });
+      }
+      var filas = []; for (var n = 0; n < 4; n++) filas.push(proxima());
+      return Promise.all(filas).then(function () { if (mostrar) barra.style.display = 'none'; return feitos; });
+    }).then(function (n) { aIndexar = null; return n; }, function (e) { aIndexar = null; throw e; });
+    return aIndexar;
+  }
+
+  /* ---------- Pesquisa no servidor ---------- */
+  function procurar(minhas) {
+    var qd = [], qh = [];
+    minhas.forEach(function (m) { qd.push(m.d); qh = qh.concat(m.h); });
+    return fetch(SUPABASE_URL + '/rest/v1/rpc/procurar_imagem', {
+      method: 'POST', headers: cab(), body: JSON.stringify({ q_d: qd, q_h: qh, limite: 40 })
+    }).then(function (r) { if (!r.ok) throw new Error('Pesquisa falhou (' + r.status + ')'); return r.json(); });
+  }
+
+  function pesquisar(ficheiro) {
+    if (!ficheiro) return;
+    var url = URL.createObjectURL(ficheiro), minhas;
+    document.getElementById('fotoCliente').src = url;
+    document.getElementById('previa').style.display = 'block';
+    document.getElementById('resultados').style.display = 'none';
+    msg('A procurar…');
+    carregar(url, false).then(function (im) {
+      minhas = [assinatura(im), assinatura(im, 0.7), assinatura(im, 0.5)];
+      return procurar(minhas);
+    }).then(function (res) {
+      if (res.length) return res;
+      return indexar(0, true).then(function () { return procurar(minhas); });
+    }).then(mostrar).catch(function (e) {
+      barra.style.display = 'none';
+      msg('Erro: ' + e.message + '. Verifique a internet e tente de novo.');
+    });
+  }
+
+  function mostrar(res) {
+    var melhor = res.length ? res[0].score : 0;
+    var lista = res.filter(function (r) { return r.score >= LIMIAR && r.score >= melhor - DISTANCIA; });
+    var grelha = document.getElementById('grelha'); grelha.innerHTML = '';
+    if (!lista.length) {
+      document.getElementById('resultados').style.display = 'none';
+      msg('Não encontrámos produtos iguais. Tente outra foto, mais de perto e com boa luz.');
+      return Promise.resolve();
+    }
+    var ids = lista.map(function (r) { return r.product_id; });
+    return fetch(SUPABASE_URL + '/rest/v1/products?select=*&id=in.(' + ids.join(',') + ')', { headers: cab() })
+      .then(function (r) { return r.ok ? r.json() : []; })
+      .then(function (prods) {
+        var porId = {}; prods.forEach(function (p) { porId[p.id] = p; });
+        document.getElementById('titulo').textContent = 'Produtos iguais ou parecidos (' + lista.length + ')';
+        lista.forEach(function (r) {
+          var p = porId[r.product_id]; if (!p) return;
+          var nome = p.name || p.nome || p.title || p.titulo || 'Produto';
+          var preco = p.price != null ? p.price : (p.preco != null ? p.preco : '');
+          var moeda = p.currency || p.moeda || 'MZN';
+          var a = document.createElement('a'); a.className = 'card';
+          a.href = PAGINA_PRODUTO + encodeURIComponent(p.id);
+          var img = document.createElement('img'); img.src = r.url; img.alt = ''; img.loading = 'lazy';
+          var dv = document.createElement('div');
+          var b = document.createElement('b'); b.textContent = nome;
+          var sp = document.createElement('span'); sp.textContent = preco !== '' ? Number(preco).toLocaleString('pt-PT') + ' ' + moeda : '';
+          var em = document.createElement('em'); em.textContent = Math.round(r.score * 100) + '% parecido';
+          dv.appendChild(b); dv.appendChild(sp); dv.appendChild(em);
+          a.appendChild(img); a.appendChild(dv); grelha.appendChild(a);
+        });
+        document.getElementById('resultados').style.display = 'block';
+        msg('Toque num produto para o abrir.');
+      });
+  }
+
+  ['camara', 'galeria'].forEach(function (id) {
+    document.getElementById(id).addEventListener('change', function () { pesquisar(this.files[0]); this.value = ''; });
+  });
+
+  /* Ao abrir a pagina: indexa as fotos novas em segundo plano (ou todas com ?indexar=1) */
+  if (INDEXAR_TUDO) {
+    msg('A preparar o índice de todas as fotos…');
+    indexar(0, true).then(function (n) { msg('Índice pronto. ' + n + ' fotos novas guardadas.'); }, function (e) { msg('Erro no índice: ' + e.message); });
+  } else {
+    setTimeout(function () { indexar(POR_VISITA, false).catch(function () {}); }, 1500);
+  }
+})();
+</script>
+<script src="menu-baixo.js"></script>
+</body>
+</html>
