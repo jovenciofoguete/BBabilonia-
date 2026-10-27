@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BBabilônia.com – Compre com confiança</title>
+<meta name="description" content="BBabilônia.com: moda, eletrónicos e muito mais, com entrega e vários métodos de pagamento.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;700;800&family=Nunito+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<meta name="color-scheme" content="light">
+<style>
+:root{
+  --laranja:#FF6A00; --laranja2:#FF8C1A; --fundo:#F5F5F5; --papel:#FFFFFF;
+  --texto:#222222; --suave:#777777; --linha:#E8E8E8; --chip:#F0F0F0;
+}
+*{box-sizing:border-box;margin:0}
+html{scroll-padding-top:110px;color-scheme:light}
+body{font-family:'Nunito Sans',system-ui,sans-serif;background:var(--fundo);color:var(--texto);line-height:1.4}
+a{color:inherit;text-decoration:none}
+:focus-visible{outline:3px solid var(--laranja);outline-offset:2px}
+
+header{position:sticky;top:0;z-index:10;background:#fff;padding:8px 10px 0;box-shadow:0 1px 0 var(--linha)}
+.topo{display:flex;align-items:center;gap:6px;max-width:1100px;margin:auto}
+.logo{flex:none;font-family:'Sora',sans-serif;font-weight:800;font-size:12.5px;letter-spacing:-.2px;white-space:nowrap;color:#1B2F6B;border:2px solid var(--laranja);border-radius:999px;padding:7px 9px;line-height:1}
+.logo span{color:var(--laranja)}
+.pesquisa{flex:1;display:flex;align-items:center;background:#fff;border:2px solid var(--laranja);border-radius:999px;overflow:hidden;min-width:0;padding:2px 3px 2px 0}
+.pesquisa input{flex:1;border:0;padding:8px 10px;font:inherit;font-size:14.5px;color:var(--texto);background:transparent;min-width:0}
+.pesquisa input:focus{outline:none}
+.pesquisa:focus-within{box-shadow:0 0 0 3px #FF6A0026}
+#bb-camara{background:var(--laranja)!important;width:36px!important;height:32px!important;flex:0 0 36px!important;border-radius:999px!important;margin-left:2px!important}
+#bb-camara svg{width:19px;height:19px}
+.carrinho{flex:none;position:relative;display:grid;place-items:center;width:36px;height:36px;color:var(--texto)}
+.carrinho svg{width:23px;height:23px}
+#nCarrinho{position:absolute;top:-2px;right:-3px;min-width:17px;height:17px;border-radius:9px;background:#E02424;color:#fff;font-size:10.5px;font-weight:700;display:none;place-items:center;padding:0 4px}
+.cats{display:flex;gap:7px;overflow-x:auto;padding:8px 0 9px;max-width:1100px;margin:auto;scrollbar-width:none}
+.cats::-webkit-scrollbar{display:none}
+.cats button{flex:none;border:1.5px solid transparent;background:var(--chip);color:var(--texto);font:inherit;font-size:13.5px;font-weight:600;padding:6px 13px;border-radius:999px;cursor:pointer}
+.cats button[aria-pressed="true"]{background:#fff;border-color:var(--texto)}
+
+main{max-width:1100px;margin:auto;padding:10px 8px 90px}
+.faixa{display:flex;gap:8px;overflow-x:auto;margin-bottom:10px;scrollbar-width:none}
+.faixa::-webkit-scrollbar{display:none}
+.faixa div{flex:1 0 auto;background:#FFF4EC;border-radius:8px;padding:7px 11px;font-size:12.5px;font-weight:600;white-space:nowrap;color:#5a3a1e}
+.faixa b{color:var(--laranja)}
+.titulo{display:flex;justify-content:space-between;align-items:baseline;margin:2px 4px 8px}
+.titulo h1{font-family:'Sora',sans-serif;font-size:16px;letter-spacing:-.2px}
+.titulo p{color:var(--suave);font-size:12.5px;display:flex;align-items:center;gap:8px}
+.pref{border:1.5px solid var(--laranja);background:#fff;color:var(--texto);font:inherit;font-size:12.5px;font-weight:700;padding:4px 10px;border-radius:999px;cursor:pointer}
+
+.grelha{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+@media(min-width:640px){.grelha{grid-template-columns:repeat(3,1fr);gap:12px}}
+@media(min-width:900px){.grelha{grid-template-columns:repeat(5,1fr)}}
+.card{background:var(--papel);border-radius:8px;overflow:hidden;display:flex;flex-direction:column}
+.card .foto{aspect-ratio:1/1;background:#fafafa;position:relative}
+.card img{width:100%;height:100%;object-fit:cover;display:block}
+.card .sem{position:absolute;inset:0;display:grid;place-items:center;color:var(--suave);font-size:12px}
+.tag{position:absolute;left:6px;top:6px;background:var(--laranja);color:#fff;font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:5px}
+.card .info{padding:6px 8px 8px}
+.card h2{font-size:13px;font-weight:400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.preco{font-family:'Sora',sans-serif;font-weight:700;font-size:15px;color:var(--texto);margin-top:2px}
+.cores{display:flex;gap:4px;margin-top:3px;overflow:hidden;white-space:nowrap}
+.cores i{font-style:normal;font-size:10.5px;color:var(--suave);border:1px solid var(--linha);border-radius:4px;padding:0 5px}
+
+.estado{grid-column:1/-1;text-align:center;padding:40px 10px;color:var(--suave)}
+.estado button{margin-top:12px;border:0;background:var(--laranja);color:#fff;font:inherit;font-weight:700;padding:10px 20px;border-radius:999px;cursor:pointer}
+.skel{aspect-ratio:4/5;border-radius:8px;background:linear-gradient(90deg,#eee,#fff,#eee);background-size:200% 100%;animation:brilho 1.3s infinite}
+@keyframes brilho{to{background-position:-200% 0}}
+@media (prefers-reduced-motion: reduce){.skel{animation:none}}
+
+footer{background:#fff;color:var(--suave);padding:20px 14px 90px;font-size:12.5px;text-align:center;border-top:1px solid var(--linha)}
+footer b{color:var(--texto)}
+
+/* menu de baixo sempre branco, mesmo com o telemóvel em modo escuro */
+body .bb-nav{background:#fff!important;border-top-color:#e5e7eb!important}
+body .bb-nav a:not(.on){color:#6b7280!important}
+body .bb-nav .n{border-color:#fff!important}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="topo">
+    <a class="logo" href="index.html" aria-label="BBabilônia.com">B-<span>Babilônia</span></a>
+    <form class="pesquisa" role="search" onsubmit="return false">
+      <input id="q" type="search" placeholder="Pesquisar produtos" aria-label="Pesquisar produtos" autocomplete="off">
+    </form>
+    <a class="carrinho" href="carrinho.html" aria-label="Ver carrinho">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.7 13.4a2 2 0 0 0 2 1.6h9.7a2 2 0 0 0 2-1.6L23 6H6"/></svg>
+      <span id="nCarrinho"></span>
+    </a>
+  </div>
+  <nav class="cats" id="cats" aria-label="Categorias"></nav>
+</header>
+
+<main>
+  <div class="faixa">
+    <div><b>Pague</b> por cripto USDT/USDC, se no seu país não tem divisas.</div>
+    <div><b>Compra</b> sem criar conta</div>
+    <div><b>Envio</b> para vários países</div>
+  </div>
+
+  <div class="titulo">
+    <h1 id="tituloLista">Novidades</h1>
+    <p><span id="contagem"></span> <button type="button" id="prefBtn" class="pref" aria-label="Mudar país, idioma e moeda">🌐 <span id="prefTxt">USD</span></button></p>
+  </div>
+
+  <section class="grelha" id="grelha" aria-live="polite"></section>
+</main>
+
+<footer>
+  <p><b>BBabilônia.com</b></p>
+  <p>Produtos de fornecedores nacionais e internacionais, com pagamento seguro.</p>
+</footer>
+
+<script>
+const SUPA = "https://dsfoqoeawvjafypycldz.supabase.co";
+const KEY  = "sb_publishable_BN4NiVcDab9CqdTY_odgDA_uUOhjja0";
+const H = { apikey: KEY, Authorization: "Bearer " + KEY };
+
+let produtos = [], categorias = [], catAtual = null, termo = "", TAXAS = null;
+
+const $ = id => document.getElementById(id);
+const nomeDe = o => o.name || o.nome || o.title || o.titulo || "Produto";
+const precoDe = o => Number(o.price ?? o.preco ?? 0);
+const esc = t => String(t ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+function fmt(v, moeda){
+  const n = Number(v||0).toLocaleString("pt-PT",{maximumFractionDigits:2});
+  return n + " " + (moeda || "MZN");
+}
+
+function atualizarCarrinho(){
+  let total = 0;
+  try{ (JSON.parse(localStorage.getItem("carrinho")||"[]")).forEach(i=> total += Number(i.qtd||1)); }catch(e){}
+  const b = $("nCarrinho");
+  b.textContent = total; b.style.display = total ? "grid" : "none";
+}
+
+async function get(tabela, query){
+  const r = await fetch(`${SUPA}/rest/v1/${tabela}?${query}`, {headers:H});
+  if(!r.ok) throw new Error(tabela + " " + r.status);
+  return r.json();
+}
+
+/* ordem das categorias no topo: primeiro as mais procuradas, depois as outras */
+const PRIORIDADE = [
+  /celular|telem[oó]v|smartphone|iphone/i,
+  /roupa|vestu[aá]rio|moda/i,
+  /sapato|cal[cç]ado|t[eé]nis|sand[aá]lia/i,
+  /eletr[oó]nic|electr[oó]nic/i,
+  /computador|laptop|port[aá]t|notebook|tablet/i,
+  /vestido|camis|cal[cç]a|blusa|t-shirt/i,
+  /cabelo|peruca|beleza/i,
+  /rel[oó]gio|j[oó]ia|an[eé]is|alian[cç]a|bolsa|mala/i,
+  /casa|cozinha|m[oó]veis|eletrodom/i,
+  /carro|autom[oó]v|cami[aã]o|pe[cç]as/i
+];
+function nivel(c){
+  let n = 0, x = c;
+  while(x && x.parent_id != null && n < 6){ x = categorias.find(y => y.id === x.parent_id); n++; }
+  return n;
+}
+function listaTopo(){
+  const vistos = new Set(), lista = [];
+  const juntar = (c, semLimite) => {
+    const chave = nomeDe(c).trim().toLowerCase();
+    if(!chave || vistos.has(chave) || (!semLimite && lista.length >= 80)) return;
+    vistos.add(chave); lista.push(c);
+  };
+  PRIORIDADE.forEach(re => {
+    categorias.filter(c => re.test(nomeDe(c)))
+      .sort((a,b) => nivel(a) - nivel(b))
+      .slice(0, 4).forEach(c => juntar(c));
+  });
+  categorias.filter(c => c.parent_id == null).forEach(c => juntar(c, true));
+  categorias.filter(c => nivel(c) === 1).forEach(c => juntar(c));
+  return lista;
+}
+
+function desenharCategorias(){
+  const nav = $("cats");
+  const lista = listaTopo();
+  nav.innerHTML = "";
+  const todas = document.createElement("button");
+  todas.textContent = "Tudo"; todas.setAttribute("aria-pressed", catAtual===null);
+  todas.onclick = () => escolher(null);
+  nav.appendChild(todas);
+  lista.forEach(c=>{
+    const b = document.createElement("button");
+    b.textContent = nomeDe(c);
+    b.setAttribute("aria-pressed", catAtual===c.id);
+    b.onclick = () => escolher(c.id);
+    nav.appendChild(b);
+  });
+}
+
+/* pesquisa: sem acentos (camara = câmara) e também pelo nome da categoria e subcategoria */
+function semAcento(t){ return String(t||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,""); }
+function caminhoCat(id){
+  const nomes = []; let c = categorias.find(x => x.id === id), n = 0;
+  while(c && n < 8){ nomes.push(nomeDe(c)); c = categorias.find(x => x.id === c.parent_id); n++; }
+  return nomes.join(" ");
+}
+
+function idsDaCategoria(id){
+  const ids = [id];
+  for(let i = 0; i < ids.length; i++){
+    categorias.forEach(c => { if(c.parent_id === ids[i] && !ids.includes(c.id)) ids.push(c.id); });
+  }
+  return ids;
+}
+
+async function todosProdutos(){
+  let tudo = [];
+  for(let ini = 0; ini < 20000; ini += 1000){
+    const parte = await get("products", `select=*&order=created_at.desc&offset=${ini}&limit=1000`);
+    tudo = tudo.concat(parte);
+    if(parte.length < 1000) break;
+  }
+  return tudo;
+}
+
+async function todasCategorias(){
+  let tudo = [];
+  for(let ini = 0; ini < 10000; ini += 1000){
+    const parte = await get("categories", `select=*&order=id&offset=${ini}&limit=1000`);
+    tudo = tudo.concat(parte);
+    if(parte.length < 1000) break;
+  }
+  return tudo;
+}
+
+function escolher(id){
+  catAtual = id;
+  desenharCategorias();
+  desenhar();
+}
+
+function coresDe(p){
+  let v = p.variants;
+  if(typeof v === "string"){ try{ v = JSON.parse(v); }catch(e){ v = []; } }
+  if(!Array.isArray(v)) return [];
+  return [...new Set(v.map(x => x.cor || x.color).filter(Boolean))].slice(0,4);
+}
+
+function desenhar(){
+  const g = $("grelha");
+  let lista = produtos;
+  if(catAtual !== null){
+    const ids = idsDaCategoria(catAtual);
+    lista = lista.filter(p => ids.includes(p.category_id));
+  }
+  if(termo){
+    const palavras = semAcento(termo).split(/\s+/).filter(Boolean);
+    lista = lista.filter(p => {
+      const texto = semAcento(nomeDe(p) + " " + caminhoCat(p.category_id) + " " + (p.description || p.descricao || ""));
+      return palavras.every(w => texto.includes(w));
+    });
+  }
+  const cat = categorias.find(c => c.id === catAtual);
+  $("tituloLista").textContent = termo ? `Resultados para "${termo}"` : (cat ? nomeDe(cat) : "Novidades");
+  $("contagem").textContent = lista.length + (lista.length===1 ? " produto" : " produtos");
+
+  if(!lista.length){
+    g.innerHTML = `<div class="estado"><p>Não encontrámos produtos aqui.</p><button onclick="limpar()">Ver todos os produtos</button></div>`;
+    return;
+  }
+  g.innerHTML = "";
+  lista.forEach(p=>{
+    const a = document.createElement("a");
+    a.className = "card";
+    a.href = "produto-bbabilonia.html?id=" + encodeURIComponent(p.id);
+    const foto = p.image_url
+      ? `<img src="${esc(p.image_url)}" alt="${esc(nomeDe(p))}" loading="lazy">`
+      : `<div class="sem">Sem foto</div>`;
+    const cores = coresDe(p).map(c=>`<i>${esc(c)}</i>`).join("");
+    a.innerHTML = `
+      <div class="foto">${foto}${p.video_url ? '<span class="tag">Vídeo</span>' : ""}</div>
+      <div class="info">
+        <h2>${esc(nomeDe(p))}</h2>
+        <div class="preco">${precoConv(p)}</div>
+        ${cores ? `<div class="cores">${cores}</div>` : ""}
+      </div>`;
+    g.appendChild(a);
+  });
+}
+
+function precoConv(p){
+  if(window.BBPrefs && BBPrefs.converter){
+    const c = BBPrefs.converter(precoDe(p), p.currency || "MZN", TAXAS);
+    return fmt(c.valor, c.moeda);
+  }
+  return fmt(precoDe(p), p.currency);
+}
+
+function mostrarPref(){
+  if(!window.BBPrefs) return;
+  const x = BBPrefs.ler();
+  $("prefTxt").textContent = (x.pais ? x.pais + " · " : "") + (x.moeda || "USD");
+}
+
+function limpar(){ termo = ""; $("q").value = ""; escolher(null); }
+
+async function iniciar(){
+  atualizarCarrinho();
+  $("grelha").innerHTML = '<div class="skel"></div>'.repeat(4);
+  try{
+    const [prods, cats] = await Promise.all([
+      todosProdutos().catch(()=> get("products","select=*&limit=1000")),
+      todasCategorias().catch(()=> get("categories","select=*&limit=1000")).catch(()=> [])
+    ]);
+    produtos = prods; categorias = cats;
+    desenharCategorias();
+    desenhar();
+  }catch(e){
+    $("grelha").innerHTML = `<div class="estado"><p>Não foi possível carregar os produtos.</p><button onclick="iniciar()">Tentar de novo</button></div>`;
+  }
+}
+
+$("q").addEventListener("input", e => { termo = e.target.value.trim(); desenhar(); });
+window.addEventListener("pageshow", atualizarCarrinho);
+$("prefBtn").onclick = () => { if(window.BBPrefs) BBPrefs.abrir(); };
+window.addEventListener("bb-prefs", () => { mostrarPref(); desenhar(); });
+window.addEventListener("load", () => {
+  mostrarPref();
+  if(window.BBPrefs && BBPrefs.taxas) BBPrefs.taxas().then(r => { TAXAS = r; if(produtos.length) desenhar(); });
+});
+iniciar();
+</script>
+<script src="menu-babilonia.js"></script>
+<script src="camara-pesquisa.js"></script>
+<script src="inicio-v2.js"></script>
+</body>
+  </html>
