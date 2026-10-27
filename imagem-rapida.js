@@ -1,7 +1,9 @@
 /* imagem-rapida.js - BBabilonia
    Deixa a leitura de imagens mais rapida. Precisa do imagem-filtro.js carregado antes.
    Nao apaga nada: so troca a funcao verificar e reutiliza as regras do imagem-filtro.js.
-   A leitura comeca logo que a imagem e escolhida (nao espera pelo botao Enviar). */
+   A leitura comeca logo que a imagem e escolhida (nao espera pelo botao Enviar).
+   Le tambem texto chines (微信, 电话, ID WeChat, 抖音...) e aplica as regras de pedido de contacto/email
+   do chat-traducao.js (window.BBPedeContacto) ao texto lido na imagem. */
 (function () {
   'use strict';
   if (window.__bbRapida) return;
@@ -9,9 +11,28 @@
 
   var JSQR = 'https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js';
   var TESS = 'https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js';
+  var LINGUAS = 'eng+chi_sim';
   var MAXLADO = 1800;
   var workerP = null;
   var textoSuspeito = null;
+
+  /* palavras chinesas de contacto e redes (o OCR põe espaços entre os caracteres: são tirados antes) */
+  var CHINES = /微信|威信|薇信|微心|vx号|wx号|加微|加v|加我|v信|电话|手机|号码|联系|联络|客服|扫一扫|扫码|二维码|公众号|小程序|微博|抖音|快手|小红书|淘宝|闲鱼|拼多多|阿里|qq号|企鹅|群号|飞书|钉钉/i;
+
+  function extra(texto) {
+    texto = String(texto || '');
+    var junto = texto.replace(/\s+/g, '');
+    if (CHINES.test(junto)) return 'Não pode enviar contactos ou redes sociais.';
+    if (typeof window.BBPedeContacto === 'function') {
+      var linhas = texto.split(/\r?\n/);
+      for (var i = 0; i < linhas.length; i++) {
+        var l = linhas[i].trim();
+        if (l.length < 3) continue;
+        try { if (window.BBPedeContacto(l)) return 'Não pode enviar contactos (número, telefone, email).'; } catch (e) {}
+      }
+    }
+    return '';
+  }
 
   function carregar(src, pronto) {
     return new Promise(function (ok, erro) {
@@ -27,7 +48,7 @@
   function preparar() {
     if (!workerP) {
       workerP = carregar(TESS, function () { return typeof window.Tesseract !== 'undefined'; })
-        .then(function () { return window.Tesseract.createWorker('eng'); })
+        .then(function () { return window.Tesseract.createWorker(LINGUAS); })
         .then(function (w) { try { localStorage.setItem('bb_ocr_ok', '1'); } catch (e) {} return w; })
         .catch(function (e) { workerP = null; throw e; });
     }
@@ -177,7 +198,8 @@
   function ligar() {
     var fi = window.FiltroImagem;
     if (!fi || typeof fi.textoSuspeito !== 'function') return false;
-    textoSuspeito = fi.textoSuspeito;
+    var base = fi.textoSuspeito;
+    textoSuspeito = function (t) { return base(t) || extra(t); };
     fi.verificar = verificarRapido;
     var antes = false;
     try { antes = localStorage.getItem('bb_ocr_ok') === '1'; } catch (e) {}
