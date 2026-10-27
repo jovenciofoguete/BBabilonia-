@@ -59,6 +59,8 @@ input:focus{outline:none;border-color:var(--rosa)}
 .env .fs a.bx{display:block;margin-top:4px;font-size:12.5px;font-weight:800;color:#fff;background:linear-gradient(90deg,#10b981,#0ea5e9);border-radius:10px;padding:6px 0;text-decoration:none}
 .env button{margin-top:8px;border:0;border-radius:10px;padding:8px 12px;font-weight:800;background:#0e7490;color:#fff;font-size:13px}
 .env small{display:block;color:#475569;margin-top:6px}
+.avb{display:block;text-align:center;margin-top:10px;padding:12px;border-radius:12px;background:linear-gradient(90deg,#f59e0b,#f97316);color:#fff;font-weight:800;text-decoration:none}
+.avd{margin-top:10px;font-size:13.5px;color:#065f46;font-weight:700}
 </style>
 </head>
 <body>
@@ -108,7 +110,7 @@ function k(x){return String(x||'').toLowerCase()}
 function pago(p){return/pago|paid|succeeded|confirmado|retido|liberado/.test(k(p.payment_status))||/pago|paid/.test(k(p.status))}
 function cancelado(p){return/cancel/.test(k(p.status))}
 function enviado(p){return/enviad|shipped|transito/.test(k(p.status))}
-function recebido(p){return/entregue|recebid|delivered|conclu/.test(k(p.status))||/liberado/.test(k(p.escrow_status))}
+function recebido(p){return/entregue|recebid|delivered|conclu/.test(k(p.status))||/entregue|liberado/.test(k(p.escrow_status))}
 var REGRA={
  todos:function(){return true},
  naopago:function(p){return!pago(p)&&!cancelado(p)},
@@ -131,6 +133,76 @@ function envioHtml(p){
  if(!p.rastreio&&!p.foto_pacote)return'';
  var fs=fotosEnvio(p);
  return'<div class="env">🚚 Enviado por <b>'+esc(p.transportadora||'—')+'</b><br>Nº de rastreamento: <b>'+esc(p.rastreio||'—')+'</b>'+
+  (p.rastreio?'<br><button data-copiar="'+esc(p.rastreio)+'">Copiar número</button>':'')+
+  (fs.length?'<div class="fs">'+fs.map(function(u,n){return'<div><a href="'+esc(u)+'" target="_blank"><img src="'+esc(u)+'" alt="Foto do pacote"></a><a class="bx" href="'+esc(u)+(u.indexOf('?')<0?'?':'&')+'download=pacote-'+esc(String(p.id).slice(0,8))+'-'+(n+1)+'.jpg">⬇ Baixar</a></div>'}).join('')+'</div><small>Baixe as fotos do pacote para partilhar com a sua logística.</small>':'')+
+ '</div>';
+}
+function desenhar(){
+ document.querySelectorAll('#filtros button').forEach(function(b){
+  var f=b.getAttribute('data-f'),n=pedidos.filter(REGRA[f]).length;
+  b.classList.toggle('on',f===filtro);
+  var i=b.querySelector('i');if(i)i.remove();
+  if(n)b.insertAdjacentHTML('beforeend','<i>'+n+'</i>');
+ });
+ if(!filtro){$('lista').innerHTML='';return}
+ var l=pedidos.filter(REGRA[filtro]);
+ if(!l.length){$('lista').innerHTML='<div class="vazio">'+(filtro==='todos'?'Ainda não tem pedidos.':'Nenhum pedido em "'+ROT[filtro]+'".')+'</div>';return}
+ $('lista').innerHTML=l.map(function(p){
+  var d=p.created_at?new Date(p.created_at).toLocaleDateString():'';
+  var its=arr(p.items).map(function(i){
+   return'<div class="it">'+(i.foto?'<img src="'+esc(i.foto)+'" alt="">':'')+'<div>'+esc(i.nome||'Produto')+'<br><small>'+
+   esc([i.cor,i.tamanho].filter(Boolean).join(' · '))+' × '+esc(i.qtd||1)+'</small></div></div>'}).join('');
+  return'<div class="ped"><div class="l1"><span>Pedido '+esc(String(p.id).slice(0,8))+'</span><span>'+d+'</span></div>'+
+   '<div class="tot">'+Number(p.total||0).toLocaleString()+' '+esc(p.currency||'')+'</div>'+etiqueta(p)+its+envioHtml(p)+(recebido(p)&&!cancelado(p)?(p.avaliado?'<div class="avd">⭐ Já avaliou este pedido</div>':'<a class="avb" href="avaliar.html?pedido='+encodeURIComponent(p.id)+'">⭐ Avaliar</a>'):'')+'</div>';
+ }).join('');
+ document.querySelectorAll('[data-copiar]').forEach(function(b){b.onclick=function(){var t=b.getAttribute('data-copiar');
+  (navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(function(){b.textContent='Copiado ✓'}).catch(function(){prompt('Copie o número:',t)})}});
+}
+document.querySelectorAll('[data-f]').forEach(function(b){b.onclick=function(e){e.preventDefault();var f=b.getAttribute('data-f');filtro=(filtro===f?'':f);desenhar()}});
+function mostrarPref(){
+ if(!window.BBPrefs)return;
+ var p=BBPrefs.ler(),pais=p.pais,nomePais=pais;
+ try{nomePais=new Intl.DisplayNames([p.idioma,'pt'],{type:'region'}).of(pais)}catch(e){}
+ $('ondeEstou').textContent=nomePais||'escolher';$('lm').textContent=p.idioma+' · '+p.moeda;
+}
+$('pref').onclick=$('pref2').onclick=function(){if(window.BBPrefs)BBPrefs.abrir()};
+window.addEventListener('bb-prefs',mostrarPref);
+async function abrir(){
+ var s=(await sb.auth.getSession()).data.session;
+ $('login').classList.toggle('hide',!!s);$('painel').classList.toggle('hide',!s);
+ if(!s){$('nome').textContent='Meu Babilônia';$('av').textContent='B';$('pref').classList.add('hide');return}
+ var em=String(s.user.email||'');
+ $('pref').classList.remove('hide');$('nome').textContent=em;$('av').textContent=(em[0]||'B').toUpperCase();mostrarPref();
+ $('lista').innerHTML='<div class="vazio">A carregar…</div>';
+ var r=await sb.from('orders').select('*').order('created_at',{ascending:false}).limit(100);
+ pedidos=(r.data||[]).filter(function(p){return String(p.customer_id||'')===s.user.id||k(p.customer_email)===em.toLowerCase()});
+ desenhar();
+}
+$('ent').onclick=async function(){
+ var r=await sb.auth.signInWithPassword({email:$('em').value.trim(),password:$('pw').value});
+ if(r.error){$('msg').textContent='Email ou palavra-passe errados.';return}abrir();
+};
+$('cri').onclick=async function(){
+ var r=await sb.auth.signUp({email:$('em').value.trim(),password:$('pw').value});
+ if(r.error){$('msg').textContent=r.error.message;return}
+ $('msg').textContent='Conta criada. Se pedir confirmação, abra o email; depois toque em Entrar.';abrir();
+};
+$('apoio').onclick=async function(){
+ var b=this;b.disabled=true;
+ var r=await sb.rpc('id_atendimento');
+ b.disabled=false;
+ if(r.error||!r.data){alert('O atendimento ainda não está disponível. Tente mais tarde.');return}
+ location.href='chat-novo2.html?vendedor='+encodeURIComponent(r.data)+'&assunto='+encodeURIComponent('Atendimento ao cliente');
+};
+$('sair').onclick=async function(){await sb.auth.signOut();abrir()};
+abrir();
+</script>
+</body>
+                                                                                                                                                      </html>
+                                                                                                                                                      
+
+   
+>'+esc(p.transportadora||'—')+'</b><br>Nº de rastreamento: <b>'+esc(p.rastreio||'—')+'</b>'+
   (p.rastreio?'<br><button data-copiar="'+esc(p.rastreio)+'">Copiar número</button>':'')+
   (fs.length?'<div class="fs">'+fs.map(function(u,n){return'<div><a href="'+esc(u)+'" target="_blank"><img src="'+esc(u)+'" alt="Foto do pacote"></a><a class="bx" href="'+esc(u)+(u.indexOf('?')<0?'?':'&')+'download=pacote-'+esc(String(p.id).slice(0,8))+'-'+(n+1)+'.jpg">⬇ Baixar</a></div>'}).join('')+'</div><small>Baixe as fotos do pacote para partilhar com a sua logística.</small>':'')+
  '</div>';
