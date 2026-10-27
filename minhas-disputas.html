@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>⚠️ As minhas disputas</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<style>
+:root{--fundo:#f3f0fb;--papel:#fff;--texto:#1b1740;--suave:#6b6590;--linha:#e7e3f3}
+@media (prefers-color-scheme:dark){:root{--fundo:#110e22;--papel:#1d1838;--texto:#f3f0ff;--suave:#a9a2cf;--linha:#2d2752}}
+*{box-sizing:border-box;margin:0}body{font-family:system-ui,sans-serif;background:var(--fundo);color:var(--texto);line-height:1.45}
+.bar{position:sticky;top:0;z-index:5;background:linear-gradient(135deg,#f59e0b,#ea580c);color:#fff;box-shadow:0 4px 14px #0003}
+.bar .l{display:flex;align-items:center;gap:6px;padding:10px 8px 4px}
+.bar button.vt{border:0;background:none;color:#fff;font-size:26px;width:44px;height:44px;border-radius:50%}.bar h1{font-size:18px}
+.tabs{display:flex;gap:6px;overflow-x:auto;padding:4px 12px 12px;scrollbar-width:none}.tabs::-webkit-scrollbar{display:none}
+.tabs button{flex:none;border:0;border-radius:20px;padding:8px 14px;font:inherit;font-size:13.5px;font-weight:700;background:#ffffff2e;color:#fff}
+.tabs button.on{background:#fff;color:#c2410c}.tabs i{font-style:normal;background:#ef4444;color:#fff;border-radius:10px;padding:0 6px;font-size:11px;margin-left:5px}
+main{max-width:620px;margin:0 auto;padding:14px 14px 40px}
+a.it{display:block;background:var(--papel);border-radius:16px;padding:14px;margin-bottom:12px;box-shadow:0 4px 14px #0002;color:inherit;text-decoration:none}
+.l1{display:flex;justify-content:space-between;font-size:13px;color:var(--suave)}
+.est{display:inline-block;font-size:12.5px;font-weight:800;padding:4px 10px;border-radius:20px;background:#fef3c7;color:#92400e;margin:6px 0}
+.est.az{background:#dbeafe;color:#1e40af}.est.ok{background:#d1fae5;color:#065f46}.est.no{background:#ffe4e6;color:#9f1239}
+.t{font-size:14.5px}.ver{display:block;text-align:right;font-size:13px;font-weight:700;color:#ea580c;margin-top:6px}
+.vz{text-align:center;color:var(--suave);padding:36px 10px;background:var(--papel);border-radius:16px}
+input{width:100%;padding:12px;border:2px solid var(--linha);border-radius:12px;font:inherit;font-size:16px;margin:6px 0;background:var(--fundo);color:var(--texto)}
+.btn{width:100%;padding:14px;border:0;border-radius:14px;background:#ea580c;color:#fff;font:inherit;font-weight:800;margin-top:6px}
+.err{color:#dc2626;font-size:14px;margin-top:6px}.hide{display:none}
+</style>
+</head>
+<body>
+<div class="bar"><div class="l"><button class="vt" id="voltar" aria-label="Voltar">&#8592;</button><h1>⚠️ As minhas disputas</h1></div><div class="tabs" id="tabs"></div></div>
+<main>
+ <div id="login" class="hide"><div class="it" style="display:block"><input id="em" type="email" placeholder="Email"><input id="pw" type="password" placeholder="Palavra-passe"><button class="btn" id="ent">Entrar</button><div class="err" id="lmsg"></div></div></div>
+ <div id="lista"></div>
+</main>
+<script>
+var sb=supabase.createClient('https://dsfoqoeawvjafypycldz.supabase.co','sb_publishable_BN4NiVcDab9CqdTY_odgDA_uUOhjja0');
+function $(i){return document.getElementById(i)}
+function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function din(v,m){return Number(v||0).toLocaleString('pt-PT',{maximumFractionDigits:2})+' '+(m||'')}
+var ABAS=[['vez','À espera da minha resposta',function(d){return(d.estado==='negociacao'&&d.proposta_de!=='cliente')||(d.estado==='em_analise'&&d.proposta_de==='admin'&&!d.aceite_cliente)},1],['andamento','Em andamento',function(d){return['aberta','negociacao','em_analise'].indexOf(d.estado)>-1},0],['final','Decisão final',function(d){return['aberta','negociacao','em_analise'].indexOf(d.estado)<0},0]];
+var EST={aberta:['📝 Disputa aberta',''],negociacao:['🤝 Em negociação',''],em_analise:['🎧 Intervenção da BBabilônia','az'],fornecedor_aceitou:['⚖️ Fornecedor aceitou','ok'],acordo:['⚖️ Acordo','ok'],ganha_cliente:['⚖️ A favor do cliente','ok'],ganha_fornecedor:['⚖️ A favor do fornecedor','ok'],dividida:['⚖️ Valor dividido','ok'],cancelada:['Cancelada','no']};
+var eu=null,lista=[],aba=new URLSearchParams(location.search).get('f')||ABAS[0][0];
+function prazo(d){var t=d.prazo||(d.estado==='aberta'?d.prazo_fornecedor:null);if(!t)return'';var h=Math.max(0,Math.ceil((new Date(t)-new Date())/3600000));return' · faltam '+(h>=24?Math.ceil(h/24)+' dia(s)':h+' h')}
+function desenhar(){
+ $('tabs').innerHTML=ABAS.map(function(a){var n=lista.filter(a[2]).length;return'<button data-t="'+a[0]+'" class="'+(a[0]===aba?'on':'')+'">'+a[1]+(a[3]&&n?'<i>'+n+'</i>':'')+'</button>'}).join('');
+ $('tabs').querySelectorAll('button').forEach(function(b){b.onclick=function(){aba=b.getAttribute('data-t');history.replaceState({},'','?f='+aba);desenhar()}});
+ var A=ABAS.filter(function(a){return a[0]===aba})[0]||ABAS[0],l=lista.filter(A[2]);
+ if(!l.length){$('lista').innerHTML='<div class="vz">Nenhuma disputa aqui.</div>';return}
+ $('lista').innerHTML=l.map(function(d){var e=EST[d.estado]||[d.estado,''];
+  return'<a class="it" href="disputa.html?id='+encodeURIComponent(d.id)+'&como=cliente"><div class="l1"><span>Pedido '+esc(String(d.order_id).slice(0,8))+'</span><span>'+new Date(d.updated_at||d.created_at).toLocaleDateString()+'</span></div>'+
+   '<span class="est '+e[1]+'">'+e[0]+'</span><span style="font-size:12.5px;color:var(--suave)">'+prazo(d)+'</span><div class="t">'+esc(d.motivo)+' · '+din(d.valor,d.moeda)+'</div><span class="ver">Abrir disputa ›</span></a>'}).join('');
+}
+async function carregar(){
+ $('lista').innerHTML='<div class="vz">A carregar…</div>';
+ try{await sb.rpc('rever_prazos')}catch(e){}
+ var r=await sb.from('disputas').select('*').eq('cliente_id',eu.id).order('updated_at',{ascending:false}).limit(300);
+ lista=r.data||[];desenhar();
+}
+$('voltar').onclick=function(){if(history.length>1)history.back();else location.href='conta.html'};
+async function abrir(){var s=(await sb.auth.getSession()).data.session;eu=s?s.user:null;$('login').classList.toggle('hide',!!eu);if(eu)carregar()}
+$('ent').onclick=async function(){var r=await sb.auth.signInWithPassword({email:$('em').value.trim(),password:$('pw').value});if(r.error){$('lmsg').textContent='Email ou palavra-passe errados.';return}abrir()};
+abrir();
+</script>
+</body>
+</html>
+  
