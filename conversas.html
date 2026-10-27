@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Conversas do atendimento</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="atd-sessao.js?v=1"></script>
+<script src="filtro-contactos.js"></script>
+<script src="imagem-filtro.js?v=1"></script>
+<script src="provas-envio.js?v=1"></script>
+<script src="pedidos-escolher.js?v=1"></script>
+<script src="respostas-prontas.js?v=1"></script>
+<style>
+:root{--fundo:#f3f0fb;--papel:#fff;--texto:#1b1740;--suave:#6b6590;--linha:#e7e3f3;--az:#0284c7}
+@media (prefers-color-scheme:dark){:root{--fundo:#110e22;--papel:#1d1838;--texto:#f3f0ff;--suave:#a9a2cf;--linha:#2d2752}}
+*{box-sizing:border-box;margin:0}body{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--fundo);color:var(--texto);line-height:1.45}
+.bar{position:sticky;top:0;z-index:5;background:linear-gradient(135deg,#1e293b,#0f766e);color:#fff;display:flex;align-items:center;gap:6px;padding:10px 8px;box-shadow:0 4px 14px #0003}
+.bar button{border:0;background:none;color:#fff;font-size:26px;width:44px;height:44px;border-radius:50%}.bar h1{font-size:17px;flex:1;min-width:0}.bar small{display:block;font-size:12px;opacity:.85;font-weight:400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+main{max-width:720px;margin:0 auto;padding:12px 12px 120px}
+.box{background:var(--papel);border-radius:16px;padding:14px;margin-bottom:12px;box-shadow:0 4px 14px #0001}
+.box h3{font-size:15px;margin-bottom:8px}
+.tabs{display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;margin-bottom:8px}
+.tabs button{flex:none;border:0;border-radius:20px;padding:9px 14px;font:inherit;font-size:13.5px;font-weight:700;background:var(--papel);color:var(--suave)}
+.tabs button.on{background:#0f766e;color:#fff}.tabs i{font-style:normal;background:#ef4444;color:#fff;border-radius:10px;padding:0 6px;margin-left:4px;font-size:11.5px}
+.tk{display:block;width:100%;text-align:left;border:0;font:inherit;color:inherit;background:var(--papel);border-radius:14px;padding:12px 14px;margin-bottom:8px;box-shadow:0 2px 8px #0001;border-left:5px solid transparent}
+.tk.urg{border-left-color:#ef4444}.tk.esp{border-left-color:#f59e0b}
+.tk .l1{display:flex;justify-content:space-between;gap:8px;font-size:12.5px;color:var(--suave)}.tk b{display:block;font-size:15px;margin:3px 0}
+.est{display:inline-block;font-size:11.5px;font-weight:800;padding:2px 9px;border-radius:20px;background:#fef3c7;color:#92400e;margin:2px 4px 0 0}
+.est.az{background:#dbeafe;color:#1e40af}.est.ok{background:#d1fae5;color:#065f46}.est.no{background:#e5e7eb;color:#374151}.est.r{background:#fee2e2;color:#991b1b}
+.bt{display:inline-block;margin:4px 4px 0 0;padding:10px 13px;border:0;border-radius:12px;font:inherit;font-size:13.5px;font-weight:800;color:#fff;background:#0f766e;text-decoration:none}
+.bt.l{background:var(--fundo);color:var(--texto);border:1px solid var(--linha)}.bt.v{background:#059669}.bt.a{background:#ea580c}.bt.r{background:#dc2626}.bt:disabled{opacity:.5}
+.bt.g{display:block;width:100%;margin-top:10px;padding:13px;font-size:15px}
+textarea,select,input{width:100%;padding:11px;border:2px solid var(--linha);border-radius:12px;font:inherit;font-size:16px;background:var(--fundo);color:var(--texto)}
+textarea:focus,select:focus,input:focus{outline:none;border-color:#0f766e}
+.err{color:#dc2626;font-size:14px;margin-top:6px}.inf{color:var(--suave);font-size:13px;margin-top:6px}
+.msgs{display:flex;flex-direction:column;gap:9px;margin-top:8px}
+.m{max-width:86%;padding:9px 12px;border-radius:14px;font-size:14.5px;white-space:pre-line;word-wrap:break-word}
+.m small{display:block;font-size:11px;color:var(--suave);margin-top:3px;white-space:normal}
+.m.cliente{align-self:flex-start;background:var(--papel);border:1px solid var(--linha);border-bottom-left-radius:4px}
+.m.admin{align-self:flex-end;background:#ccfbf1;color:#134e4a;border-bottom-right-radius:4px}
+.m.nota{align-self:stretch;max-width:100%;background:#fef9c3;color:#713f12;border:1px dashed #eab308;font-size:13.5px}
+.m.sistema{align-self:center;background:transparent;color:var(--suave);font-size:12.5px;text-align:center;max-width:94%}
+.dd{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px}.dd div{background:var(--fundo);border-radius:10px;padding:7px 9px;font-size:12px;color:var(--suave)}.dd b{display:block;color:var(--texto);font-size:13.5px}
+.comp{position:fixed;left:0;right:0;bottom:0;background:var(--papel);border-top:1px solid var(--linha);padding:8px 10px calc(8px + env(safe-area-inset-bottom,0px));z-index:6}
+.comp .in{max-width:720px;margin:0 auto}.comp .r{display:flex;gap:6px;align-items:flex-end}.comp textarea{flex:1;min-height:44px;max-height:140px;resize:none}
+.comp .env{border:0;border-radius:12px;padding:0 14px;height:44px;font:inherit;font-weight:800;color:#fff;background:#0f766e}
+.comp .clip{width:44px;height:44px;border-radius:50%;border:0;background:var(--fundo);font-size:19px;flex:none}
+.modo{display:flex;gap:6px;margin-bottom:6px}.modo button{flex:1;border:0;border-radius:10px;padding:7px;font:inherit;font-size:13px;font-weight:700;background:var(--fundo);color:var(--suave)}
+.modo button.on{background:#0f766e;color:#fff}.modo button.on.n{background:#ca8a04}
+.rap{display:flex;gap:6px;overflow-x:auto;margin-bottom:6px}.rap button{flex:none;border:1px solid var(--linha);background:var(--fundo);color:var(--texto);border-radius:16px;padding:7px 11px;font:inherit;font-size:13px;font-weight:700}
+table{width:100%;border-collapse:collapse;font-size:13.5px}td,th{padding:8px 6px;border-bottom:1px solid var(--linha);text-align:left}th{color:var(--suave);font-size:12px}
+.vz{text-align:center;color:var(--suave);padding:26px 10px}.hide{display:none}
+</style>
+</head>
+<body>
+<div class="bar"><button id="voltar" aria-label="Voltar">&#8592;</button><h1 id="tit">💬 Conversas<small>Atendimento a clientes e fornecedores</small></h1><button id="atu" aria-label="Atualizar" style="font-size:20px">🔄</button></div>
+<main><div id="app"><div class="box vz">A carregar…</div></div></main>
+<div class="comp hide" id="comp"><div class="in">
+ <div class="modo"><button id="mcli" class="on">💬 Responder ao cliente</button><button id="mnota" class="n">📝 Nota interna</button></div>
+ <div class="rap" id="rap"></div>
+ <div id="cprov" class="hide"></div><div class="err" id="cmsg"></div>
+ <div class="r"><button class="clip" id="clip" aria-label="Juntar foto ou vídeo">📎</button><textarea id="ctxt" rows="1" maxlength="2000" placeholder="Escreva a resposta"></textarea><button class="env" id="cenv">Enviar</button></div>
+</div></div>
+<script src="conversas.js?v=1"></script>
+</body>
+  </html>
+  
