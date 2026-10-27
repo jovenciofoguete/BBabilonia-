@@ -1,0 +1,152 @@
+<!doctype html><html lang="pt"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Envios | B-Babilônia</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f1f5f9;color:#0f172a;font-family:system-ui,sans-serif}
+header{background:linear-gradient(135deg,#10b981,#0ea5e9 55%,#2563eb);color:#fff;padding:18px 16px 46px}
+header h1{margin:0;font-size:21px}header p{margin:4px 0 0;font-size:13px;opacity:.92}
+main{max-width:560px;margin:-30px auto 0;padding:0 14px 40px}
+.tabs{display:flex;gap:8px;background:#fff;border-radius:16px;padding:6px;box-shadow:0 6px 18px #0f172a1a;margin-bottom:14px}
+.tabs button{flex:1;border:0;border-radius:12px;padding:12px 6px;font-size:14.5px;font-weight:700;background:none;color:#475569}
+.tabs button.on{background:linear-gradient(135deg,#10b981,#0ea5e9);color:#fff}
+.tabs i{font-style:normal;background:#ef4444;color:#fff;border-radius:10px;padding:1px 7px;font-size:12px;margin-left:5px}
+.ped{background:#fff;border-radius:16px;padding:14px;margin-bottom:14px;box-shadow:0 4px 14px #0f172a12}
+.l1{display:flex;justify-content:space-between;font-size:13px;color:#64748b}
+.tot{font-size:19px;font-weight:800;color:#1e3a8a;margin:6px 0}
+.it{display:flex;gap:10px;align-items:center;margin:8px 0;font-size:14px}.it img{width:52px;height:52px;object-fit:cover;border-radius:10px}
+.it small{color:#64748b}
+.mor{background:#f8fafc;border-radius:12px;padding:10px;font-size:13.5px;margin:8px 0;white-space:pre-line}
+label{display:block;font-size:14px;font-weight:700;color:#334155;margin:12px 0 5px}
+input,select{width:100%;padding:13px;border:2px solid #e2e8f0;border-radius:12px;font-size:16px;background:#fff;color:#0f172a}
+input:focus,select:focus{outline:none;border-color:#0ea5e9}
+.fotos{display:flex;flex-wrap:wrap;gap:8px}
+.fotos div{position:relative}.fotos img{width:74px;height:74px;object-fit:cover;border-radius:12px}
+.fotos b{position:absolute;top:-6px;right:-6px;background:#ef4444;color:#fff;width:22px;height:22px;border-radius:50%;text-align:center;line-height:22px;font-size:14px}
+.add{width:74px;height:74px;border:2px dashed #94a3b8;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:26px;color:#64748b;background:#f8fafc}
+.ok{width:100%;margin-top:16px;padding:15px;border:0;border-radius:14px;background:linear-gradient(90deg,#10b981,#0ea5e9);color:#fff;font-size:16px;font-weight:800}
+.ok:disabled{background:#cbd5e1;color:#64748b}
+.falta{font-size:13px;color:#b45309;margin-top:8px}
+.err{color:#dc2626;font-size:14px;margin-top:8px}.suc{color:#059669;font-weight:700}
+.env{background:#ecfdf5;border-radius:12px;padding:10px;font-size:14px;margin-top:8px}
+.vazio{text-align:center;color:#64748b;padding:30px 10px;background:#fff;border-radius:16px}
+.alerta{background:#fffbeb;border:2px solid #f59e0b;border-radius:14px;padding:12px 14px;font-size:14.5px;line-height:1.4;margin:0 0 14px;color:#78350f}.alerta b{display:block;color:#b45309;font-size:15.5px;margin-bottom:3px}.alerta.peq{margin:10px 0 0;font-size:13.5px}
+.hide{display:none}
+#login{background:#fff;border-radius:16px;padding:16px;box-shadow:0 6px 18px #0f172a1a}
+</style></head><body>
+<header><h1>🚚 Envios da minha loja</h1><p>Só pode marcar como enviado depois de pôr as fotos do pacote e o número de rastreamento.</p></header>
+<main>
+<div id="login" class="hide"><label>Email</label><input id="em" type="email"><label>Palavra-passe</label><input id="pw" type="password"><button class="ok" id="ent">Entrar</button><p class="err" id="lmsg"></p></div>
+<div id="app" class="hide">
+ <div class="tabs"><button data-t="por" class="on">Por enviar</button><button data-t="env">Enviados</button></div>
+ <div id="lista"><div class="vazio">A carregar…</div></div>
+</div>
+</main>
+<script>
+var sb=supabase.createClient('https://dsfoqoeawvjafypycldz.supabase.co','sb_publishable_BN4NiVcDab9CqdTY_odgDA_uUOhjja0');
+function $(i){return document.getElementById(i)}
+function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function arr(x){if(typeof x==='string'){try{x=JSON.parse(x)}catch(e){x=[]}}return Array.isArray(x)?x:[]}
+function k(x){return String(x||'').toLowerCase()}
+var eu=null,pedidos=[],aba='por',fotos={};
+var TRANSP=['DHL','FedEx','UPS','Aramex','TNT','EMS / Correios','SF Express','YunExpress','Cainiao','4PX','J&T Express','Transportadora local','Agente de carga','Entrega em mão','Outra'];
+function jaEnviado(p){return/enviad|shipped|transito|entregue|recebid|delivered|conclu/.test(k(p.status))||/entregue|liberado/.test(k(p.escrow_status))}
+function porEnviar(p){return k(p.payment_status)==='pago'&&!jaEnviado(p)&&!/cancel/.test(k(p.status))}
+function fotosDe(p){return arr(p.foto_pacote).length?arr(p.foto_pacote):(p.foto_pacote&&p.foto_pacote[0]!=='['?[p.foto_pacote]:[])}
+function itensHtml(p){return arr(p.items).map(function(i){
+ var op=i.opcoes&&typeof i.opcoes==='object'?Object.keys(i.opcoes).map(function(c){return c+': '+i.opcoes[c]}).join(' · '):'';
+ return'<div class="it">'+(i.foto?'<img src="'+esc(i.foto)+'" alt="">':'')+'<div>'+esc(i.nome||'Produto')+'<br><small>'+esc([i.cor,i.tamanho].filter(Boolean).join(' · '))+' × '+esc(i.qtd||1)+(op?'<br>'+esc(op):'')+'</small></div></div>'}).join('')}
+function desenhar(){
+ var nPor=pedidos.filter(porEnviar).length;
+ document.querySelectorAll('.tabs button').forEach(function(b){
+  var t=b.getAttribute('data-t');b.classList.toggle('on',t===aba);
+  b.innerHTML=(t==='por'?'Por enviar':'Enviados')+(t==='por'&&nPor?'<i>'+nPor+'</i>':'');
+ });
+ var l=pedidos.filter(aba==='por'?porEnviar:function(p){return k(p.payment_status)==='pago'&&jaEnviado(p)});
+ var topoAviso=aba==='por'?'<div class="alerta"><b>⚠️ Atenção antes de enviar o pacote</b>Reserve as fotos do pacote e o número de rastreamento antes de enviar o pacote. É obrigatório registar o número de rastreamento e as fotos do pacote para conseguir marcar como enviado.</div>':'';
+ if(!l.length){$('lista').innerHTML=topoAviso+'<div class="vazio">'+(aba==='por'?'Não há pedidos pagos à espera de envio.':'Ainda não enviou nenhum pedido.')+'</div>';return}
+ $('lista').innerHTML=topoAviso+l.map(function(p){
+  var id=String(p.id),d=p.created_at?new Date(p.created_at).toLocaleDateString():'';
+  var topo='<div class="l1"><span>Pedido '+esc(id.slice(0,8))+'</span><span>'+d+'</span></div><div class="tot">'+Number(p.total||0).toLocaleString()+' '+esc(p.currency||'')+'</div>'+itensHtml(p)+
+   (arr(p.items).some(function(i){return i.personalizado})?'<div class="env" style="background:#eff6ff">🎨 Personalização combinada no chat'+(arr(p.items)[0].prazo_dias?' · prazo '+esc(arr(p.items)[0].prazo_dias)+' dias':'')+'</div>':'')+
+   '<div class="mor"><b>Entregar a:</b> '+esc(p.customer_name||'')+' '+esc(p.customer_phone||'')+'\n'+esc(p.delivery_address||'')+(p.country?' · '+esc(p.country):'')+'</div>';
+  if(aba==='env'){
+   return'<div class="ped">'+topo+'<div class="env">✅ Enviado por <b>'+esc(p.transportadora||'—')+'</b><br>Rastreamento: <b>'+esc(p.rastreio||'—')+'</b>'+(p.shipped_at?'<br>'+new Date(p.shipped_at).toLocaleString():'')+'</div><div class="fotos" style="margin-top:8px">'+fotosDe(p).map(function(u){return'<div><a href="'+esc(u)+'" target="_blank"><img src="'+esc(u)+'" alt=""></a></div>'}).join('')+'</div></div>';
+  }
+  var f=fotos[id]||[];
+  return'<div class="ped" data-id="'+esc(id)+'">'+topo+
+   '<label>📷 Fotos do pacote (obrigatório)</label><div class="fotos">'+f.map(function(x,n){return'<div><img src="'+x.prev+'" alt=""><b data-rm="'+n+'">×</b></div>'}).join('')+(f.length<8?'<label class="add" style="margin:0">+<input type="file" accept="image/*" multiple hidden data-foto></label>':'')+'</div>'+
+   '<label>🔢 Número de rastreamento (obrigatório)</label><input data-r placeholder="Ex.: 1Z999AA10123456784" autocomplete="off">'+
+   '<label>🚚 Transportadora (obrigatório)</label><select data-tr><option value="">— Escolha —</option>'+TRANSP.map(function(t){return'<option>'+esc(t)+'</option>'}).join('')+'</select>'+
+   '<input data-out class="hide" placeholder="Nome da transportadora" style="margin-top:8px">'+
+   '<button class="ok" data-env disabled>Marcar como enviado</button><div class="falta" data-falta></div><div class="err" data-msg></div></div>';
+ }).join('');
+ ligar();
+}
+function valores(c){
+ var tr=c.querySelector('[data-tr]').value;if(tr==='Outra')tr=c.querySelector('[data-out]').value.trim();
+ return{r:c.querySelector('[data-r]').value.trim(),tr:tr,f:(fotos[c.getAttribute('data-id')]||[]).length};
+}
+function verificar(c){
+ var v=valores(c),falta=[];
+ if(!v.f)falta.push('fotos do pacote');if(v.r.length<5)falta.push('número de rastreamento');if(!v.tr)falta.push('transportadora');
+ c.querySelector('[data-env]').disabled=!!falta.length;
+ c.querySelector('[data-falta]').textContent=falta.length?'Falta: '+falta.join(', ')+'.':'';
+}
+function ligar(){
+ document.querySelectorAll('.ped[data-id]').forEach(function(c){
+  var id=c.getAttribute('data-id');
+  var inp=c.querySelector('[data-foto]');
+  if(inp)inp.onchange=function(e){
+   var g=guardarCampos(c);fotos[id]=(fotos[id]||[]).concat([].slice.call(e.target.files).map(function(f){return{file:f,prev:URL.createObjectURL(f)}})).slice(0,8);
+   desenhar();repor(id,g);
+  };
+  c.querySelectorAll('[data-rm]').forEach(function(b){b.onclick=function(){var g=guardarCampos(c);fotos[id].splice(+b.getAttribute('data-rm'),1);desenhar();repor(id,g)}});
+  c.querySelector('[data-r]').oninput=function(){verificar(c)};
+  c.querySelector('[data-tr]').onchange=function(){c.querySelector('[data-out]').classList.toggle('hide',this.value!=='Outra');verificar(c)};
+  c.querySelector('[data-out]').oninput=function(){verificar(c)};
+  c.querySelector('[data-env]').onclick=function(){enviar(c)};
+  verificar(c);
+ });
+}
+function guardarCampos(c){return{r:c.querySelector('[data-r]').value,tr:c.querySelector('[data-tr]').value,o:c.querySelector('[data-out]').value}}
+function repor(id,g){var c=document.querySelector('.ped[data-id="'+id+'"]');if(!c)return;
+ c.querySelector('[data-r]').value=g.r;c.querySelector('[data-tr]').value=g.tr;c.querySelector('[data-out]').value=g.o;c.querySelector('[data-out]').classList.toggle('hide',g.tr!=='Outra');verificar(c)}
+async function enviar(c){
+ var id=c.getAttribute('data-id'),v=valores(c),b=c.querySelector('[data-env]'),m=c.querySelector('[data-msg]');
+ if(!v.f||v.r.length<5||!v.tr){verificar(c);return}
+ if(!confirm('Confirma que o pacote foi entregue à transportadora '+v.tr+'?'))return;
+ b.disabled=true;m.textContent='';
+ try{
+  var urls=[],lista=fotos[id];
+  for(var n=0;n<lista.length;n++){
+   var f=lista[n].file;b.textContent='A enviar foto '+(n+1)+' de '+lista.length+'…';
+   var p=eu.id+'/envio-'+id+'-'+Date.now()+'-'+n+'-'+f.name.replace(/[^\w.]/g,'_');
+   var up=await sb.storage.from('produtos').upload(p,f);
+   if(up.error)throw new Error('Foto '+(n+1)+' não foi enviada: '+up.error.message);
+   urls.push(sb.storage.from('produtos').getPublicUrl(p).data.publicUrl);
+  }
+  b.textContent='A guardar…';
+  var r=await sb.rpc('marcar_enviado',{p_id:id,p_transportadora:v.tr,p_rastreio:v.r,p_foto:JSON.stringify(urls)});
+  if(r.error)throw new Error(r.error.message);
+  delete fotos[id];alert('Pedido marcado como enviado. O cliente foi avisado.');carregar();
+ }catch(e){m.textContent=e.message||String(e);b.textContent='Marcar como enviado';verificar(c)}
+}
+async function carregar(){
+ $('lista').innerHTML='<div class="vazio">A carregar…</div>';
+ var r=await sb.rpc('pedidos_do_fornecedor');
+ if(r.error){$('lista').innerHTML='<div class="vazio">Não foi possível carregar os pedidos.<br><small>'+esc(r.error.message)+'</small></div>';return}
+ pedidos=r.data||[];desenhar();
+}
+document.querySelectorAll('.tabs button').forEach(function(b){b.onclick=function(){aba=b.getAttribute('data-t');desenhar()}});
+async function abrir(){
+ var s=(await sb.auth.getSession()).data.session;eu=s?s.user:null;
+ $('login').classList.toggle('hide',!!eu);$('app').classList.toggle('hide',!eu);
+ if(eu)carregar();
+}
+$('ent').onclick=async function(){
+ var r=await sb.auth.signInWithPassword({email:$('em').value.trim(),password:$('pw').value});
+ if(r.error){$('lmsg').textContent='Email ou palavra-passe errados.';return}abrir();
+};
+abrir();
+</script>
+</body></html>
