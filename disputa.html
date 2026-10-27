@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Disputa</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="filtro-contactos.js"></script>
+<script src="imagem-filtro.js?v=1"></script>
+<style>
+:root{--fundo:#f3f0fb;--papel:#fff;--texto:#1b1740;--suave:#6b6590;--linha:#e7e3f3;--lar:#ea580c}
+@media (prefers-color-scheme:dark){:root{--fundo:#110e22;--papel:#1d1838;--texto:#f3f0ff;--suave:#a9a2cf;--linha:#2d2752}}
+*{box-sizing:border-box;margin:0}
+body{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--fundo);color:var(--texto);line-height:1.45}
+.bar{position:sticky;top:0;z-index:5;background:linear-gradient(135deg,#f59e0b,#ea580c);color:#fff;display:flex;align-items:center;gap:6px;padding:10px 8px;box-shadow:0 4px 14px #0003}
+.bar button{border:0;background:none;color:#fff;font-size:26px;width:44px;height:44px;border-radius:50%}
+.bar h1{font-size:18px}
+main{max-width:620px;margin:0 auto;padding:14px 14px 40px}
+.box{background:var(--papel);border-radius:18px;padding:16px;margin-bottom:12px;box-shadow:0 6px 18px #0002}
+.box h3{font-size:15.5px;margin-bottom:10px}
+.fases{display:flex;align-items:flex-start;margin:2px 0 12px}
+.fase{flex:1;text-align:center;font-size:11.5px;color:var(--suave);position:relative;padding:0 2px}
+.fase b{display:flex;width:30px;height:30px;margin:0 auto 5px;border-radius:50%;align-items:center;justify-content:center;background:var(--linha);color:var(--suave);font-size:13px;position:relative;z-index:1}
+.fase:not(:first-child)::before{content:"";position:absolute;top:14px;right:50%;width:100%;height:3px;background:var(--linha)}
+.fase.feita b{background:#10b981;color:#fff}.fase.feita::before{background:#10b981}
+.fase.agora{color:var(--texto);font-weight:800}.fase.agora b{background:var(--lar);color:#fff;box-shadow:0 0 0 4px rgba(234,88,12,.25)}.fase.agora::before{background:#10b981}
+.fase.salto b{background:var(--linha);color:var(--suave)}.fase.salto{opacity:.5}
+.vez{border-radius:14px;padding:12px;font-size:14.5px;background:#fff7ed;border:2px solid #fb923c;color:#9a3412}
+.vez.az{background:#eff6ff;border-color:#60a5fa;color:#1e3a8a}.vez.ok{background:#ecfdf5;border-color:#34d399;color:#065f46}.vez.no{background:#fef2f2;border-color:#f87171;color:#991b1b}
+.vez b{display:block;font-size:15.5px;margin-bottom:2px}
+.res{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.res div{background:var(--fundo);border-radius:12px;padding:9px 10px;font-size:12.5px;color:var(--suave)}
+.res div b{display:block;font-size:15px;color:var(--texto)}
+.msg{display:flex;gap:10px;margin:14px 0}
+.msg .av{width:34px;height:34px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;font-size:16px;color:#fff}
+.msg.cliente .av{background:#f59e0b}.msg.fornecedor .av{background:#0ea5e9}.msg.admin .av{background:#10b981}.msg.sistema .av{background:#64748b}
+.msg .c{flex:1;min-width:0}.msg .q{font-size:12.5px;color:var(--suave)}.msg .q b{color:var(--texto)}
+.msg .ac{display:inline-block;font-size:12px;font-weight:800;padding:2px 9px;border-radius:12px;background:var(--linha);margin:3px 0}
+.msg p{font-size:14.5px;white-space:pre-line;word-wrap:break-word}
+.fotos{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}.fotos>div{position:relative}
+.fotos img,.fotos video{width:86px;height:86px;object-fit:cover;border-radius:12px;background:#000;display:block}
+.fotos .x{position:absolute;top:-6px;right:-6px;background:#ef4444;color:#fff;width:22px;height:22px;border-radius:50%;text-align:center;line-height:22px;font-size:14px;border:0}
+.fotos .du{position:absolute;bottom:4px;right:4px;background:#000a;color:#fff;font-size:11px;padding:1px 5px;border-radius:6px}
+.add{width:86px;height:86px;border:2px dashed #94a3b8;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:12px;color:var(--suave);text-align:center;line-height:1.2}
+.add span{font-size:24px}
+.op{display:flex;gap:10px;align-items:flex-start;border:2px solid var(--linha);border-radius:12px;padding:11px;margin:8px 0;font-size:14.5px}
+.op.on{border-color:var(--lar);background:rgba(234,88,12,.07)}.op input{width:20px;height:20px;margin-top:1px;flex:none}
+.op small{display:block;color:var(--suave);font-size:12.5px}
+textarea,input[type=number],input[type=email],input[type=password]{width:100%;padding:12px;border:2px solid var(--linha);border-radius:12px;font:inherit;font-size:16px;background:var(--fundo);color:var(--texto)}
+textarea:focus,input:focus{outline:none;border-color:var(--lar)}
+.bt{display:block;width:100%;margin-top:10px;padding:14px;border:0;border-radius:14px;font:inherit;font-size:15.5px;font-weight:800;color:#fff;background:linear-gradient(90deg,#f59e0b,#ea580c)}
+.bt.v{background:linear-gradient(90deg,#10b981,#059669)}.bt.a{background:linear-gradient(90deg,#0ea5e9,#2563eb)}.bt.r{background:#ef4444}
+.bt.l{background:transparent;color:var(--suave);border:2px solid var(--linha)}.bt:disabled{opacity:.5}
+.err{color:#dc2626;font-size:14px;margin-top:8px}.inf{color:var(--suave);font-size:13px;margin-top:6px}
+.prog{height:8px;border-radius:5px;background:var(--linha);overflow:hidden;margin-top:8px;display:none}.prog i{display:block;height:100%;width:0;background:linear-gradient(90deg,#10b981,#0ea5e9);transition:width .2s}
+.papel{display:flex;gap:6px;margin-bottom:12px}.papel button{flex:1;border:0;border-radius:12px;padding:10px 4px;font:inherit;font-size:13px;font-weight:700;background:var(--papel);color:var(--suave)}
+.papel button.on{background:var(--lar);color:#fff}
+.hide{display:none}
+</style>
+</head>
+<body>
+<div class="bar"><button id="voltar" aria-label="Voltar">&#8592;</button><h1 id="tit">⚠️ Disputa</h1></div>
+<main>
+ <div id="login" class="box hide"><h3>Entre na sua conta</h3>
+  <input id="em" type="email" placeholder="Email"><br><br><input id="pw" type="password" placeholder="Palavra-passe">
+  <button class="bt" id="ent">Entrar</button><div class="err" id="lmsg"></div></div>
+ <div id="app"><div class="box">A carregar…</div></div>
+</main>
+<script src="disputa-a.js?v=1"></script>
+<script src="disputa-c.js?v=1"></script>
+<script src="disputa-b.js?v=2"></script>
+</body>
+</html>
