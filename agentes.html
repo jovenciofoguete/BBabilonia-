@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agentes de atendimento</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<style>
+:root{--fundo:#eef2f7;--papel:#fff;--texto:#0f172a;--suave:#64748b;--linha:#e2e8f0;--az:#2563eb}
+@media (prefers-color-scheme:dark){:root{--fundo:#0b1220;--papel:#141c2e;--texto:#e8eefc;--suave:#94a3b8;--linha:#24304a}}
+*{box-sizing:border-box;margin:0}body{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--fundo);color:var(--texto);line-height:1.45}
+.bar{position:sticky;top:0;z-index:5;background:linear-gradient(135deg,#1e3a8a,#2563eb);color:#fff;display:flex;align-items:center;gap:6px;padding:10px 8px;box-shadow:0 4px 14px #0003}
+.bar button{border:0;background:none;color:#fff;font-size:26px;width:44px;height:44px;border-radius:50%}.bar h1{font-size:18px}
+main{max-width:900px;margin:0 auto;padding:16px 14px 40px}
+.box{background:var(--papel);border-radius:16px;padding:16px;margin-bottom:12px;box-shadow:0 4px 14px #0002}
+.box h2{font-size:16px;margin-bottom:10px}
+label{display:block;font-size:13.5px;font-weight:700;color:var(--suave);margin:10px 0 4px}
+input,select{width:100%;padding:12px;border:2px solid var(--linha);border-radius:12px;font:inherit;font-size:16px;background:var(--fundo);color:var(--texto)}
+.g{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.bt{display:block;width:100%;margin-top:12px;padding:14px;border:0;border-radius:14px;font:inherit;font-size:15.5px;font-weight:800;color:#fff;background:linear-gradient(90deg,#2563eb,#1d4ed8)}
+.bt:disabled{opacity:.5}
+.ag{display:flex;gap:12px;align-items:flex-start;border-top:1px solid var(--linha);padding:12px 0}
+.ag:first-of-type{border-top:0}
+.av{width:42px;height:42px;border-radius:50%;background:#dbeafe;color:#1e40af;display:flex;align-items:center;justify-content:center;font-weight:900;flex:none}
+.ag .c{flex:1;min-width:0}.ag .c b{font-size:15.5px}.ag .c small{display:block;color:var(--suave);word-break:break-all}
+.est{display:inline-block;font-size:12px;font-weight:800;padding:3px 9px;border-radius:20px;background:#dbeafe;color:#1e40af;margin:4px 4px 0 0}
+.est.s{background:#ede9fe;color:#5b21b6}.est.off{background:#fee2e2;color:#991b1b}.est.v{background:#d1fae5;color:#065f46}
+.acs{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}.acs button{border:0;border-radius:10px;padding:8px 11px;font:inherit;font-size:13px;font-weight:700;background:var(--fundo);color:var(--texto)}
+.acs .conv{background:#10b981;color:#fff}
+.err{color:#dc2626;font-size:14px;margin-top:8px}.inf{color:var(--suave);font-size:13px;margin-top:6px}.ok{color:#059669}
+.hide{display:none}
+</style>
+</head>
+<body>
+<div class="bar"><button id="voltar" aria-label="Voltar">&#8592;</button><h1>👥 Agentes de atendimento</h1></div>
+<main>
+ <div id="sem" class="box hide">Esta página é só para o dono e os superiores. <a href="atendimento.html">Entrar no atendimento</a></div>
+ <div id="app" class="hide">
+  <div class="box"><h2 id="ftit">➕ Adicionar agente</h2>
+   <label>Email do agente</label><input id="fe" type="email" placeholder="nome@exemplo.com">
+   <label>Nome</label><input id="fn" placeholder="Nome que aparece na equipa">
+   <div class="g"><div><label>Idiomas</label><input id="fi" placeholder="pt, en, zh"></div>
+   <div><label>Máximo de casos</label><input id="fm" type="number" min="1" max="100" value="10" inputmode="numeric"></div></div>
+   <div id="nivBox"><label>Nível</label><select id="fv"><option value="agente">Agente</option><option value="superior">Superior (chefe de equipa)</option></select>
+   <div id="supBox"><label>Superior responsável (equipa)</label><select id="fs"><option value="">Sem equipa (pedidos vão para si)</option></select></div></div>
+   <button class="bt" id="guardar">Guardar agente</button><div class="err" id="fmsg"></div>
+   <p class="inf">Depois de guardar, toque em <b>📤 Enviar convite</b>. A primeira entrada nas próximas 48 horas é aprovada sozinha.</p>
+  </div>
+  <div class="box"><h2>Equipa</h2><div id="lista">A carregar…</div></div>
+ </div>
+</main>
+<script>
+var LINK=location.origin+'/atendimento.html';
+var sb=supabase.createClient('https://dsfoqoeawvjafypycldz.supabase.co','sb_publishable_BN4NiVcDab9CqdTY_odgDA_uUOhjja0');
+function $(i){return document.getElementById(i)}
+function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+var EU={},lista=[],abertos={};
+function convite(a){return'Olá '+a.nome+'! Foi adicionado'+(a.nivel==='superior'?' como superior':'')+' à equipa de atendimento da BBabilônia.\n\n1) Abra: '+LINK+'\n2) Na primeira vez toque em "Primeira vez? Criar conta" com o email '+a.email+'\n3) Entre nas próximas 48 horas: a primeira entrada é aprovada sozinha.\nNum aparelho novo, o seu superior aprova a entrada.'}
+function desenhar(){
+ $('lista').innerHTML=lista.length?lista.map(function(a,i){
+  var pode=EU.supervisor||a.nivel!=='superior';
+  return'<div class="ag"><div class="av">'+esc((a.nome||'?')[0].toUpperCase())+'</div><div class="c"><b>'+esc(a.nome)+'</b><small>'+esc(a.email)+'</small>'+
+   '<span class="est '+(a.nivel==='superior'?'s':'')+'">'+(a.nivel==='superior'?'⭐ Superior':'Agente')+'</span>'+
+   '<span class="est '+(a.ativo?'v':'off')+'">'+(a.ativo?'Ativo':'Desativado')+'</span>'+
+   '<span class="est">'+(abertos[a.email]||0)+' / '+a.max_casos+' casos</span>'+(a.idiomas?'<span class="est">🌐 '+esc(a.idiomas)+'</span>':'')+(a.nivel==='agente'&&a.superior_email?'<span class="est">👥 Equipa de '+esc((lista.filter(function(x){return x.email===a.superior_email})[0]||{nome:a.superior_email}).nome)+'</span>':'')+
+   '<div class="acs"><button class="conv" data-cv="'+i+'">📤 Enviar convite</button><button data-cp="'+i+'">🔗 Copiar link</button>'+
+   (pode?'<button data-ed="'+i+'">✏️ Editar</button><button data-at="'+i+'">'+(a.ativo?'⛔ Desativar':'✅ Ativar')+'</button>':'')+'</div></div></div>'}).join(''):'<p class="inf">Ainda não há agentes. Adicione o primeiro em cima.</p>';
+ document.querySelectorAll('[data-cv]').forEach(function(b){b.onclick=function(){var a=lista[+b.getAttribute('data-cv')],t=convite(a);
+  if(navigator.share){navigator.share({title:'Atendimento BBabilônia',text:t}).catch(function(){})}else{location.href='https://wa.me/?text='+encodeURIComponent(t)}}});
+ document.querySelectorAll('[data-cp]').forEach(function(b){b.onclick=function(){var t=convite(lista[+b.getAttribute('data-cp')]);
+  (navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(function(){b.textContent='Copiado ✓'}).catch(function(){prompt('Copie:',t)})}});
+ document.querySelectorAll('[data-ed]').forEach(function(b){b.onclick=function(){var a=lista[+b.getAttribute('data-ed')];
+  $('fe').value=a.email;$('fn').value=a.nome;$('fi').value=a.idiomas||'';$('fm').value=a.max_casos;$('fv').value=a.nivel;$('fs').value=a.superior_email||'';$('supBox').classList.toggle('hide',a.nivel==='superior');$('ftit').textContent='✏️ Editar '+a.nome;window.scrollTo(0,0)}});
+ document.querySelectorAll('[data-at]').forEach(function(b){b.onclick=async function(){var a=lista[+b.getAttribute('data-at')];
+  if(!confirm(a.ativo?'Desativar '+a.nome+'? Perde o acesso já e os casos abertos voltam à fila.':'Ativar '+a.nome+'?'))return;
+  b.disabled=true;var r=await sb.rpc('agente_guardar',{p_email:a.email,p_nome:a.nome,p_idiomas:a.idiomas,p_max:a.max_casos,p_ativo:!a.ativo,p_nivel:a.nivel,p_superior:a.superior_email||null});
+  if(r.error)alert(r.error.message);carregar()}});
+}
+$('guardar').onclick=async function(){
+ var b=this,m=$('fmsg');m.textContent='';m.className='err';
+ var e=$('fe').value.trim().toLowerCase(),n=$('fn').value.trim(),mx=parseInt($('fm').value,10)||10;
+ if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e))return m.textContent='Escreva um email válido.';
+ if(n.length<2)return m.textContent='Escreva o nome.';
+ var ex=lista.filter(function(a){return a.email===e})[0];
+ b.disabled=true;
+ var r=await sb.rpc('agente_guardar',{p_email:e,p_nome:n,p_idiomas:$('fi').value.trim(),p_max:mx,p_ativo:ex?ex.ativo:true,p_nivel:EU.supervisor?$('fv').value:'agente',p_superior:EU.supervisor&&$('fv').value==='agente'?($('fs').value||null):null});
+ b.disabled=false;
+ if(r.error)return m.textContent=r.error.message;
+ m.className='err ok';m.textContent='Guardado ✓ Agora envie-lhe o convite.';
+ $('fe').value='';$('fn').value='';$('fi').value='';$('fm').value='10';$('fv').value='agente';$('fs').value='';$('supBox').classList.remove('hide');$('ftit').textContent='➕ Adicionar agente';
+ carregar();
+};
+async function carregar(){
+ var r=await sb.from('agentes').select('*').order('nivel',{ascending:false}).order('nome');lista=r.data||[];
+ $('fs').innerHTML='<option value="">Sem equipa (pedidos vão para si)</option>'+lista.filter(function(x){return x.nivel==='superior'&&x.ativo}).map(function(x){return'<option value="'+esc(x.email)+'">'+esc(x.nome)+'</option>'}).join('');
+ var d=await sb.from('disputas').select('atendente_email,estado').eq('estado','em_analise');abertos={};
+ (d.data||[]).forEach(function(x){if(x.atendente_email)abertos[x.atendente_email]=(abertos[x.atendente_email]||0)+1});
+ desenhar();
+}
+$('voltar').onclick=function(){if(history.length>1)history.back();else location.href='atendimento.html'};
+(async function(){
+ var s=(await sb.auth.getSession()).data.session;
+ if(!s){location.href='atendimento.html';return}
+ var r=await sb.rpc('meu_atendimento');EU=r.data||{};
+ if(!EU.chefe){$('sem').classList.remove('hide');return}
+ if(!EU.supervisor)$('nivBox').classList.add('hide');
+ $('fv').onchange=function(){$('supBox').classList.toggle('hide',this.value==='superior')};
+ $('app').classList.remove('hide');carregar();
+})();
+</script>
+</body>
+  </html>
+  
