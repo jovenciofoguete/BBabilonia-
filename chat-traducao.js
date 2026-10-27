@@ -134,6 +134,14 @@
           var de = r.de || base(x.idioma);
           if (de === para || r.t.trim().toLowerCase() === x.texto.trim().toLowerCase()) return;
           var hora = el.querySelector('small');
+          // anti-contactos também na tradução (ex.: números escritos noutra língua que viram dígitos)
+          var F = window.FiltroContactos;
+          if (!minha && F && F.verificar && !F.verificar(r.t).ok) {
+            var t0 = el.firstChild;
+            while (t0 && t0.nodeType !== 3) t0 = t0.nextSibling;
+            if (t0) t0.nodeValue = '⚠️ Mensagem ocultada: contém contactos ou meios fora da plataforma.';
+            return;
+          }
           var caixa = document.createElement('div');
           caixa.className = 'bb-tr';
           if (minha) {
@@ -163,4 +171,3 @@
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', vigiar); else vigiar();
 })();
-    
