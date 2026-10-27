@@ -1,0 +1,124 @@
+<!doctype html><html lang="pt"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Avaliar | B-Babilônia</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="filtro-contactos.js"></script>
+<script src="imagem-filtro.js?v=1"></script>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f1f5f9;color:#0f172a;font-family:system-ui,sans-serif}
+header{background:linear-gradient(135deg,#10b981,#0ea5e9 55%,#2563eb);color:#fff;padding:18px 16px 46px}
+header h1{margin:0;font-size:21px}header p{margin:4px 0 0;font-size:13px;opacity:.92}
+main{max-width:560px;margin:-30px auto 0;padding:0 14px 40px}
+.box{background:#fff;border-radius:16px;padding:16px;margin-bottom:14px;box-shadow:0 4px 14px #0f172a12}
+.it{display:flex;gap:12px;align-items:center}.it img{width:64px;height:64px;object-fit:cover;border-radius:12px;flex:none;background:#e2e8f0}
+.it b{display:block;font-size:15.5px}.it small{color:#64748b}
+.est{display:flex;gap:6px;margin:14px 0 4px}.est button{border:0;background:none;font-size:36px;line-height:1;padding:0;color:#cbd5e1}
+.est button.on{color:#f59e0b}
+.leg{font-size:13.5px;color:#b45309;font-weight:700;min-height:18px}
+textarea{width:100%;padding:12px;border:2px solid #e2e8f0;border-radius:12px;font-size:16px;font-family:inherit;margin-top:8px}
+textarea:focus{outline:none;border-color:#0ea5e9}
+label.t{display:block;font-size:14px;font-weight:700;color:#334155;margin:12px 0 6px}
+.fotos{display:flex;flex-wrap:wrap;gap:8px}.fotos div{position:relative}.fotos img{width:74px;height:74px;object-fit:cover;border-radius:12px}
+.fotos b{position:absolute;top:-6px;right:-6px;background:#ef4444;color:#fff;width:22px;height:22px;border-radius:50%;text-align:center;line-height:22px;font-size:14px}
+.add{width:74px;height:74px;border:2px dashed #94a3b8;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:26px;color:#64748b;background:#f8fafc}
+.ok{width:100%;margin-top:14px;padding:15px;border:0;border-radius:14px;background:linear-gradient(90deg,#10b981,#0ea5e9);color:#fff;font-size:16px;font-weight:800}
+.ok:disabled{opacity:.5}
+.err{color:#dc2626;font-size:14px;margin-top:8px}.inf{color:#475569;font-size:13.5px;margin-top:8px}
+.feito{background:#ecfdf5;border-radius:12px;padding:12px;margin-top:12px;font-size:14px}.feito .s{color:#f59e0b;font-size:20px}
+input[type=email],input[type=password]{width:100%;padding:13px;border:2px solid #e2e8f0;border-radius:12px;font-size:16px;margin:6px 0}
+.hide{display:none}a.lk{color:#0b57d0}
+</style></head><body>
+<header><h1>⭐ Avaliar o pedido</h1><p>A sua opinião ajuda outros clientes a escolher.</p></header>
+<main>
+<div id="login" class="box hide"><b>Entre na sua conta</b>
+ <input id="em" type="email" placeholder="Email" autocomplete="username"><input id="pw" type="password" placeholder="Palavra-passe" autocomplete="current-password">
+ <button class="ok" id="ent">Entrar</button><div class="err" id="lmsg"></div></div>
+<div id="lista"></div>
+<p style="text-align:center"><a class="lk" href="conta.html">‹ Voltar ao Meu Babilônia</a></p>
+</main>
+<script>
+var sb=supabase.createClient('https://dsfoqoeawvjafypycldz.supabase.co','sb_publishable_BN4NiVcDab9CqdTY_odgDA_uUOhjja0');
+function $(i){return document.getElementById(i)}
+function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function arr(x){if(typeof x==='string'){try{x=JSON.parse(x)}catch(e){x=[]}}return Array.isArray(x)?x:[]}
+var PED=new URLSearchParams(location.search).get('pedido'),eu=null,ped=null,feitas={},estado={};
+var LEG=['','Muito mau','Mau','Razoável','Bom','Excelente'];
+function chave(i,n){return String(i.id||i.link_id||n)}
+function recebido(p){return/entregue|recebid|delivered|conclu/.test(String(p.status||'').toLowerCase())||/entregue|liberado/.test(String(p.escrow_status||'').toLowerCase())}
+function estrelas(n){var s='';for(var i=1;i<=5;i++)s+=i<=n?'★':'☆';return s}
+function desenhar(){
+ var its=arr(ped.items);
+ if(!recebido(ped)){$('lista').innerHTML='<div class="box">Este pedido ainda não foi recebido. Pode avaliar depois de o receber.</div>';return}
+ $('lista').innerHTML=its.map(function(i,n){
+  var k=chave(i,n),f=feitas[k],e=estado[k]||(estado[k]={n:0,t:'',fotos:[]});
+  var topo='<div class="it">'+(i.foto?'<img src="'+esc(i.foto)+'" alt="">':'<img alt="">')+'<div><b>'+esc(i.nome||'Produto')+'</b><small>'+esc([i.cor,i.tamanho].filter(Boolean).join(' · '))+' × '+esc(i.qtd||1)+'</small></div></div>';
+  if(f)return'<div class="box">'+topo+'<div class="feito"><span class="s">'+estrelas(f.estrelas)+'</span><br>'+esc(f.comentario||'')+'<br><small>✅ Avaliação publicada</small></div></div>';
+  return'<div class="box" data-k="'+esc(k)+'">'+topo+
+   '<div class="est">'+[1,2,3,4,5].map(function(s){return'<button data-s="'+s+'" class="'+(s<=e.n?'on':'')+'" aria-label="'+s+' estrelas">★</button>'}).join('')+'</div>'+
+   '<div class="leg">'+(e.n?LEG[e.n]:'Toque nas estrelas')+'</div>'+
+   '<textarea data-t rows="3" maxlength="1000" placeholder="Conte como foi: qualidade, tamanho, cor, entrega…">'+esc(e.t)+'</textarea>'+
+   '<label class="t">📷 Fotos do produto (opcional, até 6)</label><div class="fotos">'+e.fotos.map(function(x,j){return'<div><img src="'+x.prev+'" alt=""><b data-rm="'+j+'">×</b></div>'}).join('')+
+   (e.fotos.length<6?'<label class="add">+<input type="file" accept="image/jpeg,image/png,image/webp" hidden data-f></label>':'')+'</div>'+
+   '<div class="inf" data-inf></div><button class="ok" data-pub'+(e.n?'':' disabled')+'>Publicar avaliação</button><div class="err" data-msg></div></div>';
+ }).join('');
+ document.querySelectorAll('.box[data-k]').forEach(ligar);
+}
+function ligar(c){
+ var k=c.getAttribute('data-k'),e=estado[k];
+ c.querySelectorAll('[data-s]').forEach(function(b){b.onclick=function(){e.n=+b.getAttribute('data-s');e.t=c.querySelector('[data-t]').value;desenhar()}});
+ c.querySelector('[data-t]').oninput=function(){e.t=this.value};
+ c.querySelectorAll('[data-rm]').forEach(function(b){b.onclick=function(){e.t=c.querySelector('[data-t]').value;e.fotos.splice(+b.getAttribute('data-rm'),1);desenhar()}});
+ var inp=c.querySelector('[data-f]');
+ if(inp)inp.onchange=async function(){
+  var f=this.files&&this.files[0];this.value='';if(!f)return;
+  e.t=c.querySelector('[data-t]').value;
+  var inf=c.querySelector('[data-inf]'),msg=c.querySelector('[data-msg]');msg.textContent='';
+  if(!window.FiltroImagem){msg.textContent='Não foi possível verificar a imagem.';return}
+  inf.textContent='A verificar a imagem…';
+  var r=await window.FiltroImagem.verificar(f,function(t){inf.textContent=t});
+  inf.textContent='';
+  if(!r.ok){msg.textContent=r.motivo;return}
+  e.fotos.push({file:f,prev:URL.createObjectURL(f)});desenhar();
+ };
+ c.querySelector('[data-pub]').onclick=async function(){
+  var b=this,msg=c.querySelector('[data-msg]');msg.textContent='';
+  e.t=c.querySelector('[data-t]').value.trim();
+  if(!e.n){msg.textContent='Escolha as estrelas.';return}
+  if(e.t&&window.FiltroContactos&&!window.FiltroContactos.verificar(e.t).ok){msg.textContent='O comentário tem contactos, links ou redes sociais. Não é permitido.';return}
+  b.disabled=true;
+  try{
+   var urls=[];
+   for(var j=0;j<e.fotos.length;j++){
+    b.textContent='A enviar foto '+(j+1)+' de '+e.fotos.length+'…';
+    var f=e.fotos[j].file,p=eu.id+'/avaliacao-'+String(ped.id).slice(0,8)+'-'+Date.now()+'-'+j+'-'+f.name.replace(/[^\w.]/g,'_');
+    var up=await sb.storage.from('produtos').upload(p,f);
+    if(up.error)throw new Error('Foto '+(j+1)+' não foi enviada: '+up.error.message);
+    urls.push(sb.storage.from('produtos').getPublicUrl(p).data.publicUrl);
+   }
+   b.textContent='A publicar…';
+   var r=await sb.rpc('avaliar',{p_pedido:String(ped.id),p_item:k,p_estrelas:e.n,p_comentario:e.t,p_fotos:JSON.stringify(urls)});
+   if(r.error)throw new Error(r.error.message);
+   feitas[k]={estrelas:e.n,comentario:e.t};desenhar();
+  }catch(er){msg.textContent=er.message||String(er);b.disabled=false;b.textContent='Publicar avaliação'}
+ };
+}
+async function abrir(){
+ var s=(await sb.auth.getSession()).data.session;eu=s?s.user:null;
+ $('login').classList.toggle('hide',!!eu);
+ if(!eu){$('lista').innerHTML='';return}
+ if(!PED){$('lista').innerHTML='<div class="box">Pedido não indicado.</div>';return}
+ $('lista').innerHTML='<div class="box">A carregar…</div>';
+ var r=await sb.from('orders').select('*').eq('id',PED).maybeSingle();
+ if(r.error||!r.data){$('lista').innerHTML='<div class="box">Pedido não encontrado.</div>';return}
+ ped=r.data;
+ var a=await sb.from('avaliacoes').select('*').eq('order_id',String(ped.id));
+ (a.data||[]).forEach(function(x){feitas[x.item]=x});
+ desenhar();
+}
+$('ent').onclick=async function(){
+ var r=await sb.auth.signInWithPassword({email:$('em').value.trim(),password:$('pw').value});
+ if(r.error){$('lmsg').textContent='Email ou palavra-passe errados.';return}abrir();
+};
+abrir();
+</script>
+</body></html>
+  
