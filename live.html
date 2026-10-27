@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Live B-Babilônia</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/livekit-client@2/dist/livekit-client.umd.min.js"></script>
+<style>
+:root{--verde:#0f9d58;--azul:#1565c0;--fundo:#0b1220;--cartao:#121c30;--txt:#eef3ff;--cinza:#9fb0cc}
+*{box-sizing:border-box}
+body{margin:0;background:var(--fundo);color:var(--txt);font-family:system-ui,-apple-system,sans-serif}
+header{background:linear-gradient(90deg,var(--verde),var(--azul));padding:14px 16px;font-weight:700;font-size:18px;display:flex;justify-content:space-between;align-items:center}
+header a{color:#fff;text-decoration:none;font-size:14px}
+main{padding:16px;max-width:640px;margin:0 auto}
+.palco{position:relative;background:#000;border-radius:14px;overflow:hidden;aspect-ratio:9/16;max-height:70vh;margin:0 auto}
+video{width:100%;height:100%;object-fit:cover;display:block}
+.selo{position:absolute;top:10px;left:10px;background:#e53935;color:#fff;font-weight:700;font-size:13px;padding:4px 10px;border-radius:20px;display:none}
+.olhos{position:absolute;top:10px;right:10px;background:rgba(0,0,0,.55);font-size:13px;padding:4px 10px;border-radius:20px}
+.vazio{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;padding:20px;color:var(--cinza)}
+button{width:100%;border:0;border-radius:12px;padding:14px;font-size:16px;font-weight:700;color:#fff;margin-top:10px;cursor:pointer}
+.b-verde{background:var(--verde)}.b-azul{background:var(--azul)}.b-verm{background:#c62828}
+button:disabled{opacity:.5}
+input{width:100%;padding:13px;border-radius:10px;border:1px solid #2a3a5c;background:var(--cartao);color:var(--txt);font-size:16px;margin-top:8px}
+.cartao{background:var(--cartao);border-radius:14px;padding:16px;margin-top:14px}
+.msg{margin-top:12px;color:#ffd54f;min-height:20px;font-size:14px}
+.link{word-break:break-all;font-size:13px;color:#90caf9}
+.oculto{display:none}
+</style>
+</head>
+<body>
+<header><span>🔴 Live B-Babilônia</span><a href="painel-vendedor.html" id="voltar">Painel</a></header>
+<main>
+  <div class="palco">
+    <video id="video" autoplay playsinline muted></video>
+    <span class="selo" id="selo">AO VIVO</span>
+    <span class="olhos" id="olhos">👁 0</span>
+    <div class="vazio" id="vazio">A preparar…</div>
+  </div>
+
+  <div class="cartao oculto" id="caixaLogin">
+    <b>Entre na sua conta de vendedor</b>
+    <input id="em" type="email" placeholder="Email">
+    <input id="pw" type="password" placeholder="Palavra-passe">
+    <button class="b-azul" id="btEntrar">Entrar</button>
+  </div>
+
+  <div class="oculto" id="caixaVendedor">
+    <button class="b-verde" id="btComecar">▶ Começar live</button>
+    <button class="b-azul oculto" id="btVirar">🔄 Trocar câmara</button>
+    <button class="b-verm oculto" id="btTerminar">■ Terminar live</button>
+    <div class="cartao oculto" id="caixaLink">
+      <b>Link da sua live para os clientes:</b>
+      <p class="link" id="link"></p>
+      <button class="b-azul" id="btCopiar">Copiar link</button>
+    </div>
+  </div>
+
+  <div class="oculto" id="caixaCliente">
+    <button class="b-verde" id="btAssistir">▶ Entrar na live</button>
+  </div>
+
+  <div class="msg" id="msg"></div>
+</main>
+
+<script>
+var sb = supabase.createClient('https://dsfoqoeawvjafypycldz.supabase.co', 'sb_publishable_BN4NiVcDab9CqdTY_odgDA_uUOhjja0');
+var LK = LivekitClient;
+var sala = new URLSearchParams(location.search).get('sala');
+var room = null, frente = true;
+function $(i) { return document.getElementById(i); }
+function msg(t) { $('msg').textContent = t || ''; }
+function mostrar(i, s) { $(i).classList.toggle('oculto', !s); }
+function vazio(t) { $('vazio').textContent = t; $('vazio').style.display = t ? 'flex' : 'none'; }
+function aoVivo(s) { $('selo').style.display = s ? 'inline-block' : 'none'; }
+function contar() { if (room) $('olhos').textContent = '👁 ' + room.remoteParticipants.size; }
+
+async function pedirEntrada(papel) {
+  var s = (await sb.auth.getSession()).data.session;
+  var h = s ? { Authorization: 'Bearer ' + s.access_token } : {};
+  var r = await fetch('/api/livekit-token?papel=' + papel + (sala ? '&sala=' + encodeURIComponent(sala) : ''), { headers: h });
+  var j = await r.json();
+  if (!r.ok) throw new Error(j.erro || 'Erro ao entrar na live');
+  return j;
+}
+
+function novaSala() {
+  room = new LK.Room({ adaptiveStream: true, dynacast: true });
+  room.on(LK.RoomEvent.ParticipantConnected, contar);
+  room.on(LK.RoomEvent.ParticipantDisconnected, contar);
+  return room;
+}
+
+async function iniciarVendedor() {
+  var s = (await sb.auth.getSession()).data.session;
+  if (!s) { mostrar('caixaLogin', true); vazio('Entre na sua conta para fazer live'); return; }
+  mostrar('caixaLogin', false); mostrar('caixaVendedor', true);
+  vazio('Toque em "Começar live" para ligar a câmara');
+}
+
+$('btEntrar').onclick = async function () {
+  msg('A entrar…');
+  var r = await sb.auth.signInWithPassword({ email: $('em').value.trim(), password: $('pw').value });
+  if (r.error) return msg('Email ou palavra-passe errados');
+  msg(''); iniciarVendedor();
+};
+
+$('btComecar').onclick = async function () {
+  this.disabled = true; msg('A ligar a câmara…');
+  try {
+    var j = await pedirEntrada('vendedor');
+    novaSala();
+    await room.connect(j.url, j.token);
+    await room.localParticipant.setMicrophoneEnabled(true);
+    await room.localParticipant.setCameraEnabled(true, { facingMode: 'user' });
+    var pub = room.localParticipant.getTrackPublication(LK.Track.Source.Camera);
+    if (pub && pub.track) pub.track.attach($('video'));
+    vazio(''); aoVivo(true); contar(); msg('');
+    $('link').textContent = location.origin + '/live.html?sala=' + j.sala;
+    mostrar('btComecar', false); mostrar('btVirar', true); mostrar('btTerminar', true); mostrar('caixaLink', true);
+  } catch (e) {
+    msg('Não foi possível começar: ' + e.message + '. Verifique se deu permissão à câmara e ao microfone.');
+    this.disabled = false;
+  }
+};
+
+$('btVirar').onclick = async function () {
+  var pub = room && room.localParticipant.getTrackPublication(LK.Track.Source.Camera);
+  if (!pub || !pub.track) return;
+  frente = !frente;
+  try { await pub.track.restartTrack({ facingMode: frente ? 'user' : 'environment' }); }
+  catch (e) { msg('Este telemóvel não deixou trocar a câmara'); }
+};
+
+$('btTerminar').onclick = async function () {
+  if (room) await room.disconnect();
+  room = null; aoVivo(false); $('video').srcObject = null;
+  vazio('Live terminada'); $('olhos').textContent = '👁 0';
+  mostrar('btVirar', false); mostrar('btTerminar', false); mostrar('caixaLink', false);
+  mostrar('btComecar', true); $('btComecar').disabled = false;
+};
+
+$('btCopiar').onclick = function () {
+  var t = $('link').textContent;
+  if (navigator.clipboard) navigator.clipboard.writeText(t).then(function () { msg('Link copiado'); }, function () { msg(t); });
+  else msg(t);
+};
+
+function iniciarCliente() {
+  $('voltar').href = 'index.html'; $('voltar').textContent = 'Loja';
+  mostrar('caixaCliente', true);
+  vazio('Toque em "Entrar na live" para assistir');
+}
+
+$('btAssistir').onclick = async function () {
+  this.disabled = true; msg('A entrar…');
+  try {
+    var j = await pedirEntrada('cliente');
+    novaSala();
+    room.on(LK.RoomEvent.TrackSubscribed, function (track) {
+      if (track.kind === 'video') { $('video').muted = true; track.attach($('video')); vazio(''); aoVivo(true); }
+      else { var a = track.attach(); a.style.display = 'none'; document.body.appendChild(a); }
+    });
+    room.on(LK.RoomEvent.TrackUnsubscribed, function (track) {
+      track.detach().forEach(function (el) { if (el.tagName === 'AUDIO') el.remove(); });
+      if (track.kind === 'video') { aoVivo(false); vazio('A live terminou ou foi interrompida'); }
+    });
+    room.on(LK.RoomEvent.Disconnected, function () { aoVivo(false); vazio('Saiu da live'); });
+    await room.connect(j.url, j.token);
+    await room.startAudio();
+    contar(); msg('');
+    mostrar('caixaCliente', false);
+    var temVideo = false;
+    room.remoteParticipants.forEach(function (p) { p.trackPublications.forEach(function (t) { if (t.kind === 'video') temVideo = true; }); });
+    if (!temVideo) vazio('A live ainda não começou. Fique nesta página.');
+  } catch (e) {
+    msg('Não foi possível entrar: ' + e.message);
+    this.disabled = false;
+  }
+};
+
+if (sala) iniciarCliente(); else iniciarVendedor();
+</script>
+</body>
+  </html>
