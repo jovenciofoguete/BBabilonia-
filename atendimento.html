@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Atendimento BBabilônia</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="atd-sessao.js?v=1"></script>
+<style>
+:root{--fundo:#eef2f7;--papel:#fff;--texto:#0f172a;--suave:#64748b;--linha:#e2e8f0;--az:#2563eb}
+@media (prefers-color-scheme:dark){:root{--fundo:#0b1220;--papel:#141c2e;--texto:#e8eefc;--suave:#94a3b8;--linha:#24304a}}
+*{box-sizing:border-box;margin:0}body{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--fundo);color:var(--texto);line-height:1.45}
+.bar{position:sticky;top:0;z-index:5;background:linear-gradient(135deg,#1e3a8a,#2563eb);color:#fff;box-shadow:0 4px 14px #0003}
+.bar .l{display:flex;align-items:center;gap:8px;padding:12px 14px 6px}.bar h1{font-size:18px;flex:1}
+.bar .eu{font-size:12.5px;opacity:.9;text-align:right}.bar .eu b{display:block;font-size:13.5px}
+.tabs{display:flex;gap:6px;overflow-x:auto;padding:4px 12px 12px;scrollbar-width:none}.tabs::-webkit-scrollbar{display:none}
+.tabs button{flex:none;border:0;border-radius:20px;padding:8px 14px;font:inherit;font-size:13.5px;font-weight:700;background:#ffffff2e;color:#fff}
+.tabs button.on{background:#fff;color:#1e3a8a}.tabs i{font-style:normal;background:#ef4444;color:#fff;border-radius:10px;padding:0 6px;font-size:11px;margin-left:5px}
+main{max-width:1100px;margin:0 auto;padding:16px 14px 40px}
+.grid{display:grid;gap:12px}@media (min-width:760px){.grid{grid-template-columns:1fr 1fr}}@media (min-width:1080px){.grid{grid-template-columns:1fr 1fr 1fr}}
+.box{background:var(--papel);border-radius:16px;padding:16px;box-shadow:0 4px 14px #0002}
+.entrar{max-width:420px;margin:30px auto}
+.entrar h2{font-size:19px;margin-bottom:4px}.entrar p{color:var(--suave);font-size:14px;margin-bottom:12px}
+input,select{width:100%;padding:13px;border:2px solid var(--linha);border-radius:12px;font:inherit;font-size:16px;background:var(--fundo);color:var(--texto);margin:5px 0}
+input:focus{outline:none;border-color:var(--az)}
+.codigo{font-size:26px;letter-spacing:8px;text-align:center;font-weight:800}
+.bt{display:block;width:100%;margin-top:10px;padding:14px;border:0;border-radius:14px;font:inherit;font-size:15.5px;font-weight:800;color:#fff;background:linear-gradient(90deg,#2563eb,#1d4ed8)}
+.bt.l{background:transparent;color:var(--az);border:2px solid var(--linha)}.bt.v{background:linear-gradient(90deg,#10b981,#059669)}.bt:disabled{opacity:.5}
+.err{color:#dc2626;font-size:14px;margin-top:8px}.inf{color:var(--suave);font-size:13px;margin-top:8px}
+.caso .l1{display:flex;justify-content:space-between;font-size:12.5px;color:var(--suave)}
+.caso h3{font-size:15.5px;margin:6px 0 4px}.caso .t{font-size:14px}
+.est{display:inline-block;font-size:12px;font-weight:800;padding:3px 9px;border-radius:20px;background:#dbeafe;color:#1e40af;margin:4px 4px 0 0}
+.est.r{background:#fee2e2;color:#991b1b}.est.a{background:#fef3c7;color:#92400e}.est.v{background:#d1fae5;color:#065f46}
+.caso .bts{display:flex;gap:8px;margin-top:10px}.caso .bts a,.caso .bts button{flex:1;text-align:center;padding:11px 8px;border-radius:12px;font:inherit;font-size:14px;font-weight:800;text-decoration:none;border:0}
+.abrir{background:var(--az);color:#fff}.pegar{background:#10b981;color:#fff}
+.caso select{margin-top:8px;font-size:14px;padding:10px}
+.vz{text-align:center;color:var(--suave);padding:36px 10px}
+.topo{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px}.topo a,.topo button{border:0;border-radius:12px;padding:10px 14px;font:inherit;font-size:14px;font-weight:700;background:var(--papel);color:var(--texto);text-decoration:none;box-shadow:0 2px 8px #0001}
+.hide{display:none}
+</style>
+</head>
+<body>
+<div class="bar"><div class="l"><h1>🎧 Atendimento BBabilônia</h1><div class="eu" id="eu"></div></div><div class="tabs hide" id="tabs"></div></div>
+<main>
+ <div id="passo1" class="box entrar hide">
+  <h2>Entrar no atendimento</h2><p>Use o email que o supervisor registou. Por segurança, ao fechar a página ou ficar 15 minutos sem mexer, sai sozinho.</p>
+  <input id="em" type="email" placeholder="Email" autocomplete="username">
+  <input id="pw" type="password" placeholder="Palavra-passe" autocomplete="current-password">
+  <button class="bt" id="ent">Entrar</button>
+  <button class="bt l" id="cri">Primeira vez? Criar conta</button>
+  <div class="err" id="m1"></div>
+ </div>
+ <div id="passo2" class="box entrar hide">
+  <h2>🔐 À espera de aprovação</h2><p id="p2t">Pedimos ao supervisor para aprovar a sua entrada neste aparelho. Assim que aprovar, o painel abre sozinho.</p>
+  <div style="text-align:center;font-size:40px;margin:10px 0" id="p2i">⏳</div>
+  <button class="bt l" id="reenv">Verificar agora</button>
+  <button class="bt l" id="sair3">Sair</button>
+  <div class="err" id="m2"></div>
+  <p class="inf">Só é preciso aprovar quando entra num aparelho novo ou depois de sair da conta.</p>
+ </div>
+ <div id="semAcesso" class="box entrar hide"><h2>Sem acesso ao atendimento</h2><p>Este email não está na lista de agentes ativos. Fale com o supervisor.</p><button class="bt l" id="sair1">Sair</button></div>
+ <div id="painel" class="hide">
+  <div class="topo" id="topo"></div>
+  <div id="lista" class="grid"></div>
+ </div>
+</main>
+<script>
+var sb=supabase.createClient('https://dsfoqoeawvjafypycldz.supabase.co','sb_publishable_BN4NiVcDab9CqdTY_odgDA_uUOhjja0',window.ATD_AUTH);
+function $(i){return document.getElementById(i)}
+function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function din(v,m){return Number(v||0).toLocaleString('pt-PT',{maximumFractionDigits:2})+' '+(m||'')}
+function mostra(id){['passo1','passo2','semAcesso','painel'].forEach(function(x){$(x).classList.toggle('hide',x!==id)});$('tabs').classList.toggle('hide',id!=='painel')}
+var EU=null,casos=[],agentes=[],sessoes=[],aba=new URLSearchParams(location.search).get('f')||'meus',emailLogin='';
+var NIVEL={dono:'Dono / supervisor geral',superior:'Superior',agente:'Agente'};
+var EST={aberta:['📝 Aberta','a'],negociacao:['🤝 Negociação','a'],em_analise:['🎧 Intervenção',''],fornecedor_aceitou:['⚖️ Fechada','v'],acordo:['⚖️ Acordo','v'],ganha_cliente:['⚖️ Cliente','v'],ganha_fornecedor:['⚖️ Fornecedor','v'],dividida:['⚖️ Dividida','v'],cancelada:['Cancelada','v']};
+
+function aparelho(){var u=navigator.userAgent,so=/Android/i.test(u)?'Android':/iPhone|iPad/i.test(u)?'iPhone/iPad':/Windows/i.test(u)?'Windows':/Mac/i.test(u)?'Mac':/Linux/i.test(u)?'Linux':'Aparelho';
+ var nv=/Edg\//.test(u)?'Edge':/OPR|Opera/.test(u)?'Opera':/Chrome\//.test(u)?'Chrome':/Safari\//.test(u)?'Safari':/Firefox\//.test(u)?'Firefox':'Navegador';return so+' · '+nv}
+var espera=null;
+function dispositivo(){var k='bb_disp',v='';try{v=localStorage.getItem(k)||''}catch(e){}if(!v){v=(crypto.randomUUID?crypto.randomUUID():String(Date.now())+Math.random().toString(36).slice(2));try{localStorage.setItem(k,v)}catch(e){}}return v}
+async function pedirAprovacao(){
+ $('m2').textContent='';
+ var r=await sb.rpc('pedir_aprovacao',{p_aparelho:aparelho(),p_dispositivo:dispositivo()});
+ if(r.error){$('m2').textContent=r.error.message;return}
+ if(r.data==='aprovada'){clearInterval(espera);espera=null;iniciar();return}
+ if(r.data==='recusada'||r.data==='desligada'){clearInterval(espera);espera=null;$('p2i').textContent='⛔';
+  $('p2t').textContent=r.data==='recusada'?'O supervisor não aprovou esta entrada. Saia e entre de novo para fazer outro pedido.':'Este aparelho foi desligado pelo supervisor. Saia e entre de novo para pedir outra vez.';return}
+ if(!espera)espera=setInterval(pedirAprovacao,6000);
+}
+$('ent').onclick=async function(){
+ var b=this;$('m1').textContent='';emailLogin=$('em').value.trim().toLowerCase();
+ if(!emailLogin||!$('pw').value)return $('m1').textContent='Escreva o email e a palavra-passe.';
+ b.disabled=true;
+ var r=await sb.auth.signInWithPassword({email:emailLogin,password:$('pw').value});
+ b.disabled=false;
+ if(r.error){$('m1').textContent=/confirm/i.test(r.error.message)?'Confirme primeiro o email (abra a mensagem que recebeu) e depois entre.':'Email ou palavra-passe errados.';return}
+ iniciar(true);
+};
+$('cri').onclick=async function(){
+ $('m1').textContent='';var e=$('em').value.trim().toLowerCase(),p=$('pw').value;
+ if(!e||p.length<6)return $('m1').textContent='Escreva o seu email e uma palavra-passe com pelo menos 6 letras ou números.';
+ var r=await sb.auth.signUp({email:e,password:p});
+ if(r.error){$('m1').textContent=r.error.message;return}
+ if(!r.data.session){$('m1').style.color='#059669';$('m1').textContent='Conta criada. Abra o email que recebeu para confirmar e depois toque em Entrar.';return}
+ emailLogin=e;iniciar(true);
+};
+$('reenv').onclick=pedirAprovacao;
+async function sair(){await sb.auth.signOut();location.reload()}
+$('sair1').onclick=sair;$('sair3').onclick=sair;
+
+async function iniciar(mandarCodigo){
+ var s=(await sb.auth.getSession()).data.session;
+ if(!s){mostra('passo1');$('eu').innerHTML='';if(new URLSearchParams(location.search).get('saiu')){$('m1').textContent='Saiu por segurança (15 minutos sem mexer ou página fechada). Entre de novo.'}return}
+ emailLogin=String(s.user.email||'').toLowerCase();
+ var r=await sb.rpc('meu_atendimento');EU=r.data||{};
+ if(!EU.agente&&!EU.supervisor){mostra('semAcesso');return}
+ if(!EU.supervisor&&!EU.codigo){mostra('passo2');pedirAprovacao();return}
+ $('eu').innerHTML='<b>'+esc(EU.nome||(EU.supervisor?'Supervisor':emailLogin))+'</b>'+esc(NIVEL[EU.nivel]||'');
+ mostra('painel');carregar();
+}
+function abas(){
+ var L=[['meus','Os meus casos'],['fila','Fila']];
+ if(EU.chefe)L.push(['entradas','🔐 Entradas'],['todos','Todos em aberto'],['ajuda','Pedidos de ajuda'],['fechados','Fechados']);
+ return L;
+}
+function filtra(t){
+ var me=emailLogin,ab=function(d){return['aberta','negociacao','em_analise'].indexOf(d.estado)>-1};
+ if(t==='meus')return casos.filter(function(d){return d.atendente_email===me&&d.estado==='em_analise'});
+ if(t==='fila')return casos.filter(function(d){return d.estado==='em_analise'&&!d.atendente_email});
+ if(t==='todos')return casos.filter(ab);
+ if(t==='entradas')return sessoes.filter(function(x){return x.estado==='pendente'});
+ if(t==='ajuda')return casos.filter(function(d){return d.ajuda_pedida&&d.estado==='em_analise'});
+ return casos.filter(function(d){return!ab(d)});
+}
+function prazo24(d){
+ if(!d.atribuida_em||d.primeira_resposta_em)return'';
+ var h=24-Math.floor((new Date()-new Date(d.atribuida_em))/3600000);
+ return'<span class="est '+(h<=4?'r':'a')+'">⏰ Responder em '+Math.max(0,h)+' h</span>';
+}
+function desenhar(){
+ var L=abas();if(!L.some(function(a){return a[0]===aba}))aba='meus';
+ $('tabs').innerHTML=L.map(function(a){var n=filtra(a[0]).length;return'<button data-t="'+a[0]+'" class="'+(a[0]===aba?'on':'')+'">'+a[1]+(a[0]!=='fechados'&&n?'<i>'+n+'</i>':'')+'</button>'}).join('');
+ $('tabs').querySelectorAll('button').forEach(function(b){b.onclick=function(){aba=b.getAttribute('data-t');history.replaceState({},'','?f='+aba);desenhar()}});
+ $('topo').innerHTML='<a href="conversas.html">💬 Conversas</a>'+(EU.chefe?'<a href="agentes.html">👥 Agentes</a><a href="respostas.html">📚 Respostas</a>':'')+'<button id="atu">🔄 Atualizar</button><button id="sair2">🚪 Sair</button>';
+ $('atu').onclick=carregar;$('sair2').onclick=sair;
+ if(aba==='entradas'){entradas();return}
+ var l=filtra(aba);
+ if(!l.length){$('lista').innerHTML='<div class="box vz">'+({meus:'Não tem casos seus em aberto. 👍',fila:'A fila está vazia.',todos:'Não há casos em aberto.',ajuda:'Nenhum pedido de ajuda.',fechados:'Ainda não há casos fechados.'})[aba]+'</div>';return}
+ var opc=agentes.filter(function(a){return a.ativo}).map(function(a){return'<option value="'+esc(a.email)+'">'+esc(a.nome)+(a.nivel==='superior'?' (superior)':'')+'</option>'}).join('');
+ $('lista').innerHTML=l.map(function(d){
+  var e=EST[d.estado]||[d.estado,''],dono=d.atendente_email,ag=agentes.filter(function(a){return a.email===dono})[0];
+  return'<div class="box caso"><div class="l1"><span>Pedido '+esc(String(d.order_id).slice(0,8))+'</span><span>'+new Date(d.updated_at||d.created_at).toLocaleString()+'</span></div>'+
+   '<h3>'+esc(d.motivo)+' · '+din(d.valor,d.moeda)+'</h3>'+
+   '<span class="est '+e[1]+'">'+e[0]+'</span>'+(d.ajuda_pedida&&d.estado==='em_analise'?'<span class="est r">🆘 Ajuda pedida</span>':'')+prazo24(d)+
+   '<div class="t" style="margin-top:6px;color:var(--suave)">'+(dono?'👤 '+esc(ag?ag.nome:dono):'📥 Na fila, sem agente')+'</div>'+
+   (EU.chefe&&d.estado==='em_analise'?'<select data-re="'+esc(d.id)+'"><option value="">'+(dono?'Passar para…':'Dar a…')+'</option>'+opc+'<option value="__fila">↩️ Devolver à fila</option></select>':'')+
+   '<div class="bts">'+(d.estado==='em_analise'&&!dono?'<button class="pegar" data-pg="'+esc(d.id)+'">✋ Pegar caso</button>':'')+
+   '<a class="abrir" href="disputa.html?id='+encodeURIComponent(d.id)+'&como=admin">Abrir ›</a></div></div>';
+ }).join('');
+ document.querySelectorAll('[data-pg]').forEach(function(b){b.onclick=async function(){
+  b.disabled=true;var r=await sb.rpc('pegar_caso',{p_id:b.getAttribute('data-pg')});
+  if(r.error){alert(r.error.message);carregar();return}
+  location.href='disputa.html?id='+encodeURIComponent(b.getAttribute('data-pg'))+'&como=admin';
+ }});
+ document.querySelectorAll('[data-re]').forEach(function(s){s.onchange=async function(){
+  var v=s.value;if(!v)return;var em=v==='__fila'?null:v;
+  if(!confirm(em?'Passar este caso para '+s.options[s.selectedIndex].text+'?':'Devolver este caso à fila?')){s.value='';return}
+  var r=await sb.rpc('reatribuir_caso',{p_id:s.getAttribute('data-re'),p_email:em});
+  if(r.error)alert(r.error.message);carregar();
+ }});
+}
+function entradas(){
+ var nome=function(e){var a=agentes.filter(function(x){return x.email===e})[0];return a?a.nome:e};
+ var pend=sessoes.filter(function(x){return x.estado==='pendente'}),apr=sessoes.filter(function(x){return x.estado==='aprovada'});
+ var card=function(x,ap){return'<div class="box caso"><div class="l1"><span>'+esc(x.aparelho||'Aparelho')+'</span><span>'+new Date(x.pedido_em).toLocaleString()+'</span></div><h3>'+esc(nome(x.email))+'</h3><div class="t" style="color:var(--suave)">'+esc(x.email)+'</div>'+
+  (ap&&x.confiavel_ate?'<div class="t" style="color:var(--suave)">Confiança até '+new Date(x.confiavel_ate).toLocaleDateString()+'</div>':'')+'<div class="bts">'+(ap?'<button class="abrir" style="background:#ef4444" data-ss="'+esc(x.session_id)+'" data-ok="0">⛔ Desligar este aparelho</button>':'<button class="pegar" data-ss="'+esc(x.session_id)+'" data-ok="1">✅ Aprovar</button><button class="abrir" style="background:#ef4444" data-ss="'+esc(x.session_id)+'" data-ok="0">❌ Recusar</button>')+'</div></div>'};
+ $('lista').innerHTML=(pend.length>1?'<div class="box" style="grid-column:1/-1"><button class="bt v" id="aprTodos" style="margin:0">✅ Aprovar todos ('+pend.length+')</button></div>':'')+(pend.length?pend.map(function(x){return card(x,false)}).join(''):'<div class="box vz">Não há pedidos de entrada à espera. 👍</div>')+
+  (apr.length?'<div class="box" style="grid-column:1/-1"><b>Aparelhos aprovados ('+apr.length+')</b></div>'+apr.map(function(x){return card(x,true)}).join(''):'');
+ var at=$('aprTodos');if(at)at.onclick=async function(){if(!confirm('Aprovar todos os '+pend.length+' pedidos?'))return;at.disabled=true;var r=await sb.rpc('aprovar_todos');if(r.error)alert(r.error.message);carregar()};
+ document.querySelectorAll('[data-ss]').forEach(function(b){b.onclick=async function(){
+  var ok=b.getAttribute('data-ok')==='1';if(!ok&&!confirm('Tem a certeza?'))return;b.disabled=true;
+  var r=await sb.rpc('decidir_sessao',{p_sessao:b.getAttribute('data-ss'),p_aprovar:ok});if(r.error)alert(r.error.message);carregar();
+ }});
+}
+async function carregar(){
+ $('lista').innerHTML='<div class="box vz">A carregar…</div>';
+ try{await sb.rpc('rever_prazos')}catch(e){}
+ try{await sb.rpc('rever_atendimento')}catch(e){}
+ var r=await sb.from('disputas').select('*').order('updated_at',{ascending:false}).limit(500);
+ casos=(r.data||[]).filter(function(d){return EU.chefe||d.atendente_email===emailLogin||(d.estado==='em_analise'&&!d.atendente_email)});
+ if(EU.chefe){var a=await sb.from('agentes').select('*').order('nome');agentes=a.data||[];var ss=await sb.from('sessoes_atendimento').select('*').in('estado',['pendente','aprovada']).order('pedido_em',{ascending:false});sessoes=ss.data||[]}
+ else agentes=[{email:emailLogin,nome:EU.nome||emailLogin,ativo:true}];
+ desenhar();
+}
+iniciar(true);
+</script>
+</body>
+                                  </html>
+
+    
