@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Respostas prontas</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="atd-sessao.js?v=1"></script>
+<script src="provas-envio.js?v=1"></script>
+<style>
+:root{--fundo:#f3f0fb;--papel:#fff;--texto:#1b1740;--suave:#6b6590;--linha:#e7e3f3}
+@media (prefers-color-scheme:dark){:root{--fundo:#110e22;--papel:#1d1838;--texto:#f3f0ff;--suave:#a9a2cf;--linha:#2d2752}}
+*{box-sizing:border-box;margin:0}body{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--fundo);color:var(--texto);line-height:1.45}
+.bar{position:sticky;top:0;z-index:5;background:linear-gradient(135deg,#1e293b,#0f766e);color:#fff;display:flex;align-items:center;gap:6px;padding:10px 8px}
+.bar button{border:0;background:none;color:#fff;font-size:26px;width:44px;height:44px;border-radius:50%}.bar h1{font-size:17px;flex:1}.bar small{display:block;font-size:12px;opacity:.85;font-weight:400}
+main{max-width:720px;margin:0 auto;padding:12px 12px 60px}
+.box{background:var(--papel);border-radius:16px;padding:14px;margin-bottom:12px;box-shadow:0 4px 14px #0001}
+.it{display:block;width:100%;text-align:left;border:0;font:inherit;color:inherit;background:var(--papel);border-radius:14px;padding:12px;margin-bottom:8px;box-shadow:0 2px 8px #0001}
+.it b{display:block;font-size:14.5px}.it small{display:block;color:var(--suave);font-size:12.5px;white-space:pre-line;max-height:3.9em;overflow:hidden;margin-top:2px}
+.it i{font-style:normal;font-size:11.5px;font-weight:800;background:#ccfbf1;color:#115e59;border-radius:10px;padding:1px 8px;margin-right:4px}.it i.n{background:#e5e7eb;color:#374151}
+h2{font-size:14px;color:var(--suave);margin:16px 4px 8px}
+label.t{display:block;font-size:13.5px;font-weight:700;color:var(--suave);margin:12px 0 5px}
+input,textarea{width:100%;padding:11px;border:2px solid var(--linha);border-radius:12px;font:inherit;font-size:16px;background:var(--fundo);color:var(--texto)}
+textarea{min-height:180px}input:focus,textarea:focus{outline:none;border-color:#0f766e}
+.bt{display:block;width:100%;margin-top:10px;padding:13px;border:0;border-radius:12px;font:inherit;font-size:15px;font-weight:800;color:#fff;background:#0f766e}
+.bt.l{background:var(--fundo);color:var(--texto);border:1px solid var(--linha)}.bt.r{background:#dc2626}.bt:disabled{opacity:.5}
+.err{color:#dc2626;font-size:14px;margin-top:6px}.inf{color:var(--suave);font-size:13px;margin-top:6px}
+.chk{display:flex;gap:8px;align-items:center;margin-top:12px;font-size:14.5px}.chk input{width:22px;height:22px}
+.hide{display:none}
+</style>
+</head>
+<body>
+<div class="bar"><button id="voltar" aria-label="Voltar">&#8592;</button><h1 id="tit">📚 Respostas prontas<small>Textos formais que os agentes usam nas conversas</small></h1></div>
+<main id="app"><div class="box inf">A carregar…</div></main>
+<script>
+var sb=supabase.createClient('https://dsfoqoeawvjafypycldz.supabase.co','sb_publishable_BN4NiVcDab9CqdTY_odgDA_uUOhjja0',window.ATD_AUTH);
+function $(i){return document.getElementById(i)}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function arr(x){if(typeof x==='string'){try{x=JSON.parse(x)}catch(e){x=[]}}return Array.isArray(x)?x:[]}
+function erro(e){return String((e&&e.message)||e||'').replace(/^.*?exception:\s*/i,'')||'Algo falhou.'}
+var EU={},lista=[],ed=null,prov=null,uid=null;
+$('voltar').onclick=function(){if(ed)return mostrarLista();history.length>1?history.back():location.href='conversas.html'};
+async function iniciar(){var s=(await sb.auth.getSession()).data.session;if(!s){location.href='atendimento.html';return}uid=s.user.id;
+ var r=await sb.rpc('meu_atendimento');EU=r.data||{};
+ if(!EU.supervisor&&!EU.codigo){location.href='atendimento.html';return}
+ if(!EU.chefe){$('app').innerHTML='<div class="box inf">Só o dono ou um superior pode gerir as respostas prontas.</div>';return}
+ carregar()}
+async function carregar(){var r=await sb.from('respostas_prontas').select('*').order('categoria').order('titulo');
+ if(r.error){$('app').innerHTML='<div class="box err">'+esc(erro(r.error))+'</div>';return}lista=r.data||[];mostrarLista()}
+function mostrarLista(){ed=null;var cats={};lista.forEach(function(x){(cats[x.categoria]=cats[x.categoria]||[]).push(x)});
+ var h='<div class="box"><div class="inf" style="margin-top:0">Os agentes tocam em «📚 Respostas prontas» na conversa e o texto entra pronto, com as imagens de instrução. Use <b>{agente}</b> para o nome do agente e <b>{pedido}</b> para o número do pedido.</div><button class="bt" id="nova">➕ Nova resposta</button></div>';
+ Object.keys(cats).forEach(function(c){h+='<h2>'+esc(c)+'</h2>'+cats[c].map(function(x){var n=arr(x.imagens).length;
+  return'<button class="it" data-id="'+x.id+'"><b>'+esc(x.titulo)+'</b><small>'+esc(x.texto)+'</small><div style="margin-top:6px">'+(x.ativo?'':'<i class="n">Desativada</i>')+(n?'<i>🖼 '+n+'</i>':'')+'<i class="n">Usada '+(x.usos||0)+'×</i></div></button>'}).join('')});
+ $('app').innerHTML=h;window.scrollTo(0,0);
+ $('nova').onclick=function(){editar(null)};
+ document.querySelectorAll('.it').forEach(function(b){b.onclick=function(){editar(lista.filter(function(x){return x.id===b.dataset.id})[0])}});
+}
+function editar(x){ed=x||{id:null,categoria:'',titulo:'',texto:'',imagens:[],ativo:true};
+ prov=new Provas('pimg',{semFiltro:true,prefixo:'respostas'});arr(ed.imagens).forEach(function(u){prov.addUrl(u)});
+ var cats=[];lista.forEach(function(y){if(cats.indexOf(y.categoria)<0)cats.push(y.categoria)});
+ $('app').innerHTML='<div class="box"><label class="t" style="margin-top:0">Categoria</label><input id="fcat" list="lcat" maxlength="40" placeholder="Ex.: Envio, Pagamento, Disputas" value="'+esc(ed.categoria)+'"><datalist id="lcat">'+cats.map(function(c){return'<option value="'+esc(c)+'">'}).join('')+'</datalist>'+
+  '<label class="t">Título (só os agentes veem)</label><input id="ftit" maxlength="80" value="'+esc(ed.titulo)+'">'+
+  '<label class="t">Texto da resposta</label><textarea id="ftxt" maxlength="3000" placeholder="Escreva de forma educada e clara. Use passos 1️⃣ 2️⃣ 3️⃣ e diga exatamente onde tocar.">'+esc(ed.texto)+'</textarea>'+
+  '<label class="t">Imagens de instrução (capturas de ecrã a mostrar onde tocar)</label><div id="pbox"></div>'+
+  '<label class="chk"><input type="checkbox" id="fat"'+(ed.ativo?' checked':'')+'> Ativa (aparece para os agentes)</label>'+
+  '<div class="err" id="fmsg"></div><button class="bt" id="fok">Guardar</button>'+(ed.id?'<button class="bt r" id="fdel">Apagar</button>':'')+'<button class="bt l" id="fno">Cancelar</button></div>';
+ pintarProvas();window.scrollTo(0,0);
+ $('fno').onclick=mostrarLista;
+ $('fok').onclick=async function(){var b=this;b.disabled=true;$('fmsg').textContent='';
+  try{var urls=await prov.enviar(sb,uid,b);
+   var r=await sb.rpc('resposta_guardar',{p_id:ed.id,p_categoria:$('fcat').value,p_titulo:$('ftit').value,p_texto:$('ftxt').value,p_imagens:JSON.stringify(urls),p_ativo:$('fat').checked});
+   if(r.error)throw r.error;carregar()}catch(e){$('fmsg').textContent=erro(e);b.disabled=false;b.textContent='Guardar'}};
+ if($('fdel'))$('fdel').onclick=async function(){if(!confirm('Apagar esta resposta?'))return;var r=await sb.rpc('resposta_apagar',{p_id:ed.id});if(r.error){$('fmsg').textContent=erro(r.error);return}carregar()};
+}
+function pintarProvas(){$('pbox').innerHTML=prov.html();prov.ligar(pintarProvas,function(m){$('fmsg').textContent=m})}
+iniciar();
+</script>
+</body>
+  </html>
+  
