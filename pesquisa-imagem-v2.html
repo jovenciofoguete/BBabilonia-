@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pesquisa por imagem – B-Babilônia</title>
+<meta name="color-scheme" content="light">
+<style>
+*{box-sizing:border-box;margin:0}
+body{font-family:system-ui,Arial,sans-serif;background:#F5F5F5;color:#222;padding-bottom:90px}
+a{color:inherit;text-decoration:none}
+header{background:#fff;padding:10px 12px;display:flex;align-items:center;gap:10px;border-bottom:1px solid #eee;position:sticky;top:0;z-index:5}
+.logo{border:2px solid #FF6A00;border-radius:999px;padding:6px 10px;font-weight:800;font-size:13px;color:#1B2F6B}
+.logo span{color:#FF6A00}
+header h1{font-size:16px}
+.caixa{background:#fff;margin:12px;border-radius:14px;padding:14px}
+.botoes{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.botoes label{display:flex;align-items:center;justify-content:center;gap:6px;border-radius:12px;padding:14px 8px;color:#fff;font-weight:700;font-size:15px;text-align:center;cursor:pointer}
+.b1{background:#0E9F5A}.b2{background:#1565C0}
+.botoes input{display:none}
+#prev{width:100%;max-height:300px;object-fit:contain;border-radius:10px;margin-top:12px;display:none;background:#fafafa}
+#estado{text-align:center;color:#666;font-size:14px;margin-top:12px}
+h2{font-size:17px;margin:4px 12px 8px}
+.grelha{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 12px}
+.card{background:#fff;border-radius:10px;overflow:hidden}
+.card img{width:100%;aspect-ratio:1/1;object-fit:cover;display:block;background:#fafafa}
+.card .i{padding:8px}
+.card .n{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card .p{font-weight:700;color:#1565C0;margin-top:2px}
+.card .s{display:inline-block;margin-top:4px;background:#0E9F5A;color:#fff;border-radius:999px;font-size:11.5px;padding:2px 8px}
+.vazio{grid-column:1/-1;text-align:center;color:#777;padding:24px 8px}
+</style>
+</head>
+<body>
+<header>
+  <a class="logo" href="index.html">B-<span>Babilônia</span></a>
+  <h1>Pesquisa por imagem</h1>
+</header>
+
+<div class="caixa">
+  <div class="botoes">
+    <label class="b1">📸 Tirar foto<input type="file" accept="image/*" capture="environment" id="f1"></label>
+    <label class="b2">🖼️ Escolher da galeria<input type="file" accept="image/*" id="f2"></label>
+  </div>
+  <img id="prev" alt="Foto escolhida">
+  <p id="estado">Tire ou escolha uma foto do produto.</p>
+</div>
+
+<h2 id="tit" style="display:none">Produtos iguais ou parecidos</h2>
+<section class="grelha" id="grelha"></section>
+
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet@2.1.1/dist/mobilenet.min.js"></script>
+<script>
+var SUPA = "https://dsfoqoeawvjafypycldz.supabase.co";
+var KEY  = "sb_publishable_BN4NiVcDab9CqdTY_odgDA_uUOhjja0";
+var MINIMO = 0.55;          /* abaixo disto não é o mesmo tipo de objeto */
+var MAX_FOTOS = 4;          /* fotos comparadas por produto */
+
+var modelo = null, produtos = null;
+function $(id){ return document.getElementById(id); }
+function estado(t){ $("estado").textContent = t; }
+function nomeDe(p){ return p.name || p.nome || p.title || "Produto"; }
+function esc(t){ return String(t == null ? "" : t).replace(/[&<>"']/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
+
+function fotosDe(p){
+  var l = [];
+  if(p.image_url) l.push(p.image_url);
+  var im = p.images;
+  if(typeof im === "string"){ try{ im = JSON.parse(im); }catch(e){ im = [im]; } }
+  if(Array.isArray(im)) im.forEach(function(a){
+    var u = typeof a === "string" ? a : (a && (a.url || a.foto || a.src));
+    if(u && l.indexOf(u) < 0) l.push(u);
+  });
+  return l.slice(0, MAX_FOTOS);
+}
+
+function carregarModelo(){
+  if(modelo) return Promise.resolve(modelo);
+  estado("A preparar o reconhecimento de objetos (só a primeira vez)…");
+  return mobilenet.load({version: 2, alpha: 1.0}).then(function(m){ modelo = m; return m; });
+}
+
+function carregarProdutos(){
+  if(produtos) return Promise.resolve(produtos);
+  return fetch(SUPA + "/rest/v1/products?select=*&limit=1000", {headers:{apikey: KEY}})
+    .then(function(r){ if(!r.ok) throw new Error(r.status); return r.json(); })
+    .then(function(d){ produtos = d; return d; });
+}
+
+function abrirImagem(src){
+  return new Promise(function(ok, erro){
+    var img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = function(){ ok(img); };
+    img.onerror = erro;
+    img.src = src;
+  });
+}
+
+/* preto e branco + corta as margens (menos fundo) */
+function prepararCanvas(img){
+  var lado = Math.min(img.naturalWidth, img.naturalHeight) * 0.85;
+  var sx = (img.naturalWidth - lado) / 2, sy = (img.naturalHeight - lado) / 2;
+  var c = document.createElement("canvas"); c.width = c.height = 224;
+  var x = c.getContext("2d");
+  x.drawImage(img, sx, sy, lado, lado, 0, 0, 224, 224);
+  var d = x.getImageData(0, 0, 224, 224), p = d.data;
+  for(var i = 0; i < p.length; i += 4){
+    var g = 0.299*p[i] + 0.587*p[i+1] + 0.114*p[i+2];
+    p[i] = p[i+1] = p[i+2] = g;
+  }
+  x.putImageData(d, 0, 0);
+  return c;
+}
+
+/* características do objeto (vetor) */
+function caracteristicas(img){
+  var c = prepararCanvas(img);
+  var t = tf.tidy(function(){
+    var v = modelo.infer(c, true).flatten();
+    return v.div(v.norm());
+  });
+  return t.data().then(function(a){ t.dispose(); return Array.prototype.slice.call(a); });
+}
+
+var cache = {};
+try{ cache = JSON.parse(localStorage.getItem("bb_img_v2") || "{}"); }catch(e){ cache = {}; }
+function guardarCache(){ try{ localStorage.setItem("bb_img_v2", JSON.stringify(cache)); }catch(e){} }
+
+function caracDeUrl(url){
+  if(cache[url]) return Promise.resolve(cache[url]);
+  return abrirImagem(url).then(caracteristicas).then(function(v){
+    cache[url] = v.map(function(n){ return Math.round(n * 1e4) / 1e4; });
+    return cache[url];
+  }).catch(function(){ return null; });
+}
+
+function semelhanca(a, b){
+  var s = 0;
+  for(var i = 0; i < a.length; i++) s += a[i] * b[i];
+  return s;
+}
+
+function pesquisar(ficheiro){
+  if(!ficheiro) return;
+  var url = URL.createObjectURL(ficheiro);
+  $("prev").src = url; $("prev").style.display = "block";
+  $("grelha").innerHTML = ""; $("tit").style.display = "none";
+
+  Promise.all([carregarModelo(), carregarProdutos()]).then(function(){
+    estado("A analisar a forma do objeto…");
+    return abrirImagem(url).then(caracteristicas);
+  }).then(function(minha){
+    var feitos = 0, res = [];
+    estado("A comparar com os produtos… 0/" + produtos.length);
+    var cadeia = Promise.resolve();
+    produtos.forEach(function(p){
+      cadeia = cadeia.then(function(){
+        var fotos = fotosDe(p), melhor = -1;
+        return fotos.reduce(function(pr, u){
+          return pr.then(function(){
+            return caracDeUrl(u).then(function(v){ if(v){ var s = semelhanca(minha, v); if(s > melhor) melhor = s; } });
+          });
+        }, Promise.resolve()).then(function(){
+          if(melhor >= MINIMO) res.push({p: p, s: melhor, foto: fotos[0]});
+          feitos++; estado("A comparar com os produtos… " + feitos + "/" + produtos.length);
+        });
+      });
+    });
+    return cadeia.then(function(){ guardarCache(); mostrar(res); });
+  }).catch(function(){
+    estado("Não foi possível analisar. Verifique a internet e tente de novo.");
+  });
+}
+
+function mostrar(res){
+  res.sort(function(a, b){ return b.s - a.s; });
+  var g = $("grelha");
+  $("tit").style.display = "block";
+  $("tit").textContent = "Produtos iguais ou parecidos (" + res.length + ")";
+  if(!res.length){
+    g.innerHTML = '<div class="vazio">Não encontrámos nenhum produto com a mesma forma.</div>';
+    estado("Pesquisa concluída.");
+    return;
+  }
+  g.innerHTML = res.map(function(r){
+    var p = r.p, v = Number(p.price != null ? p.price : (p.preco || 0)).toLocaleString("pt-PT");
+    var pct = Math.min(99, Math.round(r.s * 100));
+    return '<a class="card" href="produto-bbabilonia.html?id=' + encodeURIComponent(p.id) + '">' +
+      (r.foto ? '<img loading="lazy" src="' + esc(r.foto) + '" alt="">' : '') +
+      '<div class="i"><div class="n">' + esc(nomeDe(p)) + '</div>' +
+      '<div class="p">' + v + ' ' + esc(p.currency || "MZN") + '</div>' +
+      '<span class="s">' + pct + '% parecido</span></div></a>';
+  }).join("");
+  estado("Toque num produto para o abrir.");
+}
+
+$("f1").onchange = function(){ pesquisar(this.files[0]); this.value = ""; };
+$("f2").onchange = function(){ pesquisar(this.files[0]); this.value = ""; };
+</script>
+<script src="menu-babilonia.js"></script>
+</body>
+</html>
