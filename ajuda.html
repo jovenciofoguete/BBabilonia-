@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Atendimento BBabilônia</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="filtro-contactos.js"></script>
+<script src="imagem-filtro.js?v=1"></script>
+<script src="provas-envio.js?v=1"></script>
+<script src="pedidos-escolher.js?v=1"></script>
+<style>
+:root{--fundo:#f3f0fb;--papel:#fff;--texto:#1b1740;--suave:#6b6590;--linha:#e7e3f3;--az:#0284c7}
+@media (prefers-color-scheme:dark){:root{--fundo:#110e22;--papel:#1d1838;--texto:#f3f0ff;--suave:#a9a2cf;--linha:#2d2752}}
+*{box-sizing:border-box;margin:0}body{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--fundo);color:var(--texto);line-height:1.45}
+.bar{position:sticky;top:0;z-index:5;background:linear-gradient(135deg,#10b981,#0ea5e9 55%,#2563eb);color:#fff;display:flex;align-items:center;gap:6px;padding:10px 8px;box-shadow:0 4px 14px #0003}
+.bar button{border:0;background:none;color:#fff;font-size:26px;width:44px;height:44px;border-radius:50%}.bar h1{font-size:18px;flex:1}.bar small{display:block;font-size:12px;opacity:.9;font-weight:400}
+main{max-width:640px;margin:0 auto;padding:14px 14px 120px}
+.box{background:var(--papel);border-radius:18px;padding:16px;margin-bottom:12px;box-shadow:0 6px 18px #0ea5e91a}
+.box h3{font-size:15.5px;margin-bottom:10px}
+.bt{display:block;width:100%;margin-top:10px;padding:14px;border:0;border-radius:14px;font:inherit;font-size:15.5px;font-weight:800;color:#fff;background:linear-gradient(90deg,#10b981,#0ea5e9);text-align:center;text-decoration:none}
+.bt.l{background:transparent;color:var(--az);border:2px solid var(--linha)}.bt:disabled{opacity:.5}
+.tk{display:block;width:100%;text-align:left;border:0;font:inherit;color:inherit;background:var(--papel);border-radius:16px;padding:14px;margin-bottom:10px;box-shadow:0 4px 14px #0ea5e914}
+.tk .l1{display:flex;justify-content:space-between;font-size:12.5px;color:var(--suave)}.tk b{display:block;font-size:15.5px;margin:4px 0}
+.est{display:inline-block;font-size:12px;font-weight:800;padding:3px 10px;border-radius:20px;background:#fef3c7;color:#92400e;margin-right:4px}
+.est.az{background:#dbeafe;color:#1e40af}.est.ok{background:#d1fae5;color:#065f46}.est.no{background:#e5e7eb;color:#374151}.est.r{background:#fee2e2;color:#991b1b}
+.chips{display:flex;flex-wrap:wrap;gap:8px}.chips button{border:2px solid var(--linha);background:var(--fundo);color:var(--texto);border-radius:20px;padding:9px 13px;font:inherit;font-size:14px}
+.chips button.on{border-color:#0ea5e9;background:#e0f2fe;color:#075985;font-weight:700}
+select,textarea,input{width:100%;padding:12px;border:2px solid var(--linha);border-radius:12px;font:inherit;font-size:16px;background:var(--fundo);color:var(--texto)}
+textarea:focus,select:focus,input:focus{outline:none;border-color:#0ea5e9}
+label.t{display:block;font-size:14px;font-weight:700;color:var(--suave);margin:14px 0 6px}
+.err{color:#dc2626;font-size:14px;margin-top:8px}.inf{color:var(--suave);font-size:13px;margin-top:6px}
+.msgs{display:flex;flex-direction:column;gap:10px}
+.m{max-width:86%;padding:10px 13px;border-radius:16px;font-size:15px;white-space:pre-line;word-wrap:break-word}
+.m small{display:block;font-size:11px;color:var(--suave);margin-top:4px;white-space:normal}
+.m.cliente{align-self:flex-end;background:#dcfce7;color:#14532d;border-bottom-right-radius:4px}
+.m.admin{align-self:flex-start;background:var(--papel);border:1px solid var(--linha);border-bottom-left-radius:4px}
+.m.admin .q{font-size:12px;font-weight:800;color:#0284c7;margin-bottom:2px}
+.m.sistema{align-self:center;background:transparent;color:var(--suave);font-size:13px;text-align:center;max-width:94%}
+.comp{position:fixed;left:0;right:0;bottom:0;background:var(--papel);border-top:1px solid var(--linha);padding:10px 12px calc(10px + env(safe-area-inset-bottom,0px));z-index:6}
+.comp .in{max-width:640px;margin:0 auto}.comp .r{display:flex;gap:8px;align-items:flex-end}.comp textarea{flex:1;min-height:46px;max-height:140px;resize:none}
+.comp .env{border:0;border-radius:14px;padding:0 16px;height:46px;font:inherit;font-weight:800;color:#fff;background:linear-gradient(90deg,#10b981,#0ea5e9)}
+.comp .clip{width:46px;height:46px;border-radius:50%;border:0;background:var(--fundo);font-size:20px}
+.aval{display:flex;gap:10px;margin-top:10px}.aval button{flex:1;padding:14px;border-radius:14px;border:2px solid var(--linha);background:var(--fundo);font-size:26px}
+.vz{text-align:center;color:var(--suave);padding:30px 10px}.hide{display:none}
+</style>
+</head>
+<body>
+<div class="bar"><button id="voltar" aria-label="Voltar">&#8592;</button><h1 id="tit">🎧 Atendimento<small>Fale com a equipa BBabilônia</small></h1></div>
+<main>
+ <div id="login" class="box hide"><h3>Entre na sua conta</h3>
+  <input id="em" type="email" placeholder="Email"><br><br><input id="pw" type="password" placeholder="Palavra-passe">
+  <button class="bt" id="ent">Entrar</button><div class="err" id="lmsg"></div></div>
+ <div id="app"><div class="box vz">A carregar…</div></div>
+</main>
+<div class="comp hide" id="comp"><div class="in">
+ <div id="cprov" class="hide"></div><div class="err" id="cmsg"></div>
+ <div class="r"><button class="clip" id="clip" aria-label="Juntar foto ou vídeo">📎</button><textarea id="ctxt" rows="1" maxlength="2000" placeholder="Escreva a mensagem"></textarea><button class="env" id="cenv">Enviar</button></div>
+</div></div>
+<script src="ajuda.js?v=1"></script>
+</body>
+  </html>
+  
