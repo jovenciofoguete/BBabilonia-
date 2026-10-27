@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Preparar pesquisa por imagem · Admin</title>
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;background:#fff;color:#222;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;padding:16px;max-width:520px;margin:0 auto}
+  h1{font-size:18px}
+  input{width:100%;padding:12px;margin:6px 0;border:1px solid #ccc;border-radius:8px;font-size:15px}
+  button{width:100%;padding:13px;border:0;border-radius:24px;background:#ff6a00;color:#fff;font-size:15px;font-weight:600;margin-top:8px}
+  button.sec{background:#1565c0}
+  #estado{margin-top:14px;font-size:14px;white-space:pre-line}
+  .barra{height:8px;background:#eee;border-radius:4px;overflow:hidden;margin-top:10px}
+  .barra div{height:100%;width:0;background:#2e7d32}
+</style>
+</head>
+<body>
+<h1>Preparar pesquisa por imagem</h1>
+<p style="font-size:13px;color:#555">Analisa uma vez as fotos dos produtos e guarda no Supabase. Depois a pesquisa do cliente é instantânea. Abra esta página sempre que entrarem produtos novos.</p>
+
+<div id="login">
+  <input id="email" type="email" placeholder="Email do administrador" value="jovenciofoguete1904@gmail.com">
+  <input id="senha" type="password" placeholder="Palavra-passe">
+  <button id="entrar">Entrar e preparar</button>
+</div>
+<div id="acoes" style="display:none">
+  <button id="faltam">Preparar produtos novos</button>
+  <button id="todos" class="sec">Refazer todos</button>
+</div>
+<div class="barra"><div id="prog"></div></div>
+<div id="estado"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.20.0/dist/tf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet@2.1.1/dist/mobilenet.min.js"></script>
+<script src="forma-comum.js"></script>
+<script>
+const F = window.FormaBB;
+const est = document.getElementById("estado");
+const prog = document.getElementById("prog");
+let token = null, ocupado = false;
+try{ token = sessionStorage.getItem("bb_admin_token"); }catch(e){}
+
+function msg(t){ est.textContent = t; }
+
+async function entrar(){
+  msg("A entrar…");
+  const r = await fetch(F.SUPA_URL+"/auth/v1/token?grant_type=password",{
+    method:"POST", headers:{apikey:F.SUPA_KEY,"Content-Type":"application/json"},
+    body:JSON.stringify({email:document.getElementById("email").value.trim(), password:document.getElementById("senha").value})
+  });
+  const j = await r.json();
+  if(!r.ok || !j.access_token) throw new Error("Email ou palavra-passe errados");
+  token = j.access_token;
+  try{ sessionStorage.setItem("bb_admin_token", token); }catch(e){}
+}
+
+async function preparar(refazer){
+  if(ocupado) return; ocupado = true;
+  try{
+    msg("A preparar o analisador…");
+    await F.carregarModelo();
+    const h = {apikey:F.SUPA_KEY, Authorization:"Bearer "+token};
+    const r = await fetch(F.SUPA_URL+"/rest/v1/products?select=id,name,image_url,images,forma&limit=5000",{headers:h});
+    if(r.status===401){ token=null; try{sessionStorage.removeItem("bb_admin_token");}catch(e){} mostrarLogin(); throw new Error("Sessão expirada. Entre outra vez."); }
+    if(!r.ok) throw new Error("Falta correr o SQL da coluna forma ("+r.status+")");
+    const lista = (await r.json()).filter(p => F.fotosDe(p).length && (refazer || !p.forma || !p.forma.length));
+    if(!lista.length){ prog.style.width="100%"; msg("✅ Tudo pronto. Não há produtos novos para preparar."); return; }
+    let ok=0, erros=[];
+    for(let i=0;i<lista.length;i++){
+      const p = lista[i];
+      msg("A analisar "+(i+1)+" de "+lista.length+": "+(p.name||""));
+      prog.style.width = ((i+1)/lista.length*100)+"%";
+      const formas = [];
+      for(const u of F.fotosDe(p)){
+        try{ formas.push(F.codificar(await F.vetor(await F.carregarImg(u)))); }catch(e){}
+      }
+      if(!formas.length){ erros.push((p.name||p.id)+" (fotos não abrem)"); continue; }
+      const up = await fetch(F.SUPA_URL+"/rest/v1/products?id=eq."+encodeURIComponent(p.id),{
+        method:"PATCH",
+        headers:{...h,"Content-Type":"application/json",Prefer:"return=representation"},
+        body:JSON.stringify({forma:formas})
+      });
+      const linhas = up.ok ? await up.json() : [];
+      if(up.ok && linhas.length) ok++;
+      else erros.push((p.name||p.id)+" (sem permissão para guardar)");
+    }
+    msg("✅ Preparados: "+ok+" de "+lista.length + (erros.length ? "\n\n⚠️ Não guardados:\n- "+erros.join("\n- ") : ""));
+  }catch(e){ msg("Erro: "+e.message); }
+  finally{ ocupado = false; }
+}
+
+function mostrarLogin(){ document.getElementById("login").style.display="block"; document.getElementById("acoes").style.display="none"; }
+function mostrarAcoes(){ document.getElementById("login").style.display="none"; document.getElementById("acoes").style.display="block"; }
+
+document.getElementById("entrar").onclick = async ()=>{
+  try{ await entrar(); mostrarAcoes(); preparar(false); }catch(e){ msg("Erro: "+e.message); }
+};
+document.getElementById("faltam").onclick = ()=>preparar(false);
+document.getElementById("todos").onclick = ()=>preparar(true);
+if(token){ mostrarAcoes(); preparar(false); }
+</script>
+</body>
+  </html>
+  
