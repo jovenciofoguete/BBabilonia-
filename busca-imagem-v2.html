@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Pesquisa por imagem · B-Babilônia</title>
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;background:#fff;color:#222;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+  header{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid #eee;position:sticky;top:0;background:#fff;z-index:5}
+  .logo{border:2px solid #ff6a00;color:#ff6a00;border-radius:8px;padding:3px 8px;font-weight:700;font-size:14px;text-decoration:none}
+  h1{font-size:16px;margin:0}
+  main{padding:14px;max-width:900px;margin:0 auto}
+  .caixa{border:2px dashed #ff6a00;border-radius:14px;padding:18px;text-align:center}
+  .caixa p{margin:6px 0;color:#555;font-size:14px}
+  .btn{display:inline-block;background:#ff6a00;color:#fff;border:0;border-radius:24px;padding:12px 22px;font-size:15px;font-weight:600;margin-top:8px;cursor:pointer}
+  .btn.off{background:#bbb}
+  #previa{max-width:160px;max-height:160px;border-radius:10px;margin-top:10px;display:none}
+  #estado{margin:14px 0;font-size:14px;color:#555;text-align:center}
+  .grelha{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:12px}
+  @media(min-width:640px){.grelha{grid-template-columns:repeat(4,1fr)}}
+  .card{border:1px solid #eee;border-radius:10px;overflow:hidden;text-decoration:none;color:#222;background:#fff}
+  .card img{width:100%;aspect-ratio:1/1;object-fit:cover;display:block;background:#f6f6f6}
+  .card .t{padding:6px 8px;font-size:13px;line-height:1.3;height:38px;overflow:hidden}
+  .card .p{padding:0 8px 4px;font-weight:700;color:#ff6a00;font-size:14px}
+  .card .s{padding:0 8px 8px;font-size:11px;color:#2e7d32}
+</style>
+</head>
+<body>
+<header>
+  <a class="logo" href="index.html">B-Babilônia</a>
+  <h1>Pesquisa por imagem</h1>
+</header>
+<main>
+  <div class="caixa">
+    <p>Tire uma foto ou escolha uma imagem do produto.</p>
+    <p style="font-size:12px">Compara a forma e o modelo do objeto — não a cor nem o fundo.</p>
+    <label class="btn off" id="botao">⏳ A preparar…
+      <input id="ficheiro" type="file" accept="image/*" hidden disabled>
+    </label>
+    <br><img id="previa" alt="">
+  </div>
+  <div id="estado"></div>
+  <div class="grelha" id="grelha"></div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.20.0/dist/tf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet@2.1.1/dist/mobilenet.min.js"></script>
+<script src="forma-comum.js"></script>
+<script>
+const F = window.FormaBB;
+const estado = document.getElementById("estado");
+const grelha = document.getElementById("grelha");
+const botao = document.getElementById("botao");
+const input = document.getElementById("ficheiro");
+let indice = [];          // [{p, foto, v}]  — vetores já prontos, vindos do Supabase
+let semForma = 0;
+
+function msg(t){ estado.textContent = t; }
+
+async function lerProdutos(){
+  const h = {apikey:F.SUPA_KEY, Authorization:"Bearer "+F.SUPA_KEY};
+  let r = await fetch(F.SUPA_URL+"/rest/v1/products?select=id,name,price,currency,image_url,images,forma&limit=5000",{headers:h});
+  if(!r.ok) throw new Error("Falta correr o SQL da coluna forma no Supabase ("+r.status+")");
+  const lista = await r.json();
+  for(const p of lista){
+    let f = p.forma;
+    if(typeof f === "string"){ try{ f = JSON.parse(f); }catch(e){ f = null; } }
+    const fotos = F.fotosDe(p);
+    if(!Array.isArray(f) || !f.length){ if(fotos.length) semForma++; continue; }
+    f.forEach((txt,i) => { try{ indice.push({p, foto:fotos[i]||fotos[0], v:F.descodificar(txt)}); }catch(e){} });
+  }
+}
+
+/* prepara tudo ao abrir a página, antes de o cliente escolher a foto */
+Promise.all([F.carregarModelo(), lerProdutos()]).then(()=>{
+  botao.classList.remove("off");
+  botao.firstChild.textContent = "📷 Escolher imagem";
+  input.disabled = false;
+  msg("");
+}).catch(e => msg("Erro: " + e.message));
+
+function mostrar(lista, ms){
+  grelha.innerHTML = "";
+  if(!lista.length){ msg("Não encontrámos produtos com esta forma. Tente outra foto com o objeto inteiro."); return; }
+  msg(lista.length + " produtos parecidos · " + ms + " ms");
+  for(const it of lista){
+    const a = document.createElement("a");
+    a.className = "card";
+    a.href = "produto-bbabilonia.html?id=" + encodeURIComponent(it.p.id);
+    const img = document.createElement("img"); img.loading = "lazy"; img.src = it.foto; img.alt = "";
+    const t = document.createElement("div"); t.className = "t"; t.textContent = it.p.name || "Produto";
+    const pr = document.createElement("div"); pr.className = "p";
+    pr.textContent = Number(it.p.price||0).toLocaleString("pt-PT") + " " + (it.p.currency || "MZN");
+    const s = document.createElement("div"); s.className = "s"; s.textContent = Math.round(it.nota*100) + "% parecido";
+    a.append(img, t, pr, s); grelha.appendChild(a);
+  }
+}
+
+input.addEventListener("change", async ev => {
+  const f = ev.target.files && ev.target.files[0];
+  if(!f) return;
+  grelha.innerHTML = "";
+  const url = URL.createObjectURL(f);
+  const prev = document.getElementById("previa"); prev.src = url; prev.style.display = "inline-block";
+  msg("A procurar…");
+  try{
+    const t0 = performance.now();
+    const q = await F.vetor(await F.carregarImg(url));
+    const melhor = new Map();                       // um resultado por produto (a foto mais parecida)
+    for(const it of indice){
+      let s = 0; const v = it.v;
+      for(let i=0;i<v.length;i++) s += q[i]*v[i];
+      const ant = melhor.get(it.p.id);
+      if(!ant || s > ant.nota) melhor.set(it.p.id, {p:it.p, foto:it.foto, nota:s});
+    }
+    const res = [...melhor.values()].sort((a,b)=>b.nota-a.nota).filter(x=>x.nota>=0.45).slice(0,40);
+    mostrar(res, Math.round(performance.now()-t0));
+  }catch(e){ msg("Erro: " + e.message); }
+  input.value = "";
+});
+</script>
+</body>
+  </html>
+  
