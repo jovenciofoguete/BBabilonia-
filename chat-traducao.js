@@ -52,15 +52,72 @@
     return cache[k];
   }
 
-  /* guarda o idioma de quem envia em cada mensagem (sem mexer no chat.html) */
+  /* pedidos de contacto sem dígitos: "seu número de telefone", "your phone", email…
+     (o texto de qualquer língua é traduzido para português antes de ser verificado) */
+  var BLOQ = 'Não pode pedir ou enviar contactos (número, telefone, email) fora da plataforma.';
+  // contacto direto (nunca é produto)
+  var CONTACTO = '(?:contacto|contactos|contato|contatos|contact|contacts|whats|whatsapp)';
+  // aparelhos: podem ser produto da loja ("quero um telefone Samsung"), por isso só bloqueiam em pedidos claros
+  var APARELHO = '(?:telefone|telefono|telemovel|celular|phone|mobile|movil)';
+  // meios de comunicação: "número" só bloqueia quando vem junto de um destes
+  var MEIO = '(?:telefone|telefono|telemovel|celular|cel|phone|mobile|movil|chamada|chamadas|chamar|liga|ligue|ligo|ligar|ligacao|ligacoes|call|calls|contacto|contactos|contato|contatos|contact|whats|whatsapp|zap|wpp|sms|telegram|wechat|viber|signal|imo|skype)';
+  var NUMERO = '(?:numero|numeros|number|numbers)';
+  var POSSE = '(?:seu|sua|teu|tua|vosso|vossa|your|ur|tu|su|votre|ton|dein|deine|tuo)';
+  var REGRAS_EXTRA = [
+    // email é sempre proibido
+    /\b(?:email|emails|mail|gmail|hotmail|outlook|yahoo|icloud|correio eletronico|correo electronico|courriel)\b/,
+    // "seu número de telefone / de chamada / de whatsapp…" (mas "seu número" sozinho passa: sapato, cintura…)
+    new RegExp('\\b' + NUMERO + '\\b[^.!?]{0,20}\\b' + MEIO + '\\b'),
+    new RegExp('\\b' + MEIO + '\\b[^.!?]{0,12}\\b' + NUMERO + '\\b'),
+    // "seu contacto", "teu whats"
+    new RegExp('\\b' + POSSE + '\\s+' + CONTACTO + '\\b'),
+    // "qual o seu telefone?", "your phone?", "manda o teu celular pf" (pedido no fim da frase)
+    new RegExp('\\b' + POSSE + '\\s+' + APARELHO + '\\s*(?:\\?|$|por favor|pf|pfv|pls|please|plz)'),
+    // "peço / manda / dá-me / give me … contacto/whats"
+    new RegExp('\\b(?:peco|pede|pedir|pedia|quero|queria|preciso|manda|mande|envia|envie|passa|passe|deixa|deixe|partilha|partilhe|compartilha|compartilhe|share|dame|pasame|da me|de me|me da|me de|give me|send me|can i get|can i have)\\b[^.!?]{0,25}\\b' + CONTACTO + '\\b'),
+    // "qual o contacto / whats"
+    new RegExp('\\b(?:qual|quais|what|cual)\\b[^.!?]{0,15}\\b' + CONTACTO + '\\b')
+  ];
+  // "número de série / IMEI / modelo" é do produto: tira só essa parte antes de verificar (não abre buracos no resto da frase)
+  var NUM_PRODUTO = /\b(?:numeros?|numbers?)\s+(?:de\s+|do\s+|da\s+|of\s+)?(?:serie|series|serial|imei|modelo|model|referencia|reference|lote|peca|pecas|part)\b/g;
+  function normal(t) {
+    t = String(t || '').toLowerCase();
+    if (t.normalize) t = t.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    return t.replace(/e\s*-\s*mail/g, 'email').replace(/[-’'"]/g, ' ').replace(/\s+/g, ' ').trim();
+  }
+  function pedeContacto(t) {
+    var n = normal(t).replace(NUM_PRODUTO, ' ');
+    for (var i = 0; i < REGRAS_EXTRA.length; i++) if (REGRAS_EXTRA[i].test(n)) return true;
+    var F = window.FiltroContactos;
+    return !!(F && F.verificar && !F.verificar(t).ok);
+  }
+  window.BBPedeContacto = pedeContacto;
+
+  /* mostra o aviso no sítio do aviso vermelho (em vez de uma janela de alerta) */
+  var alertaOriginal = window.alert;
+  window.alert = function (m) {
+    if (m === BLOQ) {
+      var a = document.getElementById('aviso');
+      if (a) { a.textContent = BLOQ; a.style.display = 'block'; return; }
+    }
+    return alertaOriginal.apply(window, arguments);
+  };
+
+  /* antes de enviar: verifica o texto e a tradução para português; guarda o idioma de quem envia */
   if (typeof window.mandar === 'function') {
     var original = window.mandar;
-    window.mandar = function (msg) {
+    window.mandar = async function (msg) {
+      if (msg && msg.tipo === 'texto' && msg.texto) {
+        if (pedeContacto(msg.texto)) throw new Error(BLOQ);
+        var r = await traduzir(msg.texto, 'pt');
+        if (r && r.t && r.t !== msg.texto && pedeContacto(r.t)) throw new Error(BLOQ);
+      }
       var com = Object.assign({}, msg, { idioma: meuIdioma() });
-      return original(com).catch(function (e) {
+      try { return await original(com); }
+      catch (e) {
         if (/idioma/i.test(e && e.message)) return original(msg);   // coluna ainda não criada: envia normal
         throw e;
-      });
+      }
     };
   }
 
@@ -135,8 +192,7 @@
           if (de === para || r.t.trim().toLowerCase() === x.texto.trim().toLowerCase()) return;
           var hora = el.querySelector('small');
           // anti-contactos também na tradução (ex.: números escritos noutra língua que viram dígitos)
-          var F = window.FiltroContactos;
-          if (!minha && F && F.verificar && !F.verificar(r.t).ok) {
+          if (!minha && (pedeContacto(r.t) || pedeContacto(x.texto))) {
             var t0 = el.firstChild;
             while (t0 && t0.nodeType !== 3) t0 = t0.nextSibling;
             if (t0) t0.nodeValue = '⚠️ Mensagem ocultada: contém contactos ou meios fora da plataforma.';
