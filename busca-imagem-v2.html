@@ -13,8 +13,9 @@
   main{padding:14px;max-width:900px;margin:0 auto}
   .caixa{border:2px dashed #ff6a00;border-radius:14px;padding:18px;text-align:center}
   .caixa p{margin:6px 0;color:#555;font-size:14px}
-  .btn{display:inline-block;background:#ff6a00;color:#fff;border:0;border-radius:24px;padding:12px 22px;font-size:15px;font-weight:600;margin-top:8px;cursor:pointer}
-  .btn.off{background:#bbb}
+  .bts{display:flex;gap:18px;justify-content:center;margin-top:10px}
+  .ic{width:64px;height:64px;border-radius:50%;background:#fff;border:1px solid #ddd;box-shadow:0 2px 8px rgba(0,0,0,.12);display:flex;align-items:center;justify-content:center;color:#333;cursor:pointer}
+  .ic svg{width:30px;height:30px}
   #previa{max-width:160px;max-height:160px;border-radius:10px;margin-top:10px;display:none}
   #estado{margin:14px 0;font-size:14px;color:#555;text-align:center}
   .grelha{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:12px}
@@ -35,9 +36,10 @@
   <div class="caixa">
     <p>Tire uma foto ou escolha uma imagem do produto.</p>
     <p style="font-size:12px">Compara a forma e o modelo do objeto — não a cor nem o fundo.</p>
-    <label class="btn off" id="botao">⏳ A preparar…
-      <input id="ficheiro" type="file" accept="image/*" hidden disabled>
-    </label>
+    <div class="bts">
+      <label class="ic" aria-label="Tirar foto" title="Tirar foto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg><input class="fich" type="file" accept="image/*" capture="environment" hidden></label>
+      <label class="ic" aria-label="Escolher da galeria" title="Escolher da galeria"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="1.8"/><path d="M21 16l-5-5-9 9"/></svg><input class="fich" type="file" accept="image/*" hidden></label>
+    </div>
     <br><img id="previa" alt="">
   </div>
   <div id="estado"></div>
@@ -51,8 +53,6 @@
 const F = window.FormaBB;
 const estado = document.getElementById("estado");
 const grelha = document.getElementById("grelha");
-const botao = document.getElementById("botao");
-const input = document.getElementById("ficheiro");
 let indice = [];          // [{p, foto, v}]  — vetores já prontos, vindos do Supabase
 let semForma = 0;
 
@@ -72,13 +72,10 @@ async function lerProdutos(){
   }
 }
 
-/* prepara tudo ao abrir a página, antes de o cliente escolher a foto */
-Promise.all([F.carregarModelo(), lerProdutos()]).then(()=>{
-  botao.classList.remove("off");
-  botao.firstChild.textContent = "📷 Escolher imagem";
-  input.disabled = false;
-  msg("");
-}).catch(e => msg("Erro: " + e.message));
+/* prepara tudo ao abrir a página; os botões funcionam logo e a foto espera se preciso */
+let pronto = false;
+const preparar = Promise.all([F.carregarModelo(), lerProdutos()]).then(()=>{ pronto = true; });
+preparar.catch(()=>{});
 
 function mostrar(lista, ms){
   grelha.innerHTML = "";
@@ -97,14 +94,20 @@ function mostrar(lista, ms){
   }
 }
 
-input.addEventListener("change", async ev => {
-  const f = ev.target.files && ev.target.files[0];
+let vez = 0, urlAnt = null;   // só mostra o resultado da última foto escolhida
+async function procurar(ev){
+  const input = ev.target;
+  const f = input.files && input.files[0];
   if(!f) return;
+  const minha = ++vez;
   grelha.innerHTML = "";
-  const url = URL.createObjectURL(f);
+  if(urlAnt) URL.revokeObjectURL(urlAnt);
+  const url = urlAnt = URL.createObjectURL(f);
   const prev = document.getElementById("previa"); prev.src = url; prev.style.display = "inline-block";
-  msg("A procurar…");
   try{
+    if(!pronto){ msg("A preparar o analisador… a sua foto é analisada já a seguir."); await preparar; }
+    if(minha !== vez) return;
+    msg("A procurar…");
     const t0 = performance.now();
     const q = await F.vetor(await F.carregarImg(url));
     const melhor = new Map();                       // um resultado por produto (a foto mais parecida)
@@ -114,14 +117,15 @@ input.addEventListener("change", async ev => {
       const ant = melhor.get(it.p.id);
       if(!ant || s > ant.nota) melhor.set(it.p.id, {p:it.p, foto:it.foto, nota:s});
     }
-       const ord = [...melhor.values()].sort((a,b)=>b.nota-a.nota);
+    const ord = [...melhor.values()].sort((a,b)=>b.nota-a.nota);
     const topo = ord.length ? ord[0].nota : 0;
     const res = ord.filter(x=>x.nota>=0.6 && x.nota>=topo-0.12).slice(0,40);
+    if(minha !== vez) return;
     mostrar(res, Math.round(performance.now()-t0));
-  }catch(e){ msg("Erro: " + e.message); }
+  }catch(e){ if(minha === vez) msg("Erro: " + e.message); }
   input.value = "";
-});
+}
+document.querySelectorAll(".fich").forEach(i => i.addEventListener("change", procurar));
 </script>
 </body>
-  </html>
-  
+</html>
