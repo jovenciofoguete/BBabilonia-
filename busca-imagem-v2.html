@@ -114,7 +114,9 @@ input.addEventListener("change", async ev => {
       const ant = melhor.get(it.p.id);
       if(!ant || s > ant.nota) melhor.set(it.p.id, {p:it.p, foto:it.foto, nota:s});
     }
-    const res = [...melhor.values()].sort((a,b)=>b.nota-a.nota).filter(x=>x.nota>=0.45).slice(0,40);
+       const ord = [...melhor.values()].sort((a,b)=>b.nota-a.nota);
+    const topo = ord.length ? ord[0].nota : 0;
+    const res = ord.filter(x=>x.nota>=0.6 && x.nota>=topo-0.12).slice(0,40);
     mostrar(res, Math.round(performance.now()-t0));
   }catch(e){ msg("Erro: " + e.message); }
   input.value = "";
