@@ -17,6 +17,10 @@
   .ic{width:64px;height:64px;border-radius:50%;background:#fff;border:1px solid #ddd;box-shadow:0 2px 8px rgba(0,0,0,.12);display:flex;align-items:center;justify-content:center;color:#333;cursor:pointer}
   .ic svg{width:30px;height:30px}
   #previa{max-width:160px;max-height:160px;border-radius:10px;margin-top:10px;display:none}
+  #objs{display:none;gap:8px;overflow-x:auto;padding:4px 2px 8px;margin-top:10px}
+  #objs p{margin:0 0 4px;font-size:13px;color:#555;text-align:left;width:100%}
+  #objs canvas{flex:none;width:68px;height:68px;border-radius:10px;border:2px solid #ddd;background:#fff;cursor:pointer}
+  #objs canvas.on{border-color:#ff6a00}
   #estado{margin:14px 0;font-size:14px;color:#555;text-align:center}
   .grelha{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:12px}
   @media(min-width:640px){.grelha{grid-template-columns:repeat(4,1fr)}}
@@ -41,6 +45,7 @@
       <label class="ic" aria-label="Escolher da galeria" title="Escolher da galeria"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="1.8"/><path d="M21 16l-5-5-9 9"/></svg><input class="fich" type="file" accept="image/*" hidden></label>
     </div>
     <br><img id="previa" alt="">
+    <div id="objs"></div>
   </div>
   <div id="estado"></div>
   <div class="grelha" id="grelha"></div>
@@ -95,12 +100,131 @@ function mostrar(lista, ms){
 }
 
 let vez = 0, urlAnt = null;   // só mostra o resultado da última foto escolhida
+const objs = document.getElementById("objs");
+
+/* encontra os objetos da foto (como no Alibaba): contornos ligados → caixas; mais a foto inteira */
+function zonas(base){
+  const W = base.width, H = base.height;
+  const gw = 120, gh = Math.max(1, Math.round(120*H/W));
+  const g = document.createElement("canvas"); g.width = gw; g.height = gh;
+  const gx = g.getContext("2d", {willReadFrequently:true}); gx.drawImage(base, 0, 0, gw, gh);
+  const px = gx.getImageData(0, 0, gw, gh).data, cz = new Float32Array(gw*gh);
+  for(let i=0;i<gw*gh;i++) cz[i] = 0.299*px[i*4] + 0.587*px[i*4+1] + 0.114*px[i*4+2];
+  let borda = new Uint8Array(gw*gh);
+  for(let y=1;y<gh-1;y++) for(let x=1;x<gw-1;x++){
+    const i = y*gw+x;
+    if(Math.abs(cz[i+1]-cz[i-1]) + Math.abs(cz[i+gw]-cz[i-gw]) > 28) borda[i] = 1;
+  }
+  for(let r=0;r<2;r++){                    // junta os contornos do mesmo objeto
+    const n = new Uint8Array(gw*gh);
+    for(let y=0;y<gh;y++) for(let x=0;x<gw;x++){
+      let v = 0;
+      for(let dy=-1;dy<=1&&!v;dy++) for(let dx=-1;dx<=1;dx++){ const xx=x+dx, yy=y+dy; if(xx>=0&&yy>=0&&xx<gw&&yy<gh&&borda[yy*gw+xx]){ v=1; break; } }
+      n[y*gw+x] = v;
+    }
+    borda = n;
+  }
+  const visto = new Uint8Array(gw*gh), caixas = [], fila = new Int32Array(gw*gh);
+  for(let i=0;i<gw*gh;i++){
+    if(!borda[i] || visto[i]) continue;
+    let ini=0, fim=0, x0=gw, y0=gh, x1=0, y1=0; fila[fim++] = i; visto[i] = 1;
+    while(ini<fim){
+      const k = fila[ini++], x = k%gw, y = (k-x)/gw;
+      if(x<x0)x0=x; if(x>x1)x1=x; if(y<y0)y0=y; if(y>y1)y1=y;
+      for(const j of [k-1,k+1,k-gw,k+gw]){ if(j<0||j>=gw*gh||visto[j]||!borda[j]) continue; if((j===k-1&&x===0)||(j===k+1&&x===gw-1)) continue; visto[j]=1; fila[fim++]=j; }
+    }
+    const bw = x1-x0+1, bh = y1-y0+1;
+    if(bw < 8 || bh < 8 || bw*bh < gw*gh*0.02) continue;          // texto e riscos pequenos ficam de fora
+    if(bw*bh > gw*gh*0.85) continue;                                // é a foto toda
+    const pad = Math.round(Math.max(bw, bh)*0.06);
+    const X0 = Math.max(0, x0-pad), Y0 = Math.max(0, y0-pad), X1 = Math.min(gw-1, x1+pad), Y1 = Math.min(gh-1, y1+pad);
+    caixas.push({x:Math.round(X0/gw*W), y:Math.round(Y0/gh*H), w:Math.round((X1-X0+1)/gw*W), h:Math.round((Y1-Y0+1)/gh*H), area:bw*bh, objeto:true});
+  }
+  caixas.sort((a,b)=>b.area-a.area);
+  return [{x:0, y:0, w:W, h:H, inteira:true}].concat(caixas.slice(0, 15));
+}
+
+function recorte(base, z, lado){
+  const c = document.createElement("canvas"), e = lado ? lado/Math.max(z.w, z.h) : 1;
+  c.width = Math.max(1, Math.round(z.w*e)); c.height = Math.max(1, Math.round(z.h*e));
+  c.getContext("2d").drawImage(base, z.x, z.y, z.w, z.h, 0, 0, c.width, c.height);
+  return c;
+}
+
+/* vetores de todas as zonas de uma vez (mesmo cálculo de F.vetor: forma + espelho, normalizado) */
+async function vetores(base, lista){
+  const m = await F.carregarModelo(), L = F.LADO, out = [];
+  try{
+    if(!F.prepararForma) throw 0;
+    for(let i=0;i<lista.length;i+=8){
+      const parte = lista.slice(i, i+8), cvs = [];
+      for(const z of parte){
+        const cv = F.prepararForma(recorte(base, z, 320));
+        const esp = document.createElement("canvas"); esp.width = esp.height = L;
+        const e = esp.getContext("2d"); e.translate(L,0); e.scale(-1,1); e.drawImage(cv,0,0);
+        cvs.push(cv, esp);
+      }
+      const lote = tf.tidy(() => tf.stack(cvs.map(c => tf.browser.fromPixels(c))));
+      const r = m.infer(lote, true); lote.dispose();
+      const d = await r.data(), n = d.length/cvs.length; r.dispose();
+      for(let k=0;k<parte.length;k++){
+        const v = new Float32Array(n); let s = 0;
+        for(let j=0;j<n;j++){ v[j] = (d[(2*k)*n+j] + d[(2*k+1)*n+j])/2; s += v[j]*v[j]; }
+        s = Math.sqrt(s)||1; for(let j=0;j<n;j++) v[j] /= s;
+        out.push(v);
+      }
+    }
+  }catch(e){                          // se o telemóvel não aguentar o lote, faz uma a uma
+    out.length = 0;
+    for(const z of lista) out.push(await F.vetor(recorte(base, z, 320)));
+  }
+  return out;
+}
+
+function comparar(q){
+  const melhor = new Map();                         // um resultado por produto (a foto mais parecida)
+  for(const it of indice){
+    let s = 0; const v = it.v;
+    for(let i=0;i<v.length;i++) s += q[i]*v[i];
+    const ant = melhor.get(it.p.id);
+    if(!ant || s > ant.nota) melhor.set(it.p.id, {p:it.p, foto:it.foto, nota:s});
+  }
+  const ord = [...melhor.values()].sort((a,b)=>b.nota-a.nota);
+  const topo = ord.length ? ord[0].nota : 0;
+  return {topo, res: ord.filter(x=>x.nota>=0.6 && x.nota>=topo-0.12).slice(0,40)};
+}
+
+function sobrepoe(a, b){              // a mesma coisa vista em zonas diferentes
+  const ix = Math.max(0, Math.min(a.x+a.w, b.x+b.w) - Math.max(a.x, b.x));
+  const iy = Math.max(0, Math.min(a.y+a.h, b.y+b.h) - Math.max(a.y, b.y));
+  return ix*iy / Math.min(a.w*a.h, b.w*b.h) > 0.5;
+}
+
+function mostrarObjetos(base, achados, ms){
+  objs.innerHTML = "";
+  if(achados.length < 2){ objs.style.display = "none"; return; }
+  const t = document.createElement("p"); t.textContent = achados.length + " objetos na foto · toque para escolher"; objs.appendChild(t);
+  const melhor = achados[0];
+  achados = achados.slice().sort((a,b) => (Math.abs(a.z.y-b.z.y) > Math.min(a.z.h,b.z.h)/2 ? a.z.y-b.z.y : a.z.x-b.z.x));   // pela ordem na foto
+  achados.forEach(a => {
+    const c = recorte(base, a.z, 136); 
+    const q = document.createElement("canvas"); q.width = q.height = 136;
+    const qx = q.getContext("2d"); qx.fillStyle = "#fff"; qx.fillRect(0,0,136,136);
+    qx.drawImage(c, (136-c.width)/2, (136-c.height)/2);
+    if(a === melhor) q.className = "on";
+    q.onclick = () => { objs.querySelectorAll("canvas").forEach(x => x.className = ""); q.className = "on"; mostrar(a.res, ms); };
+    objs.appendChild(q);
+  });
+  objs.style.display = "flex"; objs.style.flexWrap = "wrap";
+}
+
 async function procurar(ev){
   const input = ev.target;
   const f = input.files && input.files[0];
+  input.value = "";
   if(!f) return;
   const minha = ++vez;
-  grelha.innerHTML = "";
+  grelha.innerHTML = ""; objs.style.display = "none";
   if(urlAnt) URL.revokeObjectURL(urlAnt);
   const url = urlAnt = URL.createObjectURL(f);
   const prev = document.getElementById("previa"); prev.src = url; prev.style.display = "inline-block";
@@ -109,21 +233,31 @@ async function procurar(ev){
     if(minha !== vez) return;
     msg("A procurar…");
     const t0 = performance.now();
-    const q = await F.vetor(await F.carregarImg(url));
-    const melhor = new Map();                       // um resultado por produto (a foto mais parecida)
-    for(const it of indice){
-      let s = 0; const v = it.v;
-      for(let i=0;i<v.length;i++) s += q[i]*v[i];
-      const ant = melhor.get(it.p.id);
-      if(!ant || s > ant.nota) melhor.set(it.p.id, {p:it.p, foto:it.foto, nota:s});
-    }
-    const ord = [...melhor.values()].sort((a,b)=>b.nota-a.nota);
-    const topo = ord.length ? ord[0].nota : 0;
-    const res = ord.filter(x=>x.nota>=0.6 && x.nota>=topo-0.12).slice(0,40);
+    const im = await F.carregarImg(url);
+    const e = Math.min(1, 720/Math.max(im.width, im.height));
+    const base = document.createElement("canvas"); base.width = Math.max(1, Math.round(im.width*e)); base.height = Math.max(1, Math.round(im.height*e));
+    base.getContext("2d").drawImage(im, 0, 0, base.width, base.height);
+    const lista = zonas(base), vs = await vetores(base, lista);
     if(minha !== vez) return;
-    mostrar(res, Math.round(performance.now()-t0));
+    const todas = lista.map((z, i) => Object.assign({z}, comparar(vs[i]))).filter(a => a.res.length);
+    todas.sort((a,b) => b.topo - a.topo);
+    const inteira = todas.filter(a => a.z.inteira)[0];
+    let achados = [];
+    for(const a of todas){                                          // objetos recortados (a foto inteira fica de fora aqui)
+      if(a.z.inteira) continue;
+      if(achados.length && a.topo < 0.65) continue;                 // outros objetos só se forem bem parecidos
+      if(!achados.some(b => sobrepoe(a.z, b.z))) achados.push(a);
+      if(achados.length >= 6) break;
+    }
+    if(achados.length < 2){                                         // um só objeto: fica o que for mais parecido
+      const um = achados[0];
+      achados = (inteira && (!um || inteira.topo >= um.topo)) ? [inteira] : (um ? [um] : []);
+    }
+    const ms = Math.round(performance.now()-t0);
+    if(achados.length >= 2) prev.style.display = "none";
+    mostrarObjetos(base, achados, ms);
+    mostrar(achados.length ? achados[0].res : [], ms);
   }catch(e){ if(minha === vez) msg("Erro: " + e.message); }
-  input.value = "";
 }
 document.querySelectorAll(".fich").forEach(i => i.addEventListener("change", procurar));
 </script>
