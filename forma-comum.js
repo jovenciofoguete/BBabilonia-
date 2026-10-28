@@ -11,10 +11,11 @@
     if(modelo) return Promise.resolve(modelo);
     if(!aCarregar){
       aCarregar = mobilenet.load({version:2, alpha:1.0}).then(async m => {
+        const z = tf.zeros([LADO,LADO,3]);
+        const t = m.infer(z, true); await t.data(); t.dispose(); z.dispose(); // aquecer
         modelo = m;
-        const t = m.infer(tf.zeros([LADO,LADO,3]), true); await t.data(); t.dispose(); // aquecer
         return m;
-      });
+      }).catch(e => { aCarregar = null; throw e; });   // sem internet: deixa tentar outra vez
     }
     return aCarregar;
   }
@@ -31,7 +32,9 @@
 
   /* tira o fundo (cor das bordas), corta à volta do objeto, põe em cinzento */
   function prepararForma(im){
-    const W = 160, H = Math.max(1, Math.round(160 * im.height / im.width));
+    const iw = im.naturalWidth || im.width, ih = im.naturalHeight || im.height;
+    if(!iw || !ih) throw new Error("Imagem vazia");
+    const W = 160, H = Math.max(1, Math.round(160 * ih / iw));
     const c = document.createElement("canvas"); c.width = W; c.height = H;
     const x = c.getContext("2d", {willReadFrequently:true});
     x.drawImage(im, 0, 0, W, H);
@@ -105,6 +108,5 @@
     return lista.slice(0,3);
   }
 
-  window.FormaBB = { SUPA_URL, SUPA_KEY, carregarModelo, carregarImg, vetor, codificar, descodificar, fotosDe };
+  window.FormaBB = { SUPA_URL, SUPA_KEY, carregarModelo, carregarImg, vetor, codificar, descodificar, fotosDe, prepararForma, LADO };
 })();
-                                
