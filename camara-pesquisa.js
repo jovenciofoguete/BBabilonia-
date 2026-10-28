@@ -1,7 +1,7 @@
 /* BBabilonia - icone de camara ao lado da lupa de pesquisa (abre pesquisa-imagem.html). Ficheiro novo. */
 (function () {
   if (window.__bbCamara) return; window.__bbCamara = true;
-  var DESTINO = 'busca-imagem-v2.html';
+    var DESTINO = 'busca-imagem-v3.html';
   var SVG = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>';
 
   function acharPesquisa() {
