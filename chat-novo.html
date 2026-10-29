@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chat - BBabilônia</title>
+<style>html,body{margin:0;height:100%;background:#fff}iframe{width:100%;height:100%;border:0;display:block}</style>
+</head>
+<body>
+<iframe id="c"></iframe>
+<script>
+var f=document.getElementById("c");
+f.addEventListener("load",function(){
+  try{
+    var d=f.contentDocument;
+    if(d.getElementById("bb-filtro"))return;
+    var l=["filtro-contactos-v2.js?v=3","imagem-rapida.js?v=1","chat-extra.js?v=1","chat-pagamento.js?v=1","chat-pagamento-fotos.js?v=1","chat-traducao.js?v=1","chat-perguntas.js?v=1"];
+    for(var i=0;i<l.length;i++){
+      var s=d.createElement("script");
+      if(i===0)s.id="bb-filtro";
+      s.async=false;
+      s.src=l[i];
+      d.body.appendChild(s);
+    }
+  }catch(e){}
+});
+f.src="chat.html"+location.search+location.hash;
+</script>
+</body>
+</html>
