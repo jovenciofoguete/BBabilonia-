@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="pt"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BBabilônia</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<style>
+*{box-sizing:border-box}html,body{margin:0;height:100%;background:#eef2f7;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:#0f172a}
+#f{position:fixed;inset:0;width:100%;height:100%;border:0;background:#fff}
+#cx{position:fixed;inset:0;z-index:9;background:#eef2f7;overflow:auto;padding:24px 16px}
+.bx{max-width:420px;margin:0 auto;background:#fff;border-radius:18px;padding:20px;box-shadow:0 8px 24px #0f172a1f}
+.lg{font-size:12px;letter-spacing:2px;font-weight:800;color:#16a34a}
+h2{font-size:20px;margin:6px 0}p{font-size:14.5px;color:#475569;line-height:1.45;margin:8px 0}
+.ps{background:#f1f5f9;border-radius:12px;padding:10px 12px;font-size:14px;margin:10px 0}
+.ch{font-family:ui-monospace,monospace;font-size:15px;word-break:break-all;background:#e0f2fe;border-radius:10px;padding:10px;margin:6px 0;user-select:all}
+input{width:100%;padding:14px;border:2px solid #e2e8f0;border-radius:12px;font-size:26px;letter-spacing:8px;text-align:center;font-weight:800}
+input:focus{outline:none;border-color:#2563eb}
+.bt{display:block;width:100%;margin-top:10px;padding:14px;border:0;border-radius:14px;font:inherit;font-size:15.5px;font-weight:800;color:#fff;background:linear-gradient(90deg,#16a34a,#2563eb);text-align:center;text-decoration:none}
+.bt.l{background:#fff;color:#2563eb;border:2px solid #e2e8f0}.bt:disabled{opacity:.5}
+.qr{text-align:center}.qr img{width:180px;height:180px}
+.er{color:#dc2626;font-size:14px;margin-top:8px}.hide{display:none!important}
+</style></head><body>
+<iframe id="f" title="BBabilônia"></iframe>
+<div id="cx" class="hide"><div class="bx" id="bx"></div></div>
+<script>
+(function(){
+var URL_SB='https://dsfoqoeawvjafypycldz.supabase.co',KEY='sb_publishable_BN4NiVcDab9CqdTY_odgDA_uUOhjja0';
+var PROT=/^\/(painel-vendedor|fornecedor-novo|fornecedor|registar-produto|detalhes-fornecedor|loja-criar|loja-editar|fornecedor-envios|fornecedor-saldo|conta-bancaria|fornecedor-disputas|painel-admin|admin-bbabilonia|admin-lojas|admin-disputas|admin-fotos|gerar-formas|atendimento|agentes|respostas|conversas)\.html$/;
+var AGENTE=/^\/(atendimento|agentes|respostas|conversas)\.html$/;
+var RAIZ={'fornecedor.bbabilonia.com':'/painel-vendedor.html','suppliers.bbabilonia.com':'/painel-vendedor.html','supplies.bbabilonia.com':'/painel-vendedor.html',
+ 'admin.bbabilonia.com':'/painel-admin.html','administrator.bbabilonia.com':'/painel-admin.html','atendimento.bbabilonia.com':'/atendimento.html','service.bbabilonia.com':'/atendimento.html'};
+var f=document.getElementById('f'),cx=document.getElementById('cx'),bx=document.getElementById('bx');
+var aberto=false,sb=null,modoSb='',faltaAntes=false;
+
+function caminho(){var p='';try{p=f.contentWindow.location.pathname}catch(e){}if(!p||p==='blank')p=location.pathname;if(p==='/')p=RAIZ[location.hostname]||'/';return p}
+function modo(){return AGENTE.test(caminho())?'atd':'loja'}
+function guardado(m){
+ try{var st=m==='atd'?sessionStorage:localStorage,k=m==='atd'?'bb-atd':'sb-dsfoqoeawvjafypycldz-auth-token';
+  var v=JSON.parse(st.getItem(k)||'null');if(v&&v.currentSession)v=v.currentSession;return v&&v.access_token?v:null}catch(e){return null}
+}
+function aal(tok){try{var b=tok.split('.')[1].replace(/-/g,'+').replace(/_/g,'/');while(b.length%4)b+='=';return JSON.parse(atob(b)).aal||''}catch(e){return''}}
+function falta(){if(!PROT.test(caminho()))return false;var s=guardado(modo());return!!s&&aal(s.access_token)!=='aal2'}
+function cliente(){var m=modo();if(sb&&modoSb===m)return sb;modoSb=m;
+ var o={auth:{persistSession:true,autoRefreshToken:false,detectSessionInUrl:false}};
+ if(m==='atd'){o.auth.storage=window.sessionStorage;o.auth.storageKey='bb-atd'}
+ sb=supabase.createClient(URL_SB,KEY,o);return sb}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+
+function vigiar(){
+ var x=falta();
+ if(x&&!aberto)abrir();
+ if(!x&&aberto)fechar(faltaAntes);
+ faltaAntes=x;
+}
+function fechar(recarregar){aberto=false;cx.classList.add('hide');f.style.visibility='visible';if(recarregar)try{f.contentWindow.location.reload()}catch(e){f.src=f.src}}
+async function abrir(){
+ aberto=true;f.style.visibility='hidden';cx.classList.remove('hide');
+ bx.innerHTML='<div class="lg">BBABILÔNIA · SEGURANÇA</div><h2>🔐 Verificação em 2 passos</h2><p>A carregar…</p>';
+ try{
+  var c=cliente(),r=await c.auth.mfa.listFactors();if(r.error)throw r.error;
+  var ok=(r.data.totp||[]).filter(function(x){return x.status==='verified'})[0];
+  if(ok)pedirCodigo(ok.id,false);else registar((r.data.all||[]).filter(function(x){return x.factor_type==='totp'&&x.status!=='verified'}));
+ }catch(e){erroGeral(e)}
+}
+function erroGeral(e){bx.innerHTML='<div class="lg">BBABILÔNIA · SEGURANÇA</div><h2>🔐 Verificação em 2 passos</h2><div class="er">'+esc(e&&e.message||e)+'</div><button class="bt" id="tn">Tentar de novo</button><button class="bt l" id="sa">Sair da conta</button>';
+ document.getElementById('tn').onclick=abrir;document.getElementById('sa').onclick=sair}
+async function registar(velhos){
+ var c=cliente();
+ for(var i=0;i<velhos.length;i++){try{await c.auth.mfa.unenroll({factorId:velhos[i].id})}catch(e){}}
+ var r=await c.auth.mfa.enroll({factorType:'totp',friendlyName:'BBabilonia '+new Date().toISOString().slice(0,16)});
+ if(r.error)return erroGeral(r.error);
+ var t=r.data.totp,qr=String(t.qr_code||'');if(qr&&qr.indexOf('data:')!==0)qr='data:image/svg+xml;utf-8,'+encodeURIComponent(qr);
+ bx.innerHTML='<div class="lg">BBABILÔNIA · SEGURANÇA</div><h2>🔐 Ativar a verificação em 2 passos</h2>'+
+  '<p>É obrigatória para fornecedores, agentes e administrador. Faz-se só uma vez.</p>'+
+  '<div class="ps"><b>1.</b> Instale <b>uma</b> destas apps de códigos (toque na que conseguir descarregar):</div>'+
+  (/iPhone|iPad/i.test(navigator.userAgent)?
+   '<a class="bt l" target="_blank" rel="noopener" href="https://apps.apple.com/app/microsoft-authenticator/id983156458">📲 Microsoft Authenticator</a>'+
+   '<a class="bt l" target="_blank" rel="noopener" href="https://apps.apple.com/app/2fa-authenticator-2fas/id1217793794">📲 2FAS Authenticator</a>'+
+   '<a class="bt l" target="_blank" rel="noopener" href="https://apps.apple.com/app/google-authenticator/id388497605">📲 Google Authenticator</a>'
+  :
+   '<a class="bt l" target="_blank" rel="noopener" href="https://play.google.com/store/apps/details?id=com.azure.authenticator">📲 Microsoft Authenticator</a>'+
+   '<a class="bt l" target="_blank" rel="noopener" href="https://play.google.com/store/apps/details?id=com.twofasapp">📲 2FAS Authenticator (mais leve)</a>'+
+   '<a class="bt l" target="_blank" rel="noopener" href="https://play.google.com/store/apps/details?id=com.google.android.apps.authenticator2">📲 Google Authenticator</a>')+
+  '<p style="font-size:13px">Se nenhuma descarregar: liberte espaço no telemóvel ou ligue ao Wi-Fi.</p>'+
+  '<div class="ps"><b>2.</b> Toque no botão verde para adicionar a conta na app.</div>'+
+  '<a class="bt" href="'+esc(t.uri)+'">➕ Adicionar à app autenticadora</a>'+
+  '<p>Se o botão não abrir a app: na app toque em <b>+</b> › <b>Introduzir chave</b> (ou "Enter a setup key") e cole esta chave:</p>'+
+  '<div class="ch" id="ch">'+esc(t.secret)+'</div><button class="bt l" id="cp">📋 Copiar a chave</button>'+
+  (qr?'<p>Noutro aparelho pode ler este código QR:</p><div class="qr"><img alt="Código QR" src="'+esc(qr)+'"></div>':'')+
+  '<div class="ps"><b>3.</b> Escreva o código de 6 números que aparece na app.</div>';
+ document.getElementById('cp').onclick=function(){var b=this;(navigator.clipboard?navigator.clipboard.writeText(t.secret):Promise.reject()).then(function(){b.textContent='Copiado ✓'}).catch(function(){prompt('Copie a chave:',t.secret)})};
+ pedirCodigo(r.data.id,true);
+}
+function pedirCodigo(id,juntar){
+ var h='<input id="cd" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="000000"><button class="bt" id="vf">Confirmar código</button><div class="er" id="er"></div><button class="bt l" id="sa">Sair da conta</button>';
+ if(juntar)bx.insertAdjacentHTML('beforeend',h);
+ else bx.innerHTML='<div class="lg">BBABILÔNIA · SEGURANÇA</div><h2>🔐 Código de verificação</h2><p>Abra a sua app de códigos e escreva o código de 6 números da BBabilônia.</p>'+h+'<p style="font-size:13px">Perdeu o telemóvel? Fale com o administrador da BBabilônia.</p>';
+ var cd=document.getElementById('cd'),vf=document.getElementById('vf'),er=document.getElementById('er');
+ document.getElementById('sa').onclick=sair;
+ cd.oninput=function(){cd.value=cd.value.replace(/\D/g,'').slice(0,6);if(cd.value.length===6)vf.click()};
+ vf.onclick=async function(){
+  er.textContent='';if(!/^\d{6}$/.test(cd.value))return er.textContent='Escreva os 6 números.';
+  vf.disabled=true;var r=await cliente().auth.mfa.challengeAndVerify({factorId:id,code:cd.value});vf.disabled=false;
+  if(r.error){er.textContent=/invalid|expired/i.test(r.error.message)?'Código errado ou expirado. Escreva o código novo da app.':r.error.message;cd.value='';cd.focus();return}
+  faltaAntes=false;fechar(true);
+ };
+ if(!juntar)cd.focus();
+}
+async function sair(){try{await cliente().auth.signOut()}catch(e){}
+ try{if(modo()==='atd')sessionStorage.removeItem('bb-atd');else localStorage.removeItem('sb-dsfoqoeawvjafypycldz-auth-token')}catch(e){}
+ aberto=false;faltaAntes=false;cx.classList.add('hide');f.style.visibility='visible';try{f.contentWindow.location.reload()}catch(e){f.src=f.src}}
+
+f.addEventListener('load',function(){
+ try{var w=f.contentWindow,u=w.location.pathname+w.location.search+w.location.hash;
+  if(w.location.pathname!==location.pathname||w.location.search!==location.search)history.replaceState(null,'',u);
+  if(w.document.title)document.title=w.document.title}catch(e){}
+ vigiar();
+});
+if(falta()){faltaAntes=true;abrir()}
+f.src=location.pathname+location.search+location.hash;
+setInterval(vigiar,1000);
+})();
+</script>
+</body></html>
