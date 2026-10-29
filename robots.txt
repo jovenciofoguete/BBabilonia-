@@ -1,0 +1,20 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /painel-admin.html
+Disallow: /admin-
+Disallow: /atendimento.html
+Disallow: /agentes.html
+Disallow: /respostas.html
+Disallow: /conversas.html
+Disallow: /disputa.html
+Disallow: /checkout.html
+Disallow: /carrinho.html
+Disallow: /pagar-link
+Disallow: /pagamento-ok.html
+Disallow: /conta.html
+Disallow: /moradas
+Disallow: /portao-2fa.html
+Allow: /api/sitemap
+
+Sitemap: https://bbabilonia.com/api/sitemap
