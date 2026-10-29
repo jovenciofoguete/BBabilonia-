@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Conta para receber · B-Babilônia</title>
+<meta name="color-scheme" content="light">
+<style>
+:root{--r1:#1e1b4b;--r2:#5b21b6;--r3:#7c3aed;--cl:#f3f0ff;--fundo:#f1effb;--tx:#1b1740;--su:#6b7280;--li:#ece9f7;--ok:#047857;--okf:#d1fae5;--av:#b45309;--avf:#fef3c7;--er:#b91c1c;--erf:#fee2e2}
+*{box-sizing:border-box;margin:0}
+body{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--fundo);color:var(--tx);line-height:1.4}
+button{font:inherit;cursor:pointer}
+.top{background:linear-gradient(135deg,#1e1b4b 0%,#5b21b6 55%,#9333ea 100%);color:#fff;padding:22px 16px 58px;border-radius:0 0 28px 28px}
+.top .lg{font-size:13px;letter-spacing:2px;color:#fcd34d;font-weight:bold}
+.top h1{margin:8px 0 4px;font-size:24px}.top p{font-size:14px;color:#e9d5ff}
+main{padding:0 14px 40px;margin:-40px auto 0;max-width:620px}
+.voltar{display:inline-block;background:#fff;color:#5b21b6;font-weight:800;border-radius:999px;padding:8px 14px;margin-bottom:12px;box-shadow:0 4px 12px #4c1d9522;font-size:14px;text-decoration:none}
+.cx{background:#fff;border-radius:16px;padding:16px;box-shadow:0 4px 14px #4c1d9514;margin-bottom:12px}
+.cx h2{font-size:16px;margin-bottom:10px}
+label.lb{display:block;font-size:13px;color:var(--su);margin-top:10px}
+.cp{width:100%;border:1.5px solid #ddd;border-radius:10px;padding:11px;font-size:16px;margin-top:4px;background:#fff;color:var(--tx)}
+.cp[readonly]{background:#f6f5fb;color:#555}
+.dica{font-size:12.5px;color:var(--su);margin-top:4px}
+.bt{border:0;border-radius:12px;padding:13px;font-weight:800;font-size:15px;background:var(--cl);color:var(--r2);width:100%;margin-top:14px}
+.bt.p{background:var(--r3);color:#fff}.bt.v{background:#10b981;color:#fff}.bt.x{background:var(--erf);color:var(--er)}
+.bt:disabled{opacity:.55}
+.bdg{display:inline-block;border-radius:999px;padding:3px 10px;font-size:13px;font-weight:800}
+.b-ok{background:var(--okf);color:var(--ok)}.b-av{background:var(--avf);color:var(--av)}.b-er{background:var(--erf);color:var(--er)}
+.aviso{border-left:6px solid #f59e0b;background:#fffbeb;border-radius:12px;padding:12px;font-size:14px;margin-top:10px}
+.aviso.er{border-color:#ef4444;background:#fef2f2}.aviso.ok{border-color:#10b981;background:#ecfdf5}
+.sim{display:flex;gap:8px;margin-top:6px}.sim label{flex:1;border:1.5px solid #ddd;border-radius:10px;padding:11px;text-align:center;font-weight:700}
+.sim input{display:none}.sim label:has(input:checked){border-color:var(--r3);background:var(--cl);color:var(--r2)}
+.lista{max-height:230px;overflow:auto;border:1.5px solid #ddd;border-radius:10px;margin-top:4px}
+.lista div{padding:10px 12px;border-top:1px solid var(--li);font-size:15px}.lista div:first-child{border-top:0}
+.lista div.on{background:var(--cl);color:var(--r2);font-weight:700}
+.msg{font-size:14px;margin-top:10px;color:var(--er)}.msg.ok{color:var(--ok)}
+.abas{display:flex;gap:6px;overflow-x:auto;margin-bottom:10px}
+.abas button{flex:none;border:1.5px solid var(--li);background:#fff;border-radius:999px;padding:7px 12px;font-size:14px;font-weight:600}
+.abas button.on{background:var(--r3);border-color:var(--r3);color:#fff}
+.dl{display:grid;grid-template-columns:auto 1fr;gap:4px 10px;font-size:14px;margin:8px 0}
+.dl b{color:var(--su);font-weight:600}.dl span{word-break:break-all}
+.hide{display:none!important}
+</style>
+</head>
+<body>
+<div class="top">
+  <div class="lg">BBABILÔNIA</div>
+  <h1 id="tit">Conta para receber</h1>
+  <p id="sub">Conta bancária onde a BBabilônia envia os seus pagamentos (para bancos de qualquer país).</p>
+</div>
+<main>
+  <a class="voltar" href="painel-vendedor-v2.html#inicio">← Voltar ao painel</a>
+<p id="carregar" style="text-align:center;color:#6b7280;padding:20px">A carregar…</p>
+<script>
+window.onerror=function(m,f,l){var e=document.getElementById("carregar");if(e){e.style.color="#b91c1c";e.textContent="Erro na página: "+m+" ("+String(f||"").split("/").pop()+" linha "+l+")";}};
+</script>
+
+  <section id="v-entrar" class="cx hide">
+    <h2>Entrar</h2>
+    <label class="lb">Email</label><input class="cp" id="em" type="email" autocomplete="email">
+    <label class="lb">Palavra-passe</label><input class="cp" id="pw" type="password" autocomplete="current-password">
+    <button class="bt p" id="bEntrar">Entrar</button>
+    <p class="msg" id="entMsg"></p>
+  </section>
+
+  <section id="v-info" class="cx hide"></section>
+
+  <!-- ===== FORNECEDOR ===== -->
+  <section id="v-forn" class="hide">
+    <div class="cx" id="estadoCx"></div>
+
+    <div class="cx">
+      <h2>1. Titular da conta</h2>
+      <label class="lb">Nome do titular (igual ao nome da loja aprovada)</label>
+      <input class="cp" id="titular" readonly>
+      <div class="dica">A conta tem de estar no nome exato da loja. Contas de outras pessoas não são aceites.</div>
+      <label class="lb">Tipo de titular</label>
+      <select class="cp" id="tipoTit"><option value="empresa">Empresa</option><option value="individual">Pessoa individual</option></select>
+      <label class="lb">País do titular *</label>
+      <input class="cp" id="qPaisTit" placeholder="🔍 Pesquisar país…"><div class="lista" id="lPaisTit"></div>
+      <label class="lb">Morada completa do titular * (rua, nº, cidade, código postal)</label>
+      <textarea class="cp" id="moradaTit" rows="2"></textarea>
+      <div class="dica">Obrigatório nas transferências internacionais (SWIFT).</div>
+    </div>
+
+    <div class="cx">
+      <h2>2. Banco</h2>
+      <label class="lb">País do banco *</label>
+      <input class="cp" id="qPaisBan" placeholder="🔍 Pesquisar país…"><div class="lista" id="lPaisBan"></div>
+      <label class="lb">Nome do banco *</label><input class="cp" id="banco">
+      <label class="lb">Morada do banco / agência * (cidade e país)</label><input class="cp" id="moradaBan">
+      <label class="lb">Código SWIFT / BIC * (8 ou 11 letras/números)</label>
+      <input class="cp" id="swift" maxlength="11" autocapitalize="characters" placeholder="ex.: BCOMPTPL">
+      <div class="dica">Peça ao seu banco o código SWIFT/BIC para receber transferências internacionais.</div>
+    </div>
+
+    <div class="cx">
+      <h2>3. Dados da conta</h2>
+      <div id="campoIban">
+        <label class="lb" id="lbIban">IBAN</label>
+        <input class="cp" id="iban" autocapitalize="characters">
+        <div class="dica" id="dIban"></div>
+      </div>
+      <div id="campoConta">
+        <label class="lb" id="lbConta">Número de conta</label>
+        <input class="cp" id="conta">
+      </div>
+      <div id="extras"></div>
+    </div>
+
+    <div class="cx">
+      <h2>4. Moeda</h2>
+      <label class="lb">Moeda da conta *</label>
+      <input class="cp" id="qMoeda" placeholder="🔍 Pesquisar moeda…"><div class="lista" id="lMoeda"></div>
+      <label class="lb">A sua conta aceita receber dólares (USD)? *</label>
+      <div class="sim">
+        <label><input type="radio" name="usd" value="1"> 💵 Sim</label>
+        <label><input type="radio" name="usd" value="0"> Não</label>
+      </div>
+      <div class="dica">A BBabilônia paga só em USD (moeda internacional) por transferência SWIFT; o seu banco converte para a moeda local. Se escolher "Não", os clientes verão um aviso antes de pagar.</div>
+      <div id="interBox">
+        <label class="lb">Banco intermediário para USD (opcional)</label><input class="cp" id="interBanco" placeholder="Nome do banco intermediário">
+        <label class="lb">SWIFT do banco intermediário (opcional)</label><input class="cp" id="interSwift" maxlength="11" autocapitalize="characters">
+        <div class="dica">Só se o seu banco pedir um banco correspondente para receber USD.</div>
+      </div>
+    </div>
+
+    <div class="cx">
+      <h2>5. Comprovativo da conta</h2>
+      <div class="dica" id="dComp"></div>
+      <input class="cp" id="comp" type="file" accept="image/*,application/pdf">
+    </div>
+
+    <button class="bt p" id="bGuardar">Guardar conta bancária</button>
+    <p class="msg" id="fMsg"></p>
+  </section>
+
+  <!-- ===== ADMIN ===== -->
+  <section id="v-admin" class="hide">
+    <div class="abas" id="abas">
+      <button data-a="verificacao" class="on">Em verificação</button>
+      <button data-a="confirmada">Confirmadas</button>
+      <button data-a="rejeitada">Rejeitadas</button>
+    </div>
+    <input class="cp" id="qAdm" placeholder="🔍 Pesquisar loja, banco ou país…" style="margin-bottom:10px">
+    <div id="admLista"></div>
+  </section>
+</main>
+
+<script src="conta-bancaria-1.js"></script>
+<script src="conta-bancaria-2.js"></script>
+<script src="conta-bancaria-3.js"></script>
+<script src="conta-bancaria-4.js"></script>
+<script>if(typeof iniciar!=="function"){document.getElementById("carregar").textContent="Falta um ficheiro conta-bancaria-1.js a -4.js no GitHub.";}</script>
+
+<script src="sino-avisos.js"></script>
+</body>
+  </html>
+  
