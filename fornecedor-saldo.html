@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Saldo e levantamentos · B-Babilônia</title>
+<meta name="color-scheme" content="light">
+<style>
+:root{--r1:#1e1b4b;--r2:#5b21b6;--r3:#7c3aed;--cl:#f3f0ff;--fundo:#f1effb;--tx:#1b1740;--su:#6b7280;--li:#ece9f7;--ok:#047857;--okf:#d1fae5;--av:#b45309;--avf:#fef3c7;--er:#b91c1c;--erf:#fee2e2;--az:#1d4ed8;--azf:#dbeafe}
+*{box-sizing:border-box;margin:0}
+body{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--fundo);color:var(--tx);line-height:1.4}
+button{font:inherit;cursor:pointer}a{color:inherit}
+.top{background:linear-gradient(135deg,#1e1b4b 0%,#5b21b6 55%,#9333ea 100%);color:#fff;padding:22px 16px 58px;border-radius:0 0 28px 28px}
+.top .lg{font-size:13px;letter-spacing:2px;color:#fcd34d;font-weight:bold}
+.top h1{margin:8px 0 4px;font-size:24px}.top p{font-size:14px;color:#e9d5ff}
+main{padding:0 14px 40px;margin:-40px auto 0;max-width:620px}
+.voltar{display:inline-block;background:#fff;color:#5b21b6;font-weight:800;border-radius:999px;padding:8px 14px;margin-bottom:12px;box-shadow:0 4px 12px #4c1d9522;font-size:14px;text-decoration:none}
+.cx{background:#fff;border-radius:16px;padding:16px;box-shadow:0 4px 14px #4c1d9514;margin-bottom:12px}
+.cx h2{font-size:16px;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.cp{width:100%;border:1.5px solid #ddd;border-radius:10px;padding:11px;font-size:16px;margin-top:4px;background:#fff;color:var(--tx)}
+label.lb{display:block;font-size:13px;color:var(--su);margin-top:10px}
+.bt{border:0;border-radius:12px;padding:13px;font-weight:800;font-size:15px;background:var(--cl);color:var(--r2);width:100%;margin-top:12px;display:block;text-align:center;text-decoration:none}
+.bt.p{background:var(--r3);color:#fff}.bt.v{background:#10b981;color:#fff}.bt.x{background:var(--erf);color:var(--er)}.bt:disabled{opacity:.5}
+.bt.pq{width:auto;display:inline-block;padding:7px 12px;font-size:13px;margin:0;border-radius:999px}
+.bdg{display:inline-block;border-radius:999px;padding:3px 10px;font-size:12.5px;font-weight:800}
+.b-ok{background:var(--okf);color:var(--ok)}.b-av{background:var(--avf);color:var(--av)}.b-er{background:var(--erf);color:var(--er)}.b-az{background:var(--azf);color:var(--az)}.b-cz{background:#e5e7eb;color:#374151}
+.aviso{border-left:6px solid #f59e0b;background:#fffbeb;border-radius:12px;padding:12px;font-size:14px;margin-top:10px}
+.aviso.er{border-color:#ef4444;background:#fef2f2}.aviso.ok{border-color:#10b981;background:#ecfdf5}.aviso.az{border-color:#3b82f6;background:#eff6ff}
+.moeda{border:1.5px solid var(--li);border-radius:14px;padding:12px;margin-top:10px}
+.moeda .disp{font-size:28px;font-weight:900;color:var(--ok);line-height:1.1}
+.moeda .disp small{display:block;font-size:12.5px;font-weight:600;color:var(--su)}
+.q4{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.q4 div{background:var(--cl);border-radius:10px;padding:8px}.q4 b{display:block;font-size:15px}.q4 span{font-size:12px;color:var(--su)}
+.ln{display:flex;gap:10px;align-items:center;padding:10px 0;border-top:1px solid var(--li)}.ln:first-of-type{border-top:0}
+.ln .t{flex:1;min-width:0}.ln .t b{display:block;font-size:14px}.ln .t span{font-size:12.5px;color:var(--su);display:block}
+.ln img,.ln .sf{flex:none;width:44px;height:44px;border-radius:8px;object-fit:cover;background:#f3f3f3;display:grid;place-items:center}
+.dl{display:grid;grid-template-columns:auto 1fr;gap:4px 10px;font-size:13.5px;margin:8px 0}.dl b{color:var(--su);font-weight:600}.dl span{word-break:break-all}
+.abas{display:flex;gap:6px;overflow-x:auto;margin-bottom:10px}
+.abas button{flex:none;border:1.5px solid var(--li);background:#fff;border-radius:999px;padding:7px 12px;font-size:14px;font-weight:600}
+.abas button.on{background:var(--r3);border-color:var(--r3);color:#fff}
+.vazio{text-align:center;color:var(--su);font-size:13.5px;padding:12px 0}
+.msg{font-size:14px;margin-top:8px;color:var(--er)}.msg.ok{color:var(--ok)}
+.sub{font-size:12.5px;color:var(--su)}
+.modal{position:fixed;inset:0;background:#0007;z-index:50;display:none;align-items:flex-end;justify-content:center}.modal.on{display:flex}
+.modal .cx{width:100%;max-width:520px;border-radius:18px 18px 0 0;margin:0;max-height:90vh;overflow:auto}
+.toast{position:fixed;left:12px;right:12px;bottom:18px;background:var(--r1);color:#fff;border-radius:12px;padding:12px 14px;font-size:14px;z-index:60;display:none;text-align:center}
+.hide{display:none!important}
+</style>
+</head>
+<body>
+<div class="top">
+  <div class="lg">BBABILÔNIA</div>
+  <h1 id="tit">Saldo e levantamentos</h1>
+  <p id="sub">Dinheiro das suas vendas: retido, disponível e pedidos de levantamento.</p>
+</div>
+<main>
+  <a class="voltar" id="voltar" href="painel-vendedor-v2.html#inicio">← Voltar ao painel</a>
+  <div id="carregar" class="cx vazio">A carregar…</div>
+
+  <section id="v-entrar" class="cx hide">
+    <h2>Entrar</h2>
+    <label class="lb" for="em">Email</label><input class="cp" id="em" type="email" autocomplete="email">
+    <label class="lb" for="pw">Palavra-passe</label><input class="cp" id="pw" type="password" autocomplete="current-password">
+    <button class="bt p" id="bEntrar">Entrar</button><p class="msg" id="entMsg"></p>
+  </section>
+
+  <section id="v-forn" class="hide">
+    <div class="cx"><h2>💰 O meu saldo</h2><div id="saldos"></div><div id="contaCx"></div></div>
+    <div class="cx"><h2>🏦 Os meus levantamentos</h2><div id="levs"></div></div>
+    <div class="cx"><h2>🧾 Pedidos pagos</h2><div id="peds"></div></div>
+    <div class="cx"><h2>🔔 Notificações</h2><div id="nots"></div></div>
+    <div class="cx"><h2>❓ Como funciona</h2>
+      <p class="sub" style="font-size:13.5px">1. Quando o cliente paga, o valor fica <b>retido</b>.<br>2. Quando a encomenda é entregue, o valor passa a <b>disponível</b>.<br>3. Toque em <b>Pedir levantamento</b>. A BBabilônia verifica e transfere para a sua conta bancária confirmada (em USD por SWIFT; o seu banco converte para a moeda local).<br>4. Pedidos com disputa aberta ficam bloqueados até a disputa terminar.</p>
+    </div>
+  </section>
+
+  <section id="v-admin" class="hide">
+    <div class="abas" id="abas"><button data-a="pendente" class="on">Pendentes</button><button data-a="pago">Pagos</button><button data-a="rejeitado">Rejeitados</button></div>
+    <div id="admLista"></div>
+  </section>
+</main>
+<div class="modal" id="modal"><div class="cx" id="modalCx"></div></div>
+<div class="toast" id="toast"></div>
+<script>
+(function () {
+var SUPA = "https://dsfoqoeawvjafypycldz.supabase.co", KEY = "sb_publishable_BN4NiVcDab9CqdTY_odgDA_uUOhjja0";
+var CHAVE = "sb-dsfoqoeawvjafypycldz-auth-token", ADMIN = "jovenciofoguete1904@gmail.com";
+var $ = function (i) { return document.getElementById(i); };
+var S = null, SAL = null, PEDS = [], ADM = [], aba = "pendente";
+function esc(t) { return String(t == null ? "" : t).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
+function k(x) { return String(x || "").toLowerCase(); }
+function arr(x) { if (typeof x === "string") { try { x = JSON.parse(x); } catch (e) { x = []; } } return Array.isArray(x) ? x : []; }
+function din(v, m) { return Number(v || 0).toLocaleString("pt-PT", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " " + (m || ""); }
+function dt(d) { try { return d ? new Date(d).toLocaleDateString("pt-PT") : ""; } catch (e) { return ""; } }
+function aviso(t) { var e = $("toast"); e.textContent = t; e.style.display = "block"; clearTimeout(e._t); e._t = setTimeout(function () { e.style.display = "none"; }, 3500); }
+function mostrar(id) { ["carregar", "v-entrar", "v-forn", "v-admin"].forEach(function (x) { $(x).classList.toggle("hide", x !== id); }); }
+
+/* ---------- sessão (a mesma do painel) ---------- */
+function ler() { try { var s = JSON.parse(localStorage.getItem(CHAVE) || "null"); if (s && s.access_token) return s; } catch (e) {} return null; }
+function guardar(s) { if (s && !s.expires_at && s.expires_in) s.expires_at = Math.floor(Date.now() / 1000) + s.expires_in; localStorage.setItem(CHAVE, JSON.stringify(s)); return s; }
+async function auth(c, corpo) {
+  var r = await fetch(SUPA + "/auth/v1/" + c, { method: "POST", headers: { apikey: KEY, "Content-Type": "application/json" }, body: JSON.stringify(corpo) });
+  var j = await r.json().catch(function () { return {}; });
+  if (!r.ok) throw new Error(j.msg || j.error_description || j.message || ("Erro " + r.status));
+  return j;
+}
+async function valida() {
+  var s = ler(); if (!s) return null;
+  if (s.expires_at && s.expires_at - 60 < Date.now() / 1000 && s.refresh_token) { try { s = guardar(await auth("token?grant_type=refresh_token", { refresh_token: s.refresh_token })); } catch (e) { return null; } }
+  return s;
+}
+async function api(c, metodo, corpo) {
+  var r = await fetch(SUPA + "/rest/v1/" + c, { method: metodo || "GET", headers: { apikey: KEY, Authorization: "Bearer " + S.access_token, "Content-Type": "application/json" }, body: corpo ? JSON.stringify(corpo) : undefined });
+  var t = await r.text(), j = null; try { j = t ? JSON.parse(t) : null; } catch (e) {}
+  if (!r.ok) { var er = new Error((j && j.message) || ("Erro " + r.status)); er.status = r.status; throw er; }
+  return j;
+}
+function falta(e) { return /saldo_fornecedor|pedir_levantamento|levantamentos_admin|tratar_levantamento|_bb_meus_pedidos/.test(e.message) && /function|find|exist/i.test(e.message); }
+
+/* ---------- FORNECEDOR ---------- */
+async function iniciarForn() {
+  var r = await Promise.all([
+    api("rpc/saldo_fornecedor", "POST", {}),
+    api("rpc/pedidos_do_fornecedor", "POST", {}).catch(function () { return []; }),
+    api("notifications?select=*&order=created_at.desc&limit=20").catch(function () { return []; })
+  ]);
+  SAL = r[0] || {}; PEDS = Array.isArray(r[1]) ? r[1] : []; desenharForn(r[2] || []); mostrar("v-forn");
+}
+function estConta() {
+  var c = SAL.conta, l = SAL.loja;
+  if (!l) return { ok: false, html: '<div class="aviso er">Primeiro crie a sua loja. <a href="loja-criar.html"><b>Criar loja ›</b></a></div>' };
+  if (k(l.estado).indexOf("aprov") !== 0) return { ok: false, html: '<div class="aviso">A sua loja ainda está em análise. Pode pedir levantamentos depois de ser aprovada.</div>' };
+  if (!c) return { ok: false, html: '<div class="aviso er">Para receber o dinheiro, registe a conta bancária. <a href="conta-bancaria.html"><b>Registar conta ›</b></a></div>' };
+  if (c.estado === "rejeitada") return { ok: false, html: '<div class="aviso er">A sua conta bancária foi rejeitada' + (c.motivo ? ": " + esc(c.motivo) : "") + '. <a href="conta-bancaria.html"><b>Corrigir ›</b></a></div>' };
+  if (c.estado !== "confirmada") return { ok: false, html: '<div class="aviso">A sua conta bancária está em verificação. Pode pedir levantamentos quando a BBabilônia a confirmar. <a href="conta-bancaria.html"><b>Ver conta ›</b></a></div>' };
+  return { ok: true, html: '<div class="aviso ok">🏦 Recebe em: <b>' + esc(c.banco || "Banco") + "</b>" + (c.final ? " · conta terminada em <b>" + esc(c.final) + "</b>" : "") + ' · <a href="conta-bancaria.html">Mudar</a>' + (c.aceita_usd === false ? '<br><span class="sub">A sua conta não aceita USD: confirme com o seu banco como receber transferências internacionais.</span>' : "") + "</div>" };
+}
+function desenharForn(nots) {
+  var st = estConta(), M = SAL.moedas || [];
+  $("saldos").innerHTML = M.length ? M.map(function (m) {
+    var pode = st.ok && Number(m.disponivel) > 0;
+    return '<div class="moeda"><div class="disp">' + din(m.disponivel, m.moeda) + "<small>Disponível para levantar" + (m.n_disponivel ? " · " + m.n_disponivel + (m.n_disponivel == 1 ? " pedido entregue" : " pedidos entregues") : "") + "</small></div>" +
+      '<div class="q4"><div><span>🔒 Retido (aguarda entrega)</span><b>' + din(m.retido, m.moeda) + '</b></div><div><span>⏳ Em levantamento</span><b>' + din(m.em_levantamento, m.moeda) + "</b></div>" +
+      '<div><span>✅ Já recebido</span><b>' + din(m.recebido, m.moeda) + '</b></div><div><span>⚠️ Bloqueado por disputa</span><b>' + din(m.em_disputa, m.moeda) + "</b></div></div>" +
+      '<button class="bt p" data-lev="' + esc(m.moeda) + '"' + (pode ? "" : " disabled") + ">🏦 Pedir levantamento de " + din(m.disponivel, m.moeda) + "</button></div>";
+  }).join("") : '<p class="vazio">Ainda não tem vendas pagas. Quando o cliente pagar, o valor aparece aqui.</p>';
+  $("contaCx").innerHTML = st.html;
+  var L = SAL.levantamentos || [];
+  $("levs").innerHTML = L.length ? L.map(function (l) {
+    var b = l.estado === "pago" ? '<span class="bdg b-ok">Pago</span>' : l.estado === "rejeitado" ? '<span class="bdg b-er">Rejeitado</span>' : '<span class="bdg b-av">Em análise</span>';
+    return '<div class="ln"><div class="sf">🏦</div><div class="t"><b>' + din(l.valor, l.moeda) + "</b><span>Pedido a " + dt(l.created_at) + " · " + l.n_pedidos + (l.n_pedidos == 1 ? " pedido" : " pedidos") + "</span>" +
+      (l.estado === "pago" ? "<span>Pago a " + dt(l.tratado_em) + (l.referencia ? " · Ref.: " + esc(l.referencia) : "") + "</span>" : "") +
+      (l.estado === "rejeitado" ? '<span style="color:#b91c1c">Motivo: ' + esc(l.motivo || "") + " (o valor voltou ao saldo disponível)</span>" : "") + "</div>" + b + "</div>";
+  }).join("") : '<p class="vazio">Ainda não pediu levantamentos.</p>';
+  var P = PEDS.filter(function (p) { return k(p.payment_status) === "pago"; }).sort(function (a, b) { return new Date(b.paid_at || b.created_at) - new Date(a.paid_at || a.created_at); });
+  $("peds").innerHTML = P.length ? P.slice(0, 100).map(function (p) {
+    var e = k(p.escrow_status), it = arr(p.items), f = it[0] && it[0].foto, v = Number(p.supplier_amount || p.subtotal || p.total || 0);
+    var b = /cancel/.test(k(p.status)) ? '<span class="bdg b-er">Cancelado</span>' : p.disputa_estado ? '<span class="bdg b-er">Disputa</span>' : e === "retido" ? '<span class="bdg b-av">Retido</span>' : /entregue|liberado/.test(e) ? '<span class="bdg b-ok">Entregue</span>' : '<span class="bdg b-cz">' + esc(p.escrow_status || "—") + "</span>";
+    return '<div class="ln">' + (f ? '<img loading="lazy" alt="" src="' + esc(f) + '">' : '<div class="sf">🧾</div>') + '<div class="t"><b>#' + esc(String(p.id).slice(0, 8).toUpperCase()) + " · " + esc(p.customer_name || "Cliente") + "</b><span>" + din(v, p.currency) + " · " + dt(p.paid_at || p.created_at) + "</span>" +
+      (e === "retido" && !p.disputa_estado ? '<span style="margin-top:6px"><button class="bt pq" data-ent="' + esc(p.id) + '">Marcar como entregue</button></span>' : "") + "</div>" + b + "</div>";
+  }).join("") : '<p class="vazio">Sem pedidos pagos.</p>';
+  $("nots").innerHTML = nots.length ? nots.map(function (n) { return '<div class="ln"><div class="sf">🔔</div><div class="t"><b>' + esc(n.title || "") + "</b><span>" + esc(n.message || "") + "</span><span>" + (n.created_at ? new Date(n.created_at).toLocaleString("pt-PT") : "") + "</span></div></div>"; }).join("") : '<p class="vazio">Sem notificações.</p>';
+}
+function pedir(moeda) {
+  var m = (SAL.moedas || []).filter(function (x) { return x.moeda === moeda; })[0], c = SAL.conta || {}; if (!m) return;
+  $("modalCx").innerHTML = '<h2>🏦 Pedir levantamento</h2><div class="dl"><b>Valor</b><span style="font-weight:800;color:#047857">' + din(m.disponivel, m.moeda) + "</span><b>Pedidos</b><span>" + m.n_disponivel + " entregues</span><b>Banco</b><span>" + esc(c.banco || "") + (c.final ? " · terminada em " + esc(c.final) : "") + "</span></div>" +
+    '<div class="aviso az">A BBabilônia verifica o pedido e transfere em USD por SWIFT para a sua conta confirmada. O seu banco converte para a moeda local e pode cobrar taxas de receção.</div>' +
+    '<button class="bt v" id="mOk">Confirmar levantamento</button><button class="bt" id="mNao">Cancelar</button><p class="msg" id="mMsg"></p>';
+  $("modal").classList.add("on");
+  $("mNao").onclick = function () { $("modal").classList.remove("on"); };
+  $("mOk").onclick = async function () {
+    var b = this; b.disabled = true; b.textContent = "A enviar…";
+    try { var r = await api("rpc/pedir_levantamento", "POST", { p_moeda: moeda }); $("modal").classList.remove("on"); aviso("Pedido enviado: " + din(r.valor, r.moeda) + ". Avisamos quando for pago."); await iniciarForn(); }
+    catch (e) { $("mMsg").textContent = e.message; b.disabled = false; b.textContent = "Confirmar levantamento"; }
+  };
+}
+
+/* ---------- ADMIN ---------- */
+async function iniciarAdmin() {
+  $("tit").textContent = "Levantamentos dos fornecedores"; $("sub").textContent = "Confira a conta, faça a transferência e marque como pago.";
+  $("voltar").href = "painel-admin.html";
+  ADM = await api("rpc/levantamentos_admin", "POST", {}) || []; desenharAdmin(); mostrar("v-admin");
+}
+function linha(n, v) { return v || v === false ? "<b>" + esc(n) + "</b><span>" + esc(v === true ? "Sim" : v === false ? "Não" : v) + "</span>" : ""; }
+function desenharAdmin() {
+  var n = function (e) { return ADM.filter(function (l) { return l.estado === e; }).length; };
+  document.querySelectorAll("#abas button").forEach(function (b) { var a = b.getAttribute("data-a"); b.classList.toggle("on", a === aba); b.textContent = { pendente: "Pendentes", pago: "Pagos", rejeitado: "Rejeitados" }[a] + " (" + n(a) + ")"; });
+  var L = ADM.filter(function (l) { return l.estado === aba; });
+  $("admLista").innerHTML = L.map(function (l) {
+    var c = l.conta || {}, cod = c.codigos && typeof c.codigos === "object" ? Object.keys(c.codigos).map(function (x) { return linha(x.replace(/_/g, " "), c.codigos[x]); }).join("") : "";
+    return '<div class="cx"><h2>' + esc(l.loja_nome || "Loja") + ' <span class="bdg ' + (c.aceita_usd === false ? "b-er" : "b-ok") + '">' + (c.aceita_usd === false ? "Não aceita USD" : "Aceita USD") + "</span></h2>" +
+      '<div class="moeda"><div class="disp">' + din(l.valor, l.moeda) + "<small>Pedido a " + new Date(l.created_at).toLocaleString("pt-PT") + " · " + l.n_pedidos + " pedidos</small></div></div>" +
+      '<div class="dl">' + linha("Titular", c.titular) + linha("Tipo", c.tipo_titular) + linha("Morada titular", c.morada_titular) + linha("Banco", c.banco) + linha("Morada banco", c.morada_banco) + linha("País banco", c.pais_banco) +
+      linha("SWIFT/BIC", c.swift) + linha("IBAN", c.iban) + linha("Nº conta", c.numero_conta) + cod + linha("Moeda da conta", c.moeda) + linha("Intermediário", c.intermediario_banco) + linha("SWIFT interm.", c.intermediario_swift) + linha("Estado da conta", c.estado) + "</div>" +
+      (l.estado === "pendente" ? '<button class="bt v" data-pago="' + l.id + '">✓ Já transferi — marcar como pago</button><button class="bt x" data-rej="' + l.id + '">✕ Rejeitar</button>' : "") +
+      (l.referencia ? '<div class="sub">Referência: ' + esc(l.referencia) + " · " + dt(l.tratado_em) + "</div>" : "") + (l.motivo ? '<div class="sub">Motivo: ' + esc(l.motivo) + "</div>" : "") + "</div>";
+  }).join("") || '<div class="cx vazio">Nenhum levantamento aqui.</div>';
+}
+$("abas").onclick = function (e) { var b = e.target.closest("button"); if (!b) return; aba = b.getAttribute("data-a"); desenharAdmin(); };
+
+/* ---------- cliques ---------- */
+document.addEventListener("click", async function (e) {
+  var t = e.target.closest ? e.target.closest("button") : null; if (!t || t.disabled) return;
+  if (t.hasAttribute("data-lev")) { pedir(t.getAttribute("data-lev")); return; }
+  if (t.hasAttribute("data-ent")) {
+    if (!confirm("Confirma que os produtos foram entregues ao cliente?")) return;
+    t.disabled = true;
+    try { await api("rpc/marcar_entregue", "POST", { p_id: t.getAttribute("data-ent") }); aviso("Marcado como entregue."); await iniciarForn(); } catch (er) { aviso(er.message); t.disabled = false; }
+    return;
+  }
+  var id = t.getAttribute("data-pago") || t.getAttribute("data-rej");
+  if (id) {
+    var pg = t.hasAttribute("data-pago"), tx = prompt(pg ? "Referênci
