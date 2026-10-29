@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Loja · B-Babilônia</title>
+<meta name="color-scheme" content="light">
+<style>
+:root{--laranja:#FF6A00;--fundo:#F5F5F5;--texto:#222;--suave:#777;--linha:#E8E8E8}
+*{box-sizing:border-box;margin:0}
+[hidden]{display:none!important}
+body{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--fundo);color:var(--texto);line-height:1.4}
+a{color:inherit;text-decoration:none}
+header{position:sticky;top:0;z-index:10;background:#fff;padding:8px 10px;box-shadow:0 1px 0 var(--linha);display:flex;align-items:center;gap:8px}
+.logo{flex:none;font-weight:800;font-size:12.5px;color:#1B2F6B;border:2px solid var(--laranja);border-radius:999px;padding:7px 9px;line-height:1}
+.logo span{color:var(--laranja)}
+.pesquisa{flex:1;display:flex;align-items:center;border:2px solid var(--laranja);border-radius:999px;padding:0 4px 0 12px;min-width:0;background:#fff}
+.pesquisa input{flex:1;border:0;padding:8px 4px;font:inherit;font-size:14.5px;min-width:0;outline:none;background:transparent}
+.capa{background:linear-gradient(135deg,#1B2F6B,#2f4fae);color:#fff;padding:18px 14px 16px}
+.capa .l1{display:flex;align-items:center;gap:12px}
+.ini{flex:none;width:56px;height:56px;border-radius:12px;background:#fff;color:#1B2F6B;display:grid;place-items:center;font-weight:800;font-size:24px}
+.capa h1{font-size:19px;line-height:1.2}
+.capa .m{font-size:13px;opacity:.9;margin-top:3px}
+.vf{display:inline-block;background:#fff;color:#1b5fd6;font-weight:800;font-style:italic;font-size:12px;border-radius:5px;padding:1px 6px;margin-left:4px;vertical-align:middle}
+.capa .d{font-size:13.5px;opacity:.95;margin-top:10px}
+.capa .bts{display:flex;gap:8px;margin-top:12px}
+.capa .bts a{flex:1;text-align:center;border-radius:999px;padding:9px;font-weight:700;font-size:14px}
+.b1{background:var(--laranja);color:#fff}
+.b2{background:#fff;color:#1B2F6B}
+.previa{background:#FFF4EC;color:#7a3e0c;font-size:13.5px;padding:10px 14px;border-bottom:1px solid #f3d6bf}
+.cats{display:flex;gap:7px;overflow-x:auto;padding:10px 10px 4px;scrollbar-width:none}
+.cats::-webkit-scrollbar{display:none}
+.cats button{flex:none;border:1.5px solid transparent;background:#fff;font:inherit;font-size:13.5px;font-weight:600;padding:6px 13px;border-radius:999px;cursor:pointer}
+.cats button.on{border-color:var(--texto)}
+.titulo{display:flex;justify-content:space-between;align-items:baseline;margin:8px 12px}
+.titulo h2{font-size:16px}
+.titulo span{color:var(--suave);font-size:12.5px}
+.grelha{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding:0 8px 90px}
+@media(min-width:640px){.grelha{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.card{background:#fff;border-radius:8px;overflow:hidden;min-width:0}
+.card .ft{aspect-ratio:1/1;background:#fafafa;position:relative}
+.card img{width:100%;height:100%;object-fit:cover;display:block}
+.card .sem{position:absolute;inset:0;display:grid;place-items:center;color:var(--suave);font-size:12px}
+.card .tag{position:absolute;left:6px;top:6px;background:var(--laranja);color:#fff;font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:5px}
+.card .in{padding:6px 8px 9px}
+.card h3{font-size:13.5px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card .pr{font-weight:800;font-size:16px;margin-top:2px}
+.card .mo{font-size:12px;color:var(--suave)}
+.estado{grid-column:1/-1;text-align:center;padding:40px 16px;color:var(--suave)}
+.estado a{display:inline-block;margin-top:12px;background:var(--laranja);color:#fff;font-weight:700;padding:10px 20px;border-radius:999px}
+</style>
+</head>
+<body>
+<header>
+  <a class="logo" href="index.html">B-<span>Babilônia</span></a>
+  <label class="pesquisa"><input id="q" type="search" placeholder="Pesquisar nesta loja" autocomplete="off"></label>
+</header>
+<div id="previa" class="previa" hidden></div>
+<section class="capa" id="capa">
+  <div class="l1"><div class="ini" id="ini">B</div><div><h1 id="nome">A carregar a loja…</h1><div class="m" id="meta"></div></div></div>
+  <p class="d" id="desc" hidden></p>
+  <div class="bts" id="bts" hidden><a class="b1" id="bContactar" href="chat-novo2.html">Contactar fornecedor</a><a class="b2" href="index.html">Mais lojas</a></div>
+</section>
+<nav class="cats" id="cats" aria-label="Categorias da loja"></nav>
+<div class="titulo"><h2 id="tit">Produtos da loja</h2><span id="cont"></span></div>
+<section class="grelha" id="grelha"></section>
+
+<script>
+const SUPA = "https://dsfoqoeawvjafypycldz.supabase.co";
+const KEY = "sb_publishable_BN4NiVcDab9CqdTY_odgDA_uUOhjja0";
+const $ = id => document.getElementById(id);
+const esc = t => String(t == null ? "" : t).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const semAc = t => String(t || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+const dono = new URLSearchParams(location.search).get("f") || "";
+let produtos = [], categorias = [], cat = null, termo = "";
+
+function sessao() {
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (/^sb-.*-auth-token$/.test(k)) { const s = JSON.parse(localStorage.getItem(k)); if (s && s.access_token) return s; }
+    }
+  } catch (e) {}
+  return null;
+}
+async function get(caminho, token) {
+  const r = await fetch(SUPA + "/rest/v1/" + caminho, { headers: { apikey: KEY, Authorization: "Bearer " + (token || KEY) } });
+  if (!r.ok) throw new Error(r.status);
+  return r.json();
+}
+function nomePais(c) {
+  try { return c ? new Intl.DisplayNames(["pt"], { type: "region" }).of(String(c).toUpperCase()) : ""; } catch (e) { return c || ""; }
+}
+function bandeira(c) {
+  return /^[A-Za-z]{2}$/.test(c || "") ? String.fromCodePoint(...c.toUpperCase().split("").map(x => 127397 + x.charCodeAt(0))) : "";
+}
+function preco(p) {
+  const v = Number(p.price || 0), m = p.currency || "MZN";
+  try { if (window.BBPrefs && BBPrefs.converter) { const c = BBPrefs.converter(v, m, window.__taxas); return Number(c.valor).toLocaleString("pt-PT", { maximumFractionDigits: 2 }) + " " + c.moeda; } } catch (e) {}
+  return v.toLocaleString("pt-PT", { maximumFractionDigits: 2 }) + " " + m;
+}
+function fotoDe(p) {
+  if (p.image_url) return p.image_url;
+  let im = p.images; if (typeof im === "string") { try { im = JSON.parse(im); } catch (e) { im = [im]; } }
+  if (Array.isArray(im) && im.length) { const a = im[0]; return typeof a === "string" ? a : (a && (a.url || a.foto || a.src)) || ""; }
+  return "";
+}
+function nomeCat(id) { const c = categorias.find(x => x.id === id); return c ? (c.name || c.nome || "") : ""; }
+
+function mostrarLoja(l, emPrevia) {
+  document.title = (l.nome || "Loja") + " · B-Babilônia";
+  $("nome").innerHTML = esc(l.nome || "Loja") + (emPrevia ? "" : ' <span class="vf">Verified</span>');
+  $("ini").textContent = (l.nome || "B").trim().charAt(0).toUpperCase();
+  const envia = l.envia_mundo ? "Envia para todo o mundo" : (Array.isArray(l.paises_entrega) && l.paises_entrega.length ? "Envia para " + l.paises_entrega.length + (l.paises_entrega.length === 1 ? " país" : " países") : "");
+  $("meta").textContent = [bandeira(l.pais) + " " + nomePais(l.pais), l.tipo, envia].filter(x => x && x.trim()).join(" · ");
+  if (l.descricao) { $("desc").textContent = l.descricao; $("desc").hidden = false; }
+  $("bts").hidden = false;
+}
+function desenharCats() {
+  const usadas = [...new Set(produtos.map(p => p.category_id).filter(Boolean))].map(id => ({ id, n: nomeCat(id) })).filter(x => x.n);
+  const box = $("cats"); box.innerHTML = "";
+  if (!usadas.length) return;
+  [{ id: null, n: "Tudo" }].concat(usadas).forEach(c => {
+    const b = document.createElement("button"); b.type = "button"; b.textContent = c.n;
+    if (c.id === cat) b.className = "on";
+    b.onclick = () => { cat = c.id; desenharCats(); desenhar(); };
+    box.appendChild(b);
+  });
+}
+function desenhar() {
+  let lista = produtos;
+  if (cat !== null) lista = lista.filter(p => p.category_id === cat);
+  if (termo) { const pal = semAc(termo).split(/\s+/).filter(Boolean); lista = lista.filter(p => { const s = semAc((p.name || "") + " " + nomeCat(p.category_id) + " " + (p.description || "")); return pal.every(w => s.includes(w)); }); }
+  $("tit").textContent = termo ? 'Resultados para "' + termo + '"' : (cat !== null ? nomeCat(cat) : "Produtos da loja");
+  $("cont").textContent = lista.length + (lista.length === 1 ? " produto" : " produtos");
+  const g = $("grelha");
+  if (!lista.length) { g.innerHTML = '<div class="estado"><p>' + (produtos.length ? "Não encontrámos produtos aqui." : "Esta loja ainda não tem produtos publicados.") + "</p></div>"; return; }
+  g.innerHTML = "";
+  lista.forEach(p => {
+    const a = document.createElement("a"), f = fotoDe(p), m = Number(p.pedido_minimo || p.min_order || 1);
+    a.className = "card"; a.href = "produto-bbabilonia.html?id=" + encodeURIComponent(p.id);
+    a.innerHTML = '<div class="ft">' + (f ? '<img loading="lazy" alt="' + esc(p.name) + '" src="' + esc(f) + '">' : '<div class="sem">Sem foto</div>') +
+      (p.video_url ? '<span class="tag">Vídeo</span>' : "") + '</div><div class="in"><h3>' + esc(p.name || "Produto") + '</h3><div class="pr">' + preco(p) +
+      '</div><div class="mo">Pedido mínimo: ' + m + (m === 1 ? " peça" : " peças") + "</div></div>";
+    g.appendChild(a);
+  });
+}
+function semLoja(txt) {
+  $("nome").textContent = "Loja não encontrada"; $("meta").textContent = "";
+  $("grelha").innerHTML = '<div class="estado"><p>' + esc(txt) + '</p><a href="index.html">Ver todos os produtos</a></div>';
+}
+
+async function iniciar() {
+  if (!/^[0-9a-f-]{20,}$/i.test(dono)) return semLoja("O link desta loja não está completo.");
+  $("grelha").innerHTML = '<div class="estado"><p>A carregar…</p></div>';
+  const s = sessao(), euSou = s && s.user && s.user.id === dono;
+  let loja = null, previa = false;
+  try { const r = await get("lojas_publicas?select=*&dono_id=eq." + dono + "&limit=1"); loja = r[0] || null; } catch (e) {}
+  if (!loja && euSou) {        // o próprio fornecedor vê a sua loja mesmo antes de ser aprovada
+    try { const r = await get("lojas?select=*&dono_id=eq." + dono + "&limit=1", s.access_token); loja = r[0] || null; previa = !!loja; } catch (e) {}
+  }
+  if (!loja) return semLoja(euSou ? "Ainda não criou a sua loja." : "Esta loja não existe ou ainda não foi aprovada.");
+  mostrarLoja(loja, previa);
+  if (!euSou && !previa) {     // conta a visita para as Estatísticas do fornecedor (o próprio dono não conta)
+    try { fetch(SUPA + "/rest/v1/visitas", { method: "POST", headers: { apikey: KEY, Authorization: "Bearer " + ((s && s.access_token) || KEY), "Content-Type": "application/json", Prefer: "return=minimal" }, body: JSON.stringify({ dono_id: dono }) }).catch(function () {}); } catch (e) {}
+  }
+  if (euSou) {
+    $("previa").hidden = false;
+    $("previa").textContent = previa ? "Pré-visualização: a sua loja ainda está em análise. Os clientes vão vê-la assim depois da aprovação." : "Está a ver a sua loja exatamente como os clientes a veem.";
+    $("bContactar").style.display = "none";
+  }
+  try {
+    const [p, c] = await Promise.all([
+      get("products?select=*&supplier_id=eq." + dono + "&order=created_at.desc&limit=1000"),
+      get("categories?select=id,name,parent_id&limit=5000").catch(() => [])
+    ]);
+    produtos = p.filter(x => x.active !== false); categorias = c;
+  } catch (e) {
+    $("grelha").innerHTML = '<div class="estado"><p>Não foi possível carregar os produtos.</p><a href="javascript:location.reload()">Tentar de novo</a></div>';
+    return;
+  }
+  desenharCats(); desenhar();
+}
+$("q").addEventListener("input", e => { termo = e.target.value.trim(); desenhar(); });
+window.addEventListener("load", () => {
+  try { if (window.BBPrefs && BBPrefs.taxas) BBPrefs.taxas().then(t => { window.__taxas = t; if (produtos.length) desenhar(); }); } catch (e) {}
+});
+iniciar();
+</script>
+<script src="menu-babilonia.js"></script>
+</body>
+  </html>
+  
