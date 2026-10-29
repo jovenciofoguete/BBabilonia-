@@ -1,0 +1,153 @@
+<!doctype html><html lang="pt"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Pagar link | B-Babilônia</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="https://js.stripe.com/v3/"></script>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f1f5f9;color:#0f172a;font-family:system-ui,sans-serif}
+header{background:linear-gradient(135deg,#10b981,#0ea5e9 55%,#2563eb);color:#fff;padding:18px 16px 46px}
+header h1{margin:0;font-size:21px}header p{margin:4px 0 0;font-size:13px;opacity:.92}
+main{max-width:560px;margin:-30px auto 0;padding:0 14px 40px}
+.box{background:#fff;border-radius:16px;padding:16px;margin-bottom:14px;box-shadow:0 4px 14px #0f172a12}
+.box h2{margin:0 0 10px;font-size:16px}
+.d b{display:block;font-size:17px;margin-bottom:6px}.d .l{font-size:14px;color:#475569;margin:2px 0}
+.tot{font-size:22px;font-weight:900;color:#065f46;margin-top:8px}
+.gal{margin:-4px 0 12px}.gal .g1{width:100%;aspect-ratio:1;object-fit:cover;border-radius:12px;display:block;background:#f1f5f9}
+.gal .mi{display:flex;gap:6px;overflow-x:auto;margin-top:6px}.gal .mi img{width:58px;height:58px;object-fit:cover;border-radius:8px;border:3px solid transparent;flex:none;cursor:pointer}
+.gal .mi img.on{border-color:#0ea5e9}.gal p{font-size:12.5px;color:#64748b;margin:6px 0 0}
+.op{display:flex;gap:10px;align-items:flex-start;border:2px solid #e2e8f0;border-radius:12px;padding:11px;margin:8px 0;font-size:14px}
+.op.on{border-color:#0ea5e9;background:#f0f9ff}.op input{margin-top:3px;width:20px;height:20px;flex:none}
+.op small{display:block;color:#64748b;margin-top:2px}
+a.lk{color:#0b57d0;font-size:14px}
+.ok{width:100%;margin-top:14px;padding:15px;border:0;border-radius:14px;background:linear-gradient(90deg,#10b981,#0ea5e9);color:#fff;font-size:16px;font-weight:800}
+.ok:disabled{opacity:.5}
+input[type=email],input[type=password]{width:100%;padding:13px;border:2px solid #e2e8f0;border-radius:12px;font-size:16px;margin:6px 0}
+.err{color:#dc2626;font-size:14px;margin-top:8px}
+.estado{display:inline-block;margin-top:8px;font-size:13px;font-weight:800;padding:5px 12px;border-radius:20px}
+.estado.ok2{background:#d1fae5;color:#065f46}.estado.no{background:#ffe4e6;color:#9f1239}
+#taxas{font-size:14px;line-height:1.6;margin-top:8px}
+#cartao{margin-top:12px}.hide{display:none}
+</style></head><body>
+<header><h1>💳 Pagamento combinado no chat</h1><p>O dinheiro fica retido na plataforma até o fornecedor entregar.</p></header>
+<main>
+<div id="login" class="box hide"><h2>Entre na sua conta</h2>
+ <input id="em" type="email" placeholder="Email" autocomplete="username"><input id="pw" type="password" placeholder="Palavra-passe" autocomplete="current-password">
+ <button class="ok" id="ent">Entrar</button><div class="err" id="lmsg"></div></div>
+<div id="app" class="hide">
+ <div class="box d" id="det">A carregar…</div>
+ <div class="box" id="endBox"><h2>📍 Endereço de entrega</h2><div id="ends">A carregar…</div>
+  <a class="lk" href="moradas-v3.html">+ Criar ou editar endereços</a></div>
+ <div class="box" id="payBox"><h2>Forma de pagamento</h2>
+  <label class="op"><input type="radio" name="m" value="cartao" checked><div><b>Cartão Visa / Mastercard</b><small>Pagamento seguro com cartão.</small></div></label>
+  <label class="op"><input type="radio" name="m" value="cripto"><div><b>Cripto (USDT / USDC / Bitcoin)</b><small>Para quem não consegue pagar com cartão internacional.</small></div></label>
+  <button class="ok" id="cont">Continuar para pagamento</button>
+  <div id="taxas"></div><div id="cartao"></div>
+  <button class="ok hide" id="pagar">Pagar</button>
+  <div class="err" id="msg"></div>
+ </div>
+</div>
+</main>
+<script>
+var sb=supabase.createClient('https://dsfoqoeawvjafypycldz.supabase.co','sb_publishable_BN4NiVcDab9CqdTY_odgDA_uUOhjja0');
+function $(i){return document.getElementById(i)}
+function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function din(v,m){return Number(v||0).toLocaleString('pt-PT',{maximumFractionDigits:2})+' '+(m||'')}
+function arr(x){if(typeof x==='string'){try{x=JSON.parse(x)}catch(e){x=x?[x]:[]}}return Array.isArray(x)?x:[]}
+var ID=new URLSearchParams(location.search).get('id'),L=null,eu=null,orderId=null,escolhida=null;
+var CHAVE_END='bb_link_end';
+function metodo(){return document.querySelector('input[name=m]:checked').value}
+document.querySelectorAll('input[name=m]').forEach(function(r){r.onchange=function(){
+ document.querySelectorAll('#payBox .op').forEach(function(o){o.classList.toggle('on',o.querySelector('input').checked)});
+ $('cartao').innerHTML='';$('taxas').innerHTML='';$('pagar').classList.add('hide');$('msg').textContent='';$('cont').classList.remove('hide');$('cont').disabled=false;
+}});
+document.querySelector('#payBox .op').classList.add('on');
+
+function galeria(){
+ var fs=arr(L.fotos).map(function(a){return typeof a==='string'?a:(a&&(a.url||a.foto))||''}).filter(Boolean);
+ if(!fs.length)return'';
+ return'<div class="gal"><a id="g1a" href="'+esc(fs[0])+'" target="_blank"><img class="g1" id="g1" src="'+esc(fs[0])+'" alt="Foto do que vai pagar"></a>'+
+  (fs.length>1?'<div class="mi">'+fs.map(function(u,i){return'<img data-u="'+esc(u)+'" class="'+(i?'':'on')+'" src="'+esc(u)+'" alt="">'}).join('')+'</div>':'')+
+  '<p>Fotos enviadas pelo fornecedor: é isto que vai receber.</p></div>';
+}
+function detalhe(){
+ var est='';
+ if(L.estado==='pago')est='<span class="estado ok2">✅ Já foi pago</span>';
+ if(L.estado==='cancelado')est='<span class="estado no">O fornecedor cancelou este link</span>';
+ $('det').innerHTML=galeria()+'<b>'+esc(L.descricao)+'</b>'+
+  (L.opcoes?'<div class="l">'+esc(L.opcoes)+'</div>':'')+
+  '<div class="l">Quantidade: '+esc(L.quantidade)+' × '+din(L.preco_unitario,L.moeda)+'</div>'+
+  (Number(L.envio)?'<div class="l">Envio: '+din(L.envio,L.moeda)+'</div>':'')+
+  (L.prazo_dias?'<div class="l">Prazo de produção: '+esc(L.prazo_dias)+' dias</div>':'')+
+  (L.produto_id?'<div class="l"><a class="lk" href="produto-bbabilonia.html?id='+esc(L.produto_id)+'">Ver o produto publicado ›</a></div>':'')+
+  '<div class="tot">'+din(L.total,L.moeda)+'</div><div class="l" style="font-size:12.5px">A taxa da plataforma é mostrada antes de pagar.</div>'+est;
+ document.querySelectorAll('#det .mi img').forEach(function(im){im.onclick=function(){
+  $('g1').src=im.getAttribute('data-u');$('g1a').href=im.getAttribute('data-u');
+  document.querySelectorAll('#det .mi img').forEach(function(x){x.classList.toggle('on',x===im)});
+ }});
+ var aberto=L.estado==='por_pagar'&&String(L.cliente_id)===String(eu.id);
+ if(L.estado==='por_pagar'&&!aberto)$('det').insertAdjacentHTML('beforeend','<div class="l" style="margin-top:8px">Este link é para o cliente pagar.</div>');
+ $('endBox').classList.toggle('hide',!aberto);$('payBox').classList.toggle('hide',!aberto);
+ if(L.estado==='pago')$('det').insertAdjacentHTML('beforeend','<br><a class="lk" href="conta.html">Ver os meus pedidos ›</a>');
+}
+async function moradas(){
+ var r=await sb.from('moradas').select('*').eq('user_id',eu.id);
+ var m=r.data||[];
+ if(!m.length){$('ends').innerHTML='<p style="font-size:14px">Ainda não tem endereços guardados.</p>';return}
+ var guard='';try{guard=localStorage.getItem(CHAVE_END)||''}catch(e){}
+ $('ends').innerHTML=m.map(function(x){
+  var sel=String(x.id)===guard;
+  return'<label class="op'+(sel?' on':'')+'"><input type="radio" name="end" value="'+esc(x.id)+'"'+(sel?' checked':'')+'><div><b>'+esc(x.nome||'')+' · '+esc(x.telefone||'')+'</b>'+
+   '<small>'+esc([x.endereco,x.cidade,x.distrito,x.provincia,x.pais].filter(Boolean).join(', '))+(x.marca?' · Marca: '+esc(x.marca):'')+(x.tipo?'<br>'+esc(x.tipo):'')+'</small></div></label>'}).join('');
+ if(guard&&m.some(function(x){return String(x.id)===guard}))escolhida=guard;
+ document.querySelectorAll('input[name=end]').forEach(function(r){r.onchange=function(){
+  escolhida=r.value;try{localStorage.setItem(CHAVE_END,escolhida)}catch(e){}
+  document.querySelectorAll('#ends .op').forEach(function(o){o.classList.toggle('on',o.querySelector('input').checked)});
+  orderId=null;$('cartao').innerHTML='';$('taxas').innerHTML='';$('pagar').classList.add('hide');$('cont').classList.remove('hide');$('cont').disabled=false;
+ }});
+}
+async function preparar(m){
+ var r=await fetch('/api/criar-pagamento',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({order_id:orderId,metodo:m})});
+ var d={};try{d=await r.json()}catch(e){d={erro:'O pagamento não respondeu. Tente outra vez.'}}
+ if(d.erro)throw new Error(d.erro);
+ $('taxas').innerHTML='Valor combinado: '+din(d.subtotal,d.moeda)+'<br>Taxa da plataforma: '+din(d.taxa_plataforma,d.moeda)+(d.taxa_cambio?'<br>Taxa da rede e troca: '+din(d.taxa_cambio,d.moeda):'')+'<hr><b>Total a pagar: '+din(d.total,d.moeda)+'</b>';
+ return d;
+}
+$('cont').onclick=async function(){
+ var b=this,msg=$('msg');msg.textContent='';
+ if(!escolhida){msg.textContent='Escolha um endereço de entrega.';return}
+ b.disabled=true;
+ try{
+  var r=await sb.rpc('criar_pedido_link',{p_link:L.id,p_morada:String(escolhida)});
+  if(r.error)throw new Error(r.error.message);
+  orderId=r.data;
+  var m=metodo(),d=await preparar(m);
+  if(m==='cartao'){
+   if(!d.client_secret||!d.publishable_key)throw new Error('Pagamento por cartão ainda não configurado.');
+   var stripe=Stripe(d.publishable_key),el=stripe.elements({clientSecret:d.client_secret});
+   el.create('payment').mount('#cartao');
+   b.classList.add('hide');var p=$('pagar');p.classList.remove('hide');p.disabled=false;p.textContent='Pagar '+din(d.total,d.moeda);
+   p.onclick=async function(){
+    p.disabled=true;msg.textContent='';
+    var res=await stripe.confirmPayment({elements:el,confirmParams:{return_url:location.origin+'/pagamento-ok.html?pedido='+orderId},redirect:'if_required'});
+    if(!res.error){location.href='pagamento-ok.html?pedido='+orderId;return}
+    msg.textContent=res.error.message||'Não foi possível concluir o pagamento.';p.disabled=false;
+   };
+  }else if(d.url){location.href=d.url}
+  else throw new Error('Pagamento por cripto indisponível de momento.');
+ }catch(e){msg.textContent=e.message||String(e);b.disabled=false}
+};
+async function abrir(){
+ var s=(await sb.auth.getSession()).data.session;eu=s?s.user:null;
+ $('login').classList.toggle('hide',!!eu);$('app').classList.toggle('hide',!eu);
+ if(!eu)return;
+ if(!ID){$('det').textContent='Link de pagamento inválido.';$('endBox').classList.add('hide');$('payBox').classList.add('hide');return}
+ var r=await sb.from('links_pagamento').select('*').eq('id',ID).maybeSingle();
+ if(r.error||!r.data){$('det').textContent='Este link de pagamento não existe ou não é para a sua conta.';$('endBox').classList.add('hide');$('payBox').classList.add('hide');return}
+ L=r.data;detalhe();if(L.estado==='por_pagar'&&String(L.cliente_id)===String(eu.id))moradas();
+}
+$('ent').onclick=async function(){
+ var r=await sb.auth.signInWithPassword({email:$('em').value.trim(),password:$('pw').value});
+ if(r.error){$('lmsg').textContent='Email ou palavra-passe errados.';return}abrir();
+};
+abrir();
+</script>
+</body></html>
