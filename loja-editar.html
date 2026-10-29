@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="pt"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Editar loja • BBabilônia</title>
+<style>
+:root{--bg:#111;--card:#1c1c1f;--line:#2c2c30;--tx:#f3f3f3;--mut:#9a9aa2;--ac:#ff4d6a;--ok:#2e9d62}
+*{box-sizing:border-box}
+body{margin:0 auto;background:var(--bg);color:var(--tx);font:16px system-ui,sans-serif;padding:16px 16px 70px;max-width:560px}
+h1{font-size:22px}h3{margin:24px 0 8px;font-size:16px}
+a{color:#a78bfa}
+label{display:block;margin:12px 0 4px;color:var(--mut);font-size:14px}
+input,select,textarea{width:100%;padding:12px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--tx);font:inherit}
+button{padding:12px 16px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--tx);font:inherit}
+.p{background:var(--ac);border-color:var(--ac);color:#fff;width:100%;font-weight:600;margin-top:20px;height:50px}
+.box{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px;margin-top:8px;font-size:14px;color:var(--mut)}
+.ck{display:flex;gap:10px;align-items:center;margin:0;padding:8px 0;color:var(--tx);font-size:15px}
+.ck input{width:auto}
+.lista{max-height:220px;overflow:auto;border:1px solid var(--line);border-radius:10px;padding:4px 12px;margin-top:8px}
+#m{margin-top:12px;color:var(--ac)}#m.ok{color:var(--ok)}.hide{display:none}
+.est{font-size:17px;color:var(--tx)}
+</style></head><body>
+<p><a href="painel-vendedor-v2.html">← Voltar ao painel</a></p>
+<h1>Editar a minha loja</h1>
+<div class="box">Mude a descrição, os países para onde envia e os meios de envio. O nome, o país e os documentos não mudam aqui.</div>
+
+<div id="login" class="hide">
+ <label>Email</label><input id="em" type="email" autocomplete="email">
+ <label>Palavra-passe</label><input id="pw" type="password" autocomplete="current-password">
+ <button class="p" id="ent">Entrar</button>
+</div>
+
+<div id="sem" class="hide box">Ainda não tem loja. <a href="loja-criar.html">Criar a minha loja</a></div>
+
+<div id="form" class="hide">
+ <h3>A sua loja</h3>
+ <div class="box"><div class="est" id="en"></div><div id="ee"></div></div>
+ <label>Descrição da loja</label><textarea id="desc" rows="4"></textarea>
+
+ <h3>Para onde envia</h3>
+ <label class="ck"><input type="checkbox" id="mundo"> Envia para todo o mundo</label>
+ <div id="pbox">
+  <input id="busca" placeholder="Pesquisar país…" style="margin-top:8px">
+  <div class="lista" id="pl"></div>
+ </div>
+
+ <h3>Meios de envio</h3>
+ <div class="lista" style="max-height:none" id="ml"></div>
+ <label>Outro meio de envio (opcional)</label><input id="outro">
+
+ <button class="p" id="gua">Guardar alterações</button>
+</div>
+<div id="m"></div>
+
+<script>
+const SUPA = 'https://dsfoqoeawvjafypycldz.supabase.co', KEY = 'sb_publishable_BN4NiVcDab9CqdTY_odgDA_uUOhjja0';
+const CHAVE = 'sb-dsfoqoeawvjafypycldz-auth-token';
+const $ = i => document.getElementById(i);
+const msg = (t, ok) => { $('m').textContent = t; $('m').className = ok ? 'ok' : ''; };
+const CODES = 'AF AL DZ AD AO AG AR AM AU AT AZ BS BH BD BB BY BE BZ BJ BT BO BA BW BR BN BG BF BI CV KH CM CA CF TD CL CN CO KM CG CD CR CI HR CU CY CZ DK DJ DM DO EC EG SV GQ ER EE SZ ET FJ FI FR GA GM GE DE GH GR GD GT GN GW GY HT HN HU IS IN ID IR IQ IE IL IT JM JP JO KZ KE KI XK KW KG LA LV LB LS LR LY LI LT LU MG MW MY MV ML MT MH MR MU MX FM MD MC MN ME MA MZ MM NA NR NP NL NZ NI NE NG MK NO OM PK PW PS PA PG PY PE PH PL PT QA RO RU RW KN LC VC WS SM ST SA SN RS SC SL SG SK SI SB SO ZA KR SS ES LK SD SR SE CH SY TW TJ TZ TH TL TG TO TT TN TR TM TV UG UA AE GB US UY UZ VU VA VE VN YE ZM ZW'.split(' ');
+const nomes = new Intl.DisplayNames(['pt'], { type: 'region' });
+const PAISES = CODES.map(c => ({ c: c, n: nomes.of(c) })).sort((a, b) => a.n.localeCompare(b.n, 'pt'));
+const MEIOS = ['DHL', 'FedEx', 'Aramex', 'UPS', 'Correios / EMS', 'Transporte marítimo', 'Transporte aéreo', 'Entrega em mão (presencial)'];
+const ESTADOS = { pendente: 'Em análise', aprovada: 'Aprovada ✓', rejeitada: 'Rejeitada', suspensa: 'Suspensa' };
+let S = null;
+
+function ler() { try { const s = JSON.parse(localStorage.getItem(CHAVE) || 'null'); return s && s.access_token ? s : null; } catch (e) { return null; } }
+function guardar(s) { if (s && !s.expires_at && s.expires_in) s.expires_at = Math.floor(Date.now() / 1000) + s.expires_in; localStorage.setItem(CHAVE, JSON.stringify(s)); return s; }
+async function auth(c, corpo) {
+  const r = await fetch(SUPA + '/auth/v1/' + c, { method: 'POST', headers: { apikey: KEY, 'Content-Type': 'application/json' }, body: JSON.stringify(corpo) });
+  const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.msg || j.error_description || j.message || ('Erro ' + r.status)); return j;
+}
+async function sessao() {
+  let s = ler(); if (!s) return null;
+  if (s.expires_at && s.expires_at - 60 < Date.now() / 1000 && s.refresh_token) { try { s = guardar(await auth('token?grant_type=refresh_token', { refresh_token: s.refresh_token })); } catch (e) { return null; } }
+  return s;
+}
+async function api(c, metodo, corpo) {
+  const r = await fetch(SUPA + '/rest/v1/' + c, { method: metodo || 'GET', headers: { apikey: KEY, Authorization: 'Bearer ' + S.access_token, 'Content-Type': 'application/json' }, body: corpo ? JSON.stringify(corpo) : undefined });
+  const t = await r.text(); let j = null; try { j = t ? JSON.parse(t) : null; } catch (e) {}
+  if (!r.ok) { const er = new Error((j && j.message) || ('Erro ' + r.status)); er.status = r.status; throw er; } return j;
+}
+function lista(x) {                 // aceita lista, texto JSON ou "A,B,C"
+  if (Array.isArray(x)) return x;
+  if (typeof x === 'string' && x.trim()) { try { const j = JSON.parse(x); if (Array.isArray(j)) return j; } catch (e) {} return x.replace(/^\{|\}$/g, '').split(',').map(v => v.replace(/^"|"$/g, '').trim()).filter(Boolean); }
+  return [];
+}
+function montar() {
+  $('pl').innerHTML = PAISES.map(p => `<label class="ck" data-n="${p.n.toLowerCase()}"><input type="checkbox" class="pe" value="${p.c}"> ${p.n}</label>`).join('');
+  $('ml').innerHTML = MEIOS.map(m => `<label class="ck"><input type="checkbox" class="me" value="${m}"> ${m}</label>`).join('');
+}
+$('mundo').onchange = () => $('pbox').classList.toggle('hide', $('mundo').checked);
+$('busca').oninput = () => { const q = $('busca').value.trim().toLowerCase(); document.querySelectorAll('#pl .ck').forEach(l => l.style.display = l.dataset.n.includes(q) ? '' : 'none'); };
+
+async function init() {
+  S = await sessao();
+  ['login', 'sem', 'form'].forEach(i => $(i).classList.add('hide'));
+  if (!S || !S.user) { $('login').classList.remove('hide'); return; }
+  let l = null;
+  try { const r = await api('lojas?select=*&dono_id=eq.' + S.user.id + '&limit=1'); l = r && r[0]; }
+  catch (e) { if (e.status === 401) { localStorage.removeItem(CHAVE); $('login').classList.remove('hide'); return; } msg('Não foi possível abrir a loja: ' + e.message); return; }
+  if (!l) { $('sem').classList.remove('hide'); return; }
+  $('en').textContent = l.nome || 'A minha loja';
+  $('ee').textContent = ESTADOS[l.estado] || l.estado || '';
+  $('desc').value = l.descricao || '';
+  const mundo = l.envia_mundo === true || l.envia_mundo === 'true';
+  $('mundo').checked = mundo; $('pbox').classList.toggle('hide', mundo);
+  const pe = lista(l.paises_entrega), me = lista(l.meios_envio);
+  document.querySelectorAll('.pe').forEach(x => x.checked = pe.indexOf(x.value) > -1);
+  document.querySelectorAll('.me').forEach(x => x.checked = me.indexOf(x.value) > -1);
+  const outros = me.filter(m => MEIOS.indexOf(m) < 0); $('outro').value = outros.join(', ');
+  $('form').classList.remove('hide'); msg('');
+  document.querySelectorAll('.pe').forEach(x => x.dispatchEvent(new Event('change', { bubbles: true })));
+}
+$('ent').onclick = async () => {
+  try { guardar(await auth('token?grant_type=password', { email: $('em').value.trim(), password: $('pw').value })); init(); }
+  catch (e) { msg(/invalid/i.test(e.message) ? 'Email ou palavra-passe errados.' : e.message); }
+};
+$('gua').onclick = async () => {
+  const mundo = $('mundo').checked, pe = [...document.querySelectorAll('.pe:checked')].map(x => x.value);
+  if (!mundo && !pe.length) return msg('Escolha os países para onde envia, ou marque "Envia para todo o mundo".');
+  const meios = [...document.querySelectorAll('.me:checked')].map(x => x.value);
+  $('outro').value.split(',').map(v => v.trim()).filter(Boolean).forEach(v => { if (meios.indexOf(v) < 0) meios.push(v); });
+  if (!meios.length) return msg('Escolha pelo menos um meio de envio.');
+  $('gua').disabled = true; msg('A guardar…', true);
+  try {
+    S = await sessao(); if (!S) { init(); return; }
+    await api('rpc/loja_editar_envio', 'POST', { p_descricao: $('desc').value.trim(), p_mundo: mundo, p_paises: mundo ? [] : pe, p_meios: meios });
+    msg('Alterações guardadas ✓', true);
+  } catch (e) { msg('Erro: ' + e.message); }
+  finally { $('gua').disabled = false; }
+};
+montar(); init();
+</script>
+<script src="loja-continentes.js"></script>
+</body></html>
