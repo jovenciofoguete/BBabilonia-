@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="pt"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BBabilônia</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<style>
+*{box-sizing:border-box}html,body{margin:0;height:100%;background:#eef2f7;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:#0f172a}
+#f{position:fixed;inset:0;width:100%;height:100%;border:0;background:#fff}
+#cx{position:fixed;inset:0;z-index:9;background:#eef2f7;overflow:auto;padding:24px 16px 40px}
+.bx{max-width:420px;margin:0 auto;background:#fff;border-radius:18px;padding:22px;box-shadow:0 8px 24px #0f172a1f;text-align:center}
+.lg{font-size:12px;letter-spacing:2px;font-weight:800;color:#16a34a}
+.ic{font-size:64px;margin:10px 0 4px}
+h2{font-size:21px;margin:6px 0}p{font-size:15px;color:#475569;line-height:1.5;margin:8px 0}
+.bt{display:block;width:100%;margin-top:12px;padding:16px;border:0;border-radius:14px;font:inherit;font-size:16px;font-weight:800;color:#fff;background:linear-gradient(90deg,#16a34a,#2563eb);cursor:pointer}
+.bt.l{background:#fff;color:#2563eb;border:2px solid #e2e8f0;font-size:15px;padding:13px}.bt:disabled{opacity:.55}
+.er{color:#dc2626;font-size:14.5px;margin-top:10px;min-height:1em}.ok{color:#16a34a}
+.pq{font-size:13px;color:#64748b;margin-top:14px}
+.hide{display:none!important}
+</style></head><body>
+<iframe id="f" title="BBabilônia"></iframe>
+<div id="cx" class="hide"><div class="bx" id="bx"></div></div>
+<script>
+(function(){
+var URL_SB='https://dsfoqoeawvjafypycldz.supabase.co';
+var PROT=/^\/(painel-vendedor|painel-vendedor-v2|fornecedor-v3|fornecedor-novo|fornecedor|registar-produto|detalhes-fornecedor|loja-criar|loja-editar|fornecedor-envios|fornecedor-saldo|conta-bancaria|fornecedor-disputas|painel-admin|admin-bbabilonia|admin-lojas|admin-disputas|admin-fotos|gerar-formas|atendimento|agentes|respostas|conversas)\.html$/;
+var AGENTE=/^\/(atendimento|agentes|respostas|conversas)\.html$/;
+var RAIZ={'fornecedor.bbabilonia.com':'/painel-vendedor-v2.html','suppliers.bbabilonia.com':'/painel-vendedor-v2.html','supplies.bbabilonia.com':'/painel-vendedor-v2.html',
+ 'admin.bbabilonia.com':'/painel-admin.html','administrator.bbabilonia.com':'/painel-admin.html','atendimento.bbabilonia.com':'/atendimento.html','service.bbabilonia.com':'/atendimento.html'};
+var OKK='bb-2fa-ok';
+var f=document.getElementById('f'),cx=document.getElementById('cx'),bx=document.getElementById('bx');
+var aberto=false,aVer='',faltaAntes=false;
+
+function caminho(){var p='';try{p=f.contentWindow.location.pathname}catch(e){}if(!p||p==='blank')p=location.pathname;if(p==='/')p=RAIZ[location.hostname]||'/';return p}
+function modo(){return AGENTE.test(caminho())?'atd':'loja'}
+function guardado(){
+ try{var m=modo(),st=m==='atd'?sessionStorage:localStorage,k=m==='atd'?'bb-atd':'sb-dsfoqoeawvjafypycldz-auth-token';
+  var v=JSON.parse(st.getItem(k)||'null');if(v&&v.currentSession)v=v.currentSession;return v&&v.access_token?v:null}catch(e){return null}
+}
+function dados(tok){try{var b=tok.split('.')[1].replace(/-/g,'+').replace(/_/g,'/');while(b.length%4)b+='=';return JSON.parse(atob(b))}catch(e){return{}}}
+function oks(){try{return JSON.parse(localStorage.getItem(OKK)||'[]')}catch(e){return[]}}
+function marcarOk(sid){try{var l=oks().filter(function(x){return x!==sid});l.unshift(sid);localStorage.setItem(OKK,JSON.stringify(l.slice(0,20)))}catch(e){}}
+function sessao(){var s=guardado();if(!s)return null;var d=dados(s.access_token);return{tok:s.access_token,sid:d.session_id||'',exp:d.exp||0}}
+function falta(){if(!PROT.test(caminho()))return false;var s=sessao();if(!s||!s.sid)return false;return oks().indexOf(s.sid)<0}
+function esc(t){return String(t==null?'':t).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+
+/* base64url <-> bytes */
+function b2u(buf){var s='',b=new Uint8Array(buf);for(var i=0;i<b.length;i++)s+=String.fromCharCode(b[i]);return btoa(s).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')}
+function u2b(t){t=String(t).replace(/-/g,'+').replace(/_/g,'/');while(t.length%4)t+='=';var s=atob(t),b=new Uint8Array(s.length);for(var i=0;i<s.length;i++)b[i]=s.charCodeAt(i);return b.buffer}
+
+async function api(acao,extra){
+ var s=sessao();if(!s)throw new Error('Entre primeiro na conta.');
+ var r=await fetch('/api/passkey',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+s.tok},body:JSON.stringify(Object.assign({acao:acao},extra||{}))});
+ var j={};try{j=await r.json()}catch(e){}
+ if(!r.ok)throw new Error(j.erro||('Erro '+r.status));
+ return j;
+}
+function aparelho(){var u=navigator.userAgent||'';return(/Android/i.test(u)?'Android':/iPhone|iPad/i.test(u)?'iPhone/iPad':/Windows/i.test(u)?'Windows':/Mac/i.test(u)?'Mac':/Linux/i.test(u)?'Linux':'Aparelho')}
+function erroWebauthn(e){
+ var n=e&&e.name;
+ if(n==='NotAllowedError')return'Cancelado, ou o tempo acabou. Toque no botão de novo.';
+ if(n==='InvalidStateError')return'Este aparelho já tem a chave. Toque em "Confirmar".';
+ if(n==='NotSupportedError'||n==='SecurityError')return'Este navegador não aceita chaves de acesso. Use o Chrome, Edge ou Safari atualizado.';
+ return(e&&e.message)||String(e);
+}
+
+function vigiar(){
+ var x=falta();
+ if(x&&!aberto)abrir();
+ if(!x&&aberto)fechar(faltaAntes);
+ faltaAntes=x;
+}
+function fechar(recarregar){aberto=false;cx.classList.add('hide');f.style.visibility='visible';if(recarregar)try{f.contentWindow.location.reload()}catch(e){f.src=f.src}}
+function ecra(ic,tit,txt,botoes){
+ bx.innerHTML='<div class="lg">BBABILÔNIA · SEGURANÇA</div><div class="ic">'+ic+'</div><h2>'+tit+'</h2><p>'+txt+'</p>'+botoes+'<div class="er" id="er"></div>'+
+  '<button class="bt l" id="sa">Sair da conta</button><p class="pq">Perdeu o aparelho? Fale com o administrador da BBabilônia.</p>';
+ document.getElementById('sa').onclick=sair;
+}
+function msg(t,bom){var e=document.getElementById('er');if(e){e.className='er'+(bom?' ok':'');e.textContent=t}}
+
+async function abrir(){
+ aberto=true;f.style.visibility='hidden';cx.classList.remove('hide');
+ var s=sessao();aVer=s&&s.sid;
+ ecra('🔐','Verificação em 2 passos','A carregar…','');
+ if(!window.PublicKeyCredential){ecra('⚠️','Navegador sem suporte','Este navegador não aceita chaves de acesso. Abra o painel no Chrome, Edge ou Safari atualizado.','');return}
+ try{
+  var e=await api('estado');
+  if(e.verificado){marcarOk(aVer);faltaAntes=false;fechar(true);return}
+  if(!e.tem)ecraAtivar();else ecraConfirmar();
+ }catch(err){ecra('⚠️','Verificação em 2 passos','Não foi possível verificar.','<button class="bt" id="tn">Tentar de novo</button>');msg(err.message);document.getElementById('tn').onclick=abrir}
+}
+function ecraAtivar(){
+ ecra('👆','Ativar a chave de acesso','Proteja a sua conta com a <b>impressão digital</b>, o <b>rosto</b> ou o <b>PIN</b> deste aparelho (telemóvel ou computador). Faz-se só uma vez.',
+  '<button class="bt" id="go">👆 Ativar agora</button>');
+ document.getElementById('go').onclick=ativar;
+}
+function ecraConfirmar(){
+ ecra('👆','Confirme que é você','Use a <b>impressão digital</b>, o <b>rosto</b> ou o <b>PIN</b> deste aparelho.',
+  '<button class="bt" id="go">👆 Confirmar</button>');
+ document.getElementById('go').onclick=confirmar;
+}
+async function ativar(){
+ var b=document.getElementById('go');b.disabled=true;msg('');
+ try{
+  var o=(await api('registo-inicio')).publicKey;
+  o.challenge=u2b(o.challenge);o.user.id=u2b(o.user.id);
+  o.excludeCredentials=(o.excludeCredentials||[]).map(function(c){return{type:c.type,id:u2b(c.id)}});
+  var c=await navigator.credentials.create({publicKey:o});
+  await api('registo-fim',{id:c.id,clientDataJSON:b2u(c.response.clientDataJSON),attestationObject:b2u(c.response.attestationObject),aparelho:aparelho()});
+  marcarOk(aVer);msg('✓ Chave ativada',true);faltaAntes=false;setTimeout(function(){fechar(true)},700);
+ }catch(e){b.disabled=false;msg(erroWebauthn(e))}
+}
+async function confirmar(){
+ var b=document.getElementById('go');b.disabled=true;msg('');
+ try{
+  var o=(await api('login-inicio')).publicKey;
+  o.challenge=u2b(o.challenge);o.allowCredentials=(o.allowCredentials||[]).map(function(c){return{type:c.type,id:u2b(c.id)}});
+  var c=await navigator.credentials.get({publicKey:o});
+  await api('login-fim',{id:c.id,clientDataJSON:b2u(c.response.clientDataJSON),authenticatorData:b2u(c.response.authenticatorData),signature:b2u(c.response.signature)});
+  marcarOk(aVer);
+  if(c.authenticatorAttachment==='cross-platform'){
+   ecra('✅','Confirmado','Usou outro aparelho. Quer ativar também a chave <b>neste</b> aparelho, para a próxima vez ser mais rápido?',
+    '<button class="bt" id="go">👆 Ativar neste aparelho</button><button class="bt l" id="nao">Agora não</button>');
+   document.getElementById('go').onclick=ativar;document.getElementById('nao').onclick=function(){faltaAntes=false;fechar(true)};
+   return;
+  }
+  msg('✓ Confirmado',true);faltaAntes=false;setTimeout(function(){fechar(true)},500);
+ }catch(e){b.disabled=false;
+  var t=erroWebauthn(e);
+  if(e&&e.name==='NotAllowedError')t+=' Se este é um aparelho novo, na janela que abre escolha "Usar outro aparelho" / "Telemóvel" e confirme com o aparelho onde ativou.';
+  msg(t)}
+}
+async function sair(){
+ try{var m=modo();var c=supabase.createClient(URL_SB,'sb_publishable_BN4NiVcDab9CqdTY_odgDA_uUOhjja0',{auth:m==='atd'?{storage:sessionStorage,storageKey:'bb-atd',autoRefreshToken:false}:{autoRefreshToken:false}});await c.auth.signOut()}catch(e){}
+ try{if(modo()==='atd')sessionStorage.removeItem('bb-atd');else localStorage.removeItem('sb-dsfoqoeawvjafypycldz-auth-token')}catch(e){}
+ aberto=false;faltaAntes=false;cx.classList.add('hide');f.style.visibility='visible';try{f.contentWindow.location.reload()}catch(e){f.src=f.src}}
+
+f.addEventListener('load',function(){
+ try{var w=f.contentWindow,u=w.location.pathname+w.location.search+w.location.hash;
+  if(w.location.pathname!==location.pathname||w.location.search!==location.search)history.replaceState(null,'',u);
+  if(w.document.title)document.title=w.document.title}catch(e){}
+ vigiar();
+});
+if(falta()){faltaAntes=true;abrir()}
+f.src=location.pathname+location.search+location.hash;
+setInterval(function(){var s=sessao();if(aberto&&s&&s.sid!==aVer){aberto=false}vigiar()},1000);
+})();
+</script>
+</body></html>
