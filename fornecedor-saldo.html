@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Saldo e levantamentos · B-Babilônia</title>
+<meta name="color-scheme" content="light">
+<style>
+:root{--r1:#1e1b4b;--r2:#5b21b6;--r3:#7c3aed;--cl:#f3f0ff;--fundo:#f1effb;--tx:#1b1740;--su:#6b7280;--li:#ece9f7;--ok:#047857;--okf:#d1fae5;--av:#b45309;--avf:#fef3c7;--er:#b91c1c;--erf:#fee2e2;--az:#1d4ed8;--azf:#dbeafe}
+*{box-sizing:border-box;margin:0}
+body{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--fundo);color:var(--tx);line-height:1.4}
+button{font:inherit;cursor:pointer}a{color:inherit}
+.top{background:linear-gradient(135deg,#1e1b4b 0%,#5b21b6 55%,#9333ea 100%);color:#fff;padding:22px 16px 58px;border-radius:0 0 28px 28px}
+.top .lg{font-size:13px;letter-spacing:2px;color:#fcd34d;font-weight:bold}
+.top h1{margin:8px 0 4px;font-size:24px}.top p{font-size:14px;color:#e9d5ff}
+main{padding:0 14px 40px;margin:-40px auto 0;max-width:620px}
+.voltar{display:inline-block;background:#fff;color:#5b21b6;font-weight:800;border-radius:999px;padding:8px 14px;margin-bottom:12px;box-shadow:0 4px 12px #4c1d9522;font-size:14px;text-decoration:none}
+.cx{background:#fff;border-radius:16px;padding:16px;box-shadow:0 4px 14px #4c1d9514;margin-bottom:12px}
+.cx h2{font-size:16px;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.cp{width:100%;border:1.5px solid #ddd;border-radius:10px;padding:11px;font-size:16px;margin-top:4px;background:#fff;color:var(--tx)}
+label.lb{display:block;font-size:13px;color:var(--su);margin-top:10px}
+.bt{border:0;border-radius:12px;padding:13px;font-weight:800;font-size:15px;background:var(--cl);color:var(--r2);width:100%;margin-top:12px;display:block;text-align:center;text-decoration:none}
+.bt.p{background:var(--r3);color:#fff}.bt.v{background:#10b981;color:#fff}.bt.x{background:var(--erf);color:var(--er)}.bt:disabled{opacity:.5}
+.bt.pq{width:auto;display:inline-block;padding:7px 12px;font-size:13px;margin:0;border-radius:999px}
+.bdg{display:inline-block;border-radius:999px;padding:3px 10px;font-size:12.5px;font-weight:800}
+.b-ok{background:var(--okf);color:var(--ok)}.b-av{background:var(--avf);color:var(--av)}.b-er{background:var(--erf);color:var(--er)}.b-az{background:var(--azf);color:var(--az)}.b-cz{background:#e5e7eb;color:#374151}
+.aviso{border-left:6px solid #f59e0b;background:#fffbeb;border-radius:12px;padding:12px;font-size:14px;margin-top:10px}
+.aviso.er{border-color:#ef4444;background:#fef2f2}.aviso.ok{border-color:#10b981;background:#ecfdf5}.aviso.az{border-color:#3b82f6;background:#eff6ff}
+.moeda{border:1.5px solid var(--li);border-radius:14px;padding:12px;margin-top:10px}
+.moeda .disp{font-size:28px;font-weight:900;color:var(--ok);line-height:1.1}
+.moeda .disp small{display:block;font-size:12.5px;font-weight:600;color:var(--su)}
+.q4{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.q4 div{background:var(--cl);border-radius:10px;padding:8px}.q4 b{display:block;font-size:15px}.q4 span{font-size:12px;color:var(--su)}
+.ln{display:flex;gap:10px;align-items:center;padding:10px 0;border-top:1px solid var(--li)}.ln:first-of-type{border-top:0}
+.ln .t{flex:1;min-width:0}.ln .t b{display:block;font-size:14px}.ln .t span{font-size:12.5px;color:var(--su);display:block}
+.ln img,.ln .sf{flex:none;width:44px;height:44px;border-radius:8px;object-fit:cover;background:#f3f3f3;display:grid;place-items:center}
+.dl{display:grid;grid-template-columns:auto 1fr;gap:4px 10px;font-size:13.5px;margin:8px 0}.dl b{color:var(--su);font-weight:600}.dl span{word-break:break-all}
+.abas{display:flex;gap:6px;overflow-x:auto;margin-bottom:10px}
+.abas button{flex:none;border:1.5px solid var(--li);background:#fff;border-radius:999px;padding:7px 12px;font-size:14px;font-weight:600}
+.abas button.on{background:var(--r3);border-color:var(--r3);color:#fff}
+.vazio{text-align:center;color:var(--su);font-size:13.5px;padding:12px 0}
+.msg{font-size:14px;margin-top:8px;color:var(--er)}.msg.ok{color:var(--ok)}
+.sub{font-size:12.5px;color:var(--su)}
+.modal{position:fixed;inset:0;background:#0007;z-index:50;display:none;align-items:flex-end;justify-content:center}.modal.on{display:flex}
+.modal .cx{width:100%;max-width:520px;border-radius:18px 18px 0 0;margin:0;max-height:90vh;overflow:auto}
+.toast{position:fixed;left:12px;right:12px;bottom:18px;background:var(--r1);color:#fff;border-radius:12px;padding:12px 14px;font-size:14px;z-index:60;display:none;text-align:center}
+.hide{display:none!important}
+</style>
+</head>
+<body>
+<div class="top">
+  <div class="lg">BBABILÔNIA</div>
+  <h1 id="tit">Saldo e levantamentos</h1>
+  <p id="sub">Dinheiro das suas vendas: retido, disponível e pedidos de levantamento.</p>
+</div>
+<main>
+  <a class="voltar" id="voltar" href="painel-vendedor-v2.html#inicio">← Voltar ao painel</a>
+  <div id="carregar" class="cx vazio">A carregar…</div>
+
+  <section id="v-entrar" class="cx hide">
+    <h2>Entrar</h2>
+    <label class="lb" for="em">Email</label><input class="cp" id="em" type="email" autocomplete="email">
+    <label class="lb" for="pw">Palavra-passe</label><input class="cp" id="pw" type="password" autocomplete="current-password">
+    <button class="bt p" id="bEntrar">Entrar</button><p class="msg" id="entMsg"></p>
+  </section>
+
+  <section id="v-forn" class="hide">
+    <div class="cx"><h2>💰 O meu saldo</h2><div id="saldos"></div><div id="contaCx"></div></div>
+    <div class="cx"><h2>🏦 Os meus levantamentos</h2><div id="levs"></div></div>
+    <div class="cx"><h2>🧾 Pedidos pagos</h2><div id="peds"></div></div>
+    <div class="cx"><h2>🔔 Notificações</h2><div id="nots"></div></div>
+    <div class="cx"><h2>❓ Como funciona</h2>
+      <p class="sub" style="font-size:13.5px">1. Quando o cliente paga, o valor fica <b>retido</b>.<br>2. Quando a encomenda é entregue, o valor passa a <b>disponível</b>.<br>3. Toque em <b>Pedir levantamento</b>. A BBabilônia verifica e transfere para a sua conta bancária confirmada (em USD por SWIFT; o seu banco converte para a moeda local).<br>4. Pedidos com disputa aberta ficam bloqueados até a disputa terminar.</p>
+    </div>
+  </section>
+
+  <section id="v-admin" class="hide">
+    <div class="abas" id="abas"><button data-a="pendente" class="on">Pendentes</button><button data-a="pago">Pagos</button><button data-a="rejeitado">Rejeitados</button></div>
+    <div id="admLista"></div>
+  </section>
+</main>
+<div class="modal" id="modal"><div class="cx" id="modalCx"></div></div>
+<div class="toast" id="toast"></div>
+<script src="fornecedor-saldo.js?v=2"></script>
+<script src="sino-avisos.js"></script>
+</body>
+</html>
