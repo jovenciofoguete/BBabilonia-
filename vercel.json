@@ -1,7 +1,0 @@
-{
-  "routes": [
-    { "src": "/", "has": [{ "type": "host", "value": "administrator.bbabilonia.com" }], "dest": "/painel-admin.html" },
-    { "src": "/", "has": [{ "type": "host", "value": "service.bbabilonia.com" }], "dest": "/atendimento.html" },
-    { "src": "/", "has": [{ "type": "host", "value": "suppliers.bbabilonia.com" }], "dest": "/painel-vendedor.html" }
-  ]
-}
