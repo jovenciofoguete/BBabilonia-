@@ -2,6 +2,7 @@
 // Dá a "entrada" na live do LiveKit.
 // Vendedor (com sessão iniciada): transmite na sala dele (live-ID_DO_VENDEDOR).
 // Cliente: só assiste, não transmite.
+// Segurança: só o dono de uma loja APROVADA pode transmitir; erros internos não são mostrados.
 const crypto = require('crypto');
 const SUPABASE_URL = 'https://dsfoqoeawvjafypycldz.supabase.co';
 
@@ -16,6 +17,15 @@ function criarToken(chave, segredo, identidade, nome, sala, podeTransmitir) {
   });
   const assinatura = crypto.createHmac('sha256', segredo).update(cabecalho + '.' + corpo).digest('base64url');
   return cabecalho + '.' + corpo + '.' + assinatura;
+}
+
+async function lojaAprovada(userId) {
+  const k = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const r = await fetch(SUPABASE_URL + '/rest/v1/lojas?select=id&estado=eq.aprovada&dono_id=eq.' + encodeURIComponent(userId) + '&limit=1',
+    { headers: { apikey: k, Authorization: 'Bearer ' + k } });
+  if (!r.ok) return false;
+  const l = await r.json();
+  return Array.isArray(l) && l.length > 0;
 }
 
 async function utilizador(tokenSessao) {
@@ -40,6 +50,7 @@ module.exports = async (req, res) => {
 
     if (papel === 'vendedor') {
       if (!user || !user.id) return res.status(401).json({ erro: 'Inicie sessão para fazer live' });
+      if (!(await lojaAprovada(user.id))) return res.status(403).json({ erro: 'Só lojas aprovadas podem fazer live' });
       const sala = 'live-' + user.id;
       const token = criarToken(chave, segredo, 'vendedor-' + user.id, user.email || 'Vendedor', sala, true);
       return res.status(200).json({ token, url, sala });
@@ -51,6 +62,7 @@ module.exports = async (req, res) => {
     const token = criarToken(chave, segredo, id, 'Cliente', sala, false);
     return res.status(200).json({ token, url, sala });
   } catch (e) {
-    return res.status(500).json({ erro: String(e.message || e) });
+    console.error('livekit-token:', e && e.message);
+    return res.status(500).json({ erro: 'Erro interno. Tente de novo.' });
   }
 };
