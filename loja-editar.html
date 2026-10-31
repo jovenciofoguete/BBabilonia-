@@ -21,7 +21,7 @@ button{padding:12px 16px;border-radius:10px;border:1px solid var(--line);backgro
 </style></head><body>
 <p><a href="painel-vendedor-v2.html">← Voltar ao painel</a></p>
 <h1>Editar a minha loja</h1>
-<div class="box">Mude a descrição, os países para onde envia e os meios de envio. O nome, o país e os documentos não mudam aqui.</div>
+<div class="box">Mude o nome da loja, o país, a descrição, os países para onde envia e os meios de envio. Os documentos não mudam aqui.</div>
 
 <div id="login" class="hide">
  <label>Email</label><input id="em" type="email" autocomplete="email">
@@ -34,6 +34,8 @@ button{padding:12px 16px;border-radius:10px;border:1px solid var(--line);backgro
 <div id="form" class="hide">
  <h3>A sua loja</h3>
  <div class="box"><div class="est" id="en"></div><div id="ee"></div></div>
+ <label>Nome da loja</label><input id="nome" maxlength="80" autocomplete="off">
+ <label>País da loja</label><select id="pais"></select>
  <label>Descrição da loja</label><textarea id="desc" rows="4"></textarea>
 
  <h3>Para onde envia</h3>
@@ -85,6 +87,7 @@ function lista(x) {                 // aceita lista, texto JSON ou "A,B,C"
   return [];
 }
 function montar() {
+  $('pais').innerHTML = '<option value="">— Escolha o país —</option>' + PAISES.map(p => `<option value="${p.c}">${p.n}</option>`).join('');
   $('pl').innerHTML = PAISES.map(p => `<label class="ck" data-n="${p.n.toLowerCase()}"><input type="checkbox" class="pe" value="${p.c}"> ${p.n}</label>`).join('');
   $('ml').innerHTML = MEIOS.map(m => `<label class="ck"><input type="checkbox" class="me" value="${m}"> ${m}</label>`).join('');
 }
@@ -101,6 +104,9 @@ async function init() {
   if (!l) { $('sem').classList.remove('hide'); return; }
   $('en').textContent = l.nome || 'A minha loja';
   $('ee').textContent = ESTADOS[l.estado] || l.estado || '';
+  $('nome').value = l.nome || '';
+  $('pais').value = l.pais || '';
+  $('pais').dispatchEvent(new Event('change', { bubbles: true }));
   $('desc').value = l.descricao || '';
   const mundo = l.envia_mundo === true || l.envia_mundo === 'true';
   $('mundo').checked = mundo; $('pbox').classList.toggle('hide', mundo);
@@ -116,6 +122,9 @@ $('ent').onclick = async () => {
   catch (e) { msg(/invalid/i.test(e.message) ? 'Email ou palavra-passe errados.' : e.message); }
 };
 $('gua').onclick = async () => {
+  const nome = $('nome').value.trim(), pais = $('pais').value;
+  if (!nome) return msg('Escreva o nome da loja.');
+  if (!pais) return msg('Escolha o país da loja.');
   const mundo = $('mundo').checked, pe = [...document.querySelectorAll('.pe:checked')].map(x => x.value);
   if (!mundo && !pe.length) return msg('Escolha os países para onde envia, ou marque "Envia para todo o mundo".');
   const meios = [...document.querySelectorAll('.me:checked')].map(x => x.value);
@@ -124,13 +133,16 @@ $('gua').onclick = async () => {
   $('gua').disabled = true; msg('A guardar…', true);
   try {
     S = await sessao(); if (!S) { init(); return; }
+    await api('rpc/loja_editar_dados', 'POST', { p_nome: nome, p_pais: pais });
     await api('rpc/loja_editar_envio', 'POST', { p_descricao: $('desc').value.trim(), p_mundo: mundo, p_paises: mundo ? [] : pe, p_meios: meios });
+    $('en').textContent = nome;
     msg('Alterações guardadas ✓', true);
   } catch (e) { msg('Erro: ' + e.message); }
   finally { $('gua').disabled = false; }
 };
 montar(); init();
 </script>
+<script src="pesquisa-pais-loja.js"></script>
 <script src="loja-continentes.js"></script>
 </body></html>
 <script src="fornecedor-idioma.js?v=1"></script>
