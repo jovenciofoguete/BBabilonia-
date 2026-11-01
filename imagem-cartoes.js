@@ -182,12 +182,20 @@
     g.style.display = aba === "p" ? "" : "none"; f.style.display = aba === "f" ? "block" : "none";
     $("bbiCats").style.display = $("bbiChips").style.display = aba === "p" ? "" : "none";
     if (aba === "f") return fornecedores(res);
+    var nota = "";
+    if (!res.length && resAtual().length) {   // o filtro escolhido não tem nada: mostra os parecidos na mesma
+      var semFiltro = resAtual().slice();
+      if (ordem === "baixo") semFiltro.sort(function (a, b) { return Number(a.p.price || 0) - Number(b.p.price || 0); });
+      if (ordem === "alto") semFiltro.sort(function (a, b) { return Number(b.p.price || 0) - Number(a.p.price || 0); });
+      res = semFiltro;
+      nota = soVerif ? "Nenhum fornecedor verificado tem este produto. Veja outros parecidos:" : "Não há exatamente isso. Veja outros produtos parecidos:";
+    }
     if (!res.length) {
       g.innerHTML = '<div class="vz"><p>Não encontrámos produtos parecidos.</p><p>Tente outra foto com o objeto inteiro, ou toque noutro objeto lá em cima.</p><button type="button" id="bbiOutra">Tirar outra foto</button></div>';
       $("bbiOutra").onclick = function () { if (d.outraFoto) d.outraFoto(); };
       return;
     }
-    g.innerHTML = "";
+    g.innerHTML = nota ? '<div style="grid-column:1/-1;padding:10px 14px;color:#555;font-size:14px">' + txt(nota) + '</div>' : "";
     res.forEach(function (it) {
       var p = it.p, a = document.createElement("a"), m = meta(p);
       a.className = "cd"; a.href = "produto-bbabilonia.html?id=" + encodeURIComponent(p.id);
