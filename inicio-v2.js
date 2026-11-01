@@ -1,7 +1,9 @@
 /* inicio-v2.js — correções da página inicial (não altera o index.html)
    1) categorias com o mesmo nome aparecem todas, com o grupo à frente (ex.: "Mulher · Acessórios")
    2) foto: usa image_url ou, se não houver, a primeira foto da coluna images
-   3) só mostra produtos de lojas aprovadas (quando a lista de lojas pode ser lida) */
+   3) só mostra produtos de lojas aprovadas (quando a lista de lojas pode ser lida)
+   4) (01/11/2026) categorias principais repetidas (Celulares, Telemóveis e Acessórios, Telemóveis e Tablets;
+      Eletrónica e Eletrónicos): no topo aparece só um botão, que mostra os produtos de todas. Nada é apagado. */
 (function(){
   function fotoDe(p){
     if(p.image_url) return p.image_url;
@@ -24,14 +26,38 @@
     return pai ? nomeDe(pai) + " · " + nome : nome;
   }
 
+  var SINONIMOS = [
+    { re: /celular|telem[oó]v|smartphone/i, nome: /^telem[oó]veis e tablets$/i },
+    { re: /^el[ec]*tr[oó]nic/i, nome: /^eletr[oó]nica$/i }
+  ];
+  function juntados(){
+    var fica = {}, fora = {};
+    SINONIMOS.forEach(function(g){
+      var topo = categorias.filter(function(c){ return c.parent_id == null && g.re.test(nomeDe(c)); });
+      if(topo.length < 2) return;
+      var princ = topo.filter(function(c){ return g.nome.test(nomeDe(c)); })[0] || topo[0];
+      fica[princ.id] = topo.filter(function(c){ return c !== princ; }).map(function(c){ return c.id; });
+      fica[princ.id].forEach(function(id){ fora[id] = 1; });
+    });
+    return { fica: fica, fora: fora };
+  }
+  /* o botão que ficou mostra também os produtos das categorias repetidas */
+  idsDaCategoria = function(id){
+    var ids = [id].concat(juntados().fica[id] || []);
+    for(var i = 0; i < ids.length; i++){
+      categorias.forEach(function(c){ if(c.parent_id === ids[i] && ids.indexOf(c.id) < 0) ids.push(c.id); });
+    }
+    return ids;
+  };
+
   listaTopo = function(){
-    var vistos = {}, lista = [], conta = {}, repetidos = {};
+    var vistos = {}, lista = [], conta = {}, repetidos = {}, fora = juntados().fora;
     categorias.forEach(function(c){
       var k = nomeDe(c).trim().toLowerCase();
       conta[k] = (conta[k] || 0) + 1;
       if(conta[k] > 1) repetidos[k] = true;
     });
-    function juntar(c){ if(!vistos[c.id]){ vistos[c.id] = 1; lista.push(c); } }
+    function juntar(c){ if(!vistos[c.id] && !fora[c.id]){ vistos[c.id] = 1; lista.push(c); } }
     PRIORIDADE.forEach(function(re){
       categorias.filter(function(c){ return re.test(nomeDe(c)); })
         .sort(function(a,b){ return nivel(a) - nivel(b); })
