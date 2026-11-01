@@ -119,7 +119,29 @@
       if (!ant || s > ant.nota) melhor.set(it.p.id, { p: it.p, foto: it.foto, nota: s });
     });
     var ord = Array.from(melhor.values()).sort(function (a, b) { return b.nota - a.nota; });
-    return { topo: ord.length ? ord[0].nota : 0, res: ord.filter(function (x) { return x.nota >= 0.3; }).slice(0, 80) };
+    var topo = ord.length ? ord[0].nota : 0;
+    // mesmo TIPO de produto primeiro: as categorias dos mais parecidos sobem (camiseta -> outras camisetas)
+    var cs = cats(), pai = {}, peso = {}, pesoPai = {};
+    cs.forEach(function (c) { pai[c.id] = c.parent_id; });
+    ord.slice(0, 6).forEach(function (x, i) {
+      var c = x.p.category_id; if (c == null || x.nota < topo - 0.15) return;   // só os realmente parecidos decidem o tipo
+      var w = i === 0 ? 10 : 6 - i;   // o mais parecido de todos é o que mais decide o tipo
+      peso[c] = (peso[c] || 0) + w;
+      if (pai[c] != null) pesoPai[pai[c]] = (pesoPai[pai[c]] || 0) + w;
+    });
+    var maxP = 0, maxPai = 0, k;
+    for (k in peso) if (peso[k] > maxP) maxP = peso[k];
+    for (k in pesoPai) if (pesoPai[k] > maxPai) maxPai = pesoPai[k];
+    ord.forEach(function (x) {
+      var c = x.p.category_id, b = 0;
+      if (c != null && peso[c]) b = 0.10 * peso[c] / maxP;
+      if (c != null && pai[c] != null && pesoPai[pai[c]]) b = Math.max(b, 0.05 * pesoPai[pai[c]] / maxPai);
+      x.ordem = x.nota + b;
+    });
+    ord.sort(function (a, b) { return b.ordem - a.ordem; });
+    var res = ord.filter(function (x) { return x.nota >= 0.3; });
+    if (res.length < 20) res = ord.slice(0, 40);   // nunca fica vazio: mostra sempre os mais parecidos que existem
+    return { topo: topo, res: res.slice(0, 80) };
   }
   function preco(p) {
     try { if (typeof precoConv === "function") return precoConv(p); } catch (e) {}
