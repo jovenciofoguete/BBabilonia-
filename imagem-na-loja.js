@@ -1,6 +1,12 @@
 /* imagem-na-loja.js — B-Babilônia: pesquisa por imagem igual ao Alibaba.
    Parte 1: botão da câmara, ecrã "A pesquisar…" e preparação.
-   Usa também imagem-analise.js (parte 2) e imagem-cartoes.js (parte 3). */
+   Usa também imagem-analise.js (parte 2) e imagem-cartoes.js (parte 3).
+   Versão rápida (01/11/2026), os resultados são os mesmos:
+   - usa os produtos que a página inicial já descarregou (antes descarregava tudo outra vez);
+   - o modelo de imagens (~14 MB) fica guardado no telemóvel: só se descarrega uma vez;
+   - as formas dos produtos novos calculadas no telemóvel ficam guardadas (não se repetem);
+   - a lista de lojas já não atrasa a pesquisa;
+   - a preparação começa depois de a página inicial abrir, para não a atrasar. */
 (function () {
   if (window.__bbImgLoja) return; window.__bbImgLoja = true;
 
@@ -11,7 +17,8 @@
   ];
   var PRONTO = { "forma-comum.js": "FormaBB", "imagem-analise.js": "BBImgAnalise", "imagem-cartoes.js": "BBImgCartoes" };
   var F = null, A = null, C = null, indice = [], semForma = [], lojas = [], preparar = null, aCompletar = null;
-  var vez = 0, urlAnt = null, aberto = false, ocupado = false;
+  var vez = 0, urlAnt = null, aberto = false, ocupado = false, ultimo = null;
+  var MOD_IDB = "indexeddb://bb-mobilenet-v2-100", modeloRapido = null, aCarregarMod = null, G = null;
   var $ = function (id) { return document.getElementById(id); };
 
   /* ---------- ecrã "A pesquisar…" (foto em ecrã inteiro escuro) ---------- */
@@ -66,14 +73,108 @@
       preparar = (async function () {
         await Promise.all([js(LIBS[0]).then(function () { return js(LIBS[1]); }), js(LIBS[2]), js(LIBS[3]), js(LIBS[4])]);
         F = window.FormaBB; A = window.BBImgAnalise; C = window.BBImgCartoes;
-        await Promise.all([F.carregarModelo(), lerProdutos(), lerLojas()]);
+        G = Object.assign({}, F, { carregarModelo: carregarModeloRapido, vetor: vetorRapido });
+        lerLojas().then(function () { if (aberto && ultimo) refazer(); });   // não espera pelas lojas
+        await Promise.all([carregarModeloRapido(), lerProdutos().then(lerFormasGuardadas)]);
       })();
       preparar.catch(function () { preparar = null; });
     }
     return preparar;
   }
   function cab() { return { apikey: F.SUPA_KEY, Authorization: "Bearer " + F.SUPA_KEY }; }
+
+  /* ---------- modelo guardado no telemóvel (IndexedDB) ---------- */
+  function carregarModeloRapido() {
+    if (modeloRapido) return Promise.resolve(modeloRapido);
+    if (!aCarregarMod) {
+      aCarregarMod = (async function () {
+        var m = null, daRede = false;
+        try { m = await mobilenet.load({ version: 2, alpha: 1.0, modelUrl: MOD_IDB, inputRange: [0, 1] }); }
+        catch (e) { m = null; }
+        if (!m) { m = await mobilenet.load({ version: 2, alpha: 1.0 }); daRede = true; }
+        await aquecer(m, 2);                       // o 1.º resultado usa 2 imagens (foto + espelho)
+        modeloRapido = m;
+        if (daRede) setTimeout(function () { try { m.model.save(MOD_IDB).catch(function () {}); } catch (e) {} }, 1500);
+        setTimeout(function () { if (!ocupado) aquecer(m, 16).catch(function () {}); }, 800);   // objetos da foto
+        return m;
+      })();
+      aCarregarMod.catch(function () { aCarregarMod = null; });
+    }
+    return aCarregarMod;
+  }
+  async function aquecer(m, n) {
+    var z = tf.zeros([n, F.LADO, F.LADO, 3], "int32"), t = m.infer(z, true);
+    await t.data(); t.dispose(); z.dispose();
+  }
+  async function vetorRapido(im) {   // igual ao FormaBB.vetor, mas com o modelo guardado
+    var m = await carregarModeloRapido(), L = F.LADO;
+    var cv = F.prepararForma(im);
+    var esp = document.createElement("canvas"); esp.width = esp.height = L;
+    var e = esp.getContext("2d"); e.translate(L, 0); e.scale(-1, 1); e.drawImage(cv, 0, 0);
+    var t1 = m.infer(cv, true), t2 = m.infer(esp, true);
+    var a = await t1.data(), b = await t2.data();
+    t1.dispose(); t2.dispose();
+    var v = new Float32Array(a.length), s = 0, i;
+    for (i = 0; i < a.length; i++) { v[i] = (a[i] + b[i]) / 2; s += v[i] * v[i]; }
+    s = Math.sqrt(s) || 1; for (i = 0; i < v.length; i++) v[i] /= s;
+    return v;
+  }
+
+  /* ---------- formas dos produtos novos, guardadas no telemóvel ---------- */
+  var formasGuardadas = {};
+  function bd() {
+    return new Promise(function (ok, falha) {
+      try {
+        var r = indexedDB.open("bb-pesquisa-imagem", 1);
+        r.onupgradeneeded = function () { r.result.createObjectStore("formas"); };
+        r.onsuccess = function () { ok(r.result); };
+        r.onerror = function () { falha(r.error); };
+      } catch (e) { falha(e); }
+    });
+  }
+  async function lerFormasGuardadas() {
+    try {
+      var db = await bd();
+      formasGuardadas = await new Promise(function (ok) {
+        var q = db.transaction("formas").objectStore("formas").get("todas");
+        q.onsuccess = function () { ok(q.result || {}); };
+        q.onerror = function () { ok({}); };
+      });
+    } catch (e) { formasGuardadas = {}; }
+    var resto = [];   // produtos sem forma que o telemóvel já calculou noutra visita
+    semForma.forEach(function (p) {
+      var foto = F.fotosDe(p)[0], g = formasGuardadas[p.id + "|" + foto];
+      if (g) { try { indice.push({ p: p, foto: foto, v: F.descodificar(g) }); return; } catch (e) {} }
+      resto.push(p);
+    });
+    semForma = resto;
+  }
+  async function guardarForma(p, foto, v) {
+    try {
+      formasGuardadas[p.id + "|" + foto] = F.codificar(v);
+      var db = await bd(), tr = db.transaction("formas", "readwrite");
+      tr.objectStore("formas").put(formasGuardadas, "todas");
+    } catch (e) {}
+  }
+
+  /* ---------- produtos: os que a página inicial já tem ---------- */
+  function daPagina() { try { return (typeof produtos !== "undefined" && Array.isArray(produtos)) ? produtos : null; } catch (e) { return null; } }
+  async function esperarPagina() {
+    for (var t = 0; t < 100; t++) {          // até 20 s, enquanto a página inicial carrega os produtos
+      var p = daPagina();
+      if (p && p.length) return p;
+      if (!p || document.querySelector("#grelha .estado")) return null;   // a página não os tem / deu erro
+      if (t > 5 && !document.querySelector("#grelha .skel")) return null;   // a página acabou e não tem produtos
+      await new Promise(function (r) { setTimeout(r, 200); });
+    }
+    return null;
+  }
   async function lerProdutos() {
+    var lista = await esperarPagina();
+    if (!lista) lista = await descarregarProdutos();
+    montarIndice(lista);
+  }
+  async function descarregarProdutos() {
     var lista = [];
     for (var ini = 0; ini < 20000; ini += 1000) {
       var r = await fetch(F.SUPA_URL + "/rest/v1/products?select=*&offset=" + ini + "&limit=1000", { headers: cab() });
@@ -81,6 +182,9 @@
       var parte = await r.json(); lista = lista.concat(parte);
       if (parte.length < 1000) break;
     }
+    return lista;
+  }
+  function montarIndice(lista) {
     indice = []; semForma = [];
     lista.forEach(function (p) {
       var f = p.forma;
@@ -101,10 +205,12 @@
     for (var i = 0; i < falta.length; i++) {
       while (ocupado) await new Promise(function (r) { setTimeout(r, 300); });   // a pesquisa do cliente vem primeiro
       var p = falta[i], foto = F.fotosDe(p)[0];
-      try { var im = await F.carregarImg(foto); indice.push({ p: p, foto: foto, v: await F.vetor(im) }); } catch (e) {}
+      try { var im = await F.carregarImg(foto), v = await vetorRapido(im); indice.push({ p: p, foto: foto, v: v }); guardarForma(p, foto, v); } catch (e) {}
     }
   }
-  prepararTudo().catch(function () {});   // começa logo que a página abre (como a busca-imagem antiga)
+  function comecarDepois() { setTimeout(function () { prepararTudo().catch(function () {}); }, 1200); }
+  if (document.readyState === "complete") comecarDepois();   // começa logo que a página inicial acaba de abrir
+  else window.addEventListener("load", comecarDepois);
 
   /* ---------- comparar ---------- */
   function poucas(z) {   // foto inteira, até 6 objetos e 4 quadrados
@@ -166,6 +272,12 @@
       categorias: cats(), lojas: lojas, fechar: function () { fechar(); }, outraFoto: function () { fich.click(); } };
   }
 
+  function refazer() {   // quando chegam as lojas ou formas novas, atualiza a janela aberta
+    if (!ultimo || ultimo.minha !== vez || !aberto) return;
+    A.usar(G, indice);
+    C.atualizar(dados(ultimo.base, ultimo.lista, ultimo.vs));
+  }
+
   /* ---------- procurar ---------- */
   async function procurar() {
     var f = fich.files && fich.files[0];
@@ -190,14 +302,16 @@
       base.width = Math.max(1, Math.round(im.width * e)); base.height = Math.max(1, Math.round(im.height * e));
       base.getContext("2d").drawImage(im, 0, 0, base.width, base.height);
       ocupado = true;
-      A.usar(F, indice);
+      A.usar(G, indice);
       var lista = poucas(A.zonas(base)), vs = await A.vetores(base, lista.slice(0, 1));
       if (minha !== vez) { ocupado = false; return; }
+      ultimo = { minha: minha, base: base, lista: lista.slice(0, 1), vs: vs };
       C.abrir(dados(base, lista.slice(0, 1), vs));          // resultado da foto inteira logo
       load.style.display = "none";
       if (lista.length > 1) {                               // depois os objetos da foto
         vs = vs.concat(await A.vetores(base, lista.slice(1)));
         if (minha !== vez) { ocupado = false; return; }
+        ultimo = { minha: minha, base: base, lista: lista, vs: vs };
         C.atualizar(dados(base, lista, vs));
       } else lista = lista.slice(0, 1);
       ocupado = false;
