@@ -15,9 +15,9 @@
   var LIBS = [
     "https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.20.0/dist/tf.min.js",
     "https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet@2.1.1/dist/mobilenet.min.js",
-    "forma-comum.js", "imagem-analise.js", "imagem-cartoes.js"
+    "forma-comum.js", "imagem-analise.js?v=3", "imagem-cartoes.js"
   ];
-  var PRONTO = { "forma-comum.js": "FormaBB", "imagem-analise.js": "BBImgAnalise", "imagem-cartoes.js": "BBImgCartoes" };
+  var PRONTO = { "forma-comum.js": "FormaBB", "imagem-analise.js?v=3": "BBImgAnalise", "imagem-cartoes.js": "BBImgCartoes" };
   var F = null, A = null, C = null, indice = [], semForma = [], lojas = [], preparar = null, aCompletar = null;
   var vez = 0, urlAnt = null, aberto = false, ocupado = false, ultimo = null;
   var MOD_IDB = "indexeddb://bb-mobilenet-v2-100", modeloRapido = null, aCarregarMod = null, G = null;
@@ -273,7 +273,7 @@
     // cada produto da foto separado; uma caixa que junta 2 ou mais produtos não entra
     var obj = comRes.filter(function (a) { return a.z.objeto; }), achados = [];
     // ordem do imagem-analise.js: primeiro os produtos separados por cor (os maiores primeiro), depois as outras caixas
-    var porTam = todas.filter(function (a) { return a.z.objeto && a.res.length && a.topo >= 0.4; });
+    var porTam = todas.filter(function (a) { return a.z.objeto && a.res.length; });   // cada cor aparece, mesmo sem produto igual na loja
     for (var i = 0; i < porTam.length && achados.length < 9; i++) {
       var a = porTam[i];
       if (!a.z.cor && obj.filter(function (b) { return A.dentro(b.z, a.z); }).length >= 2) continue;   // caixa que junta vários produtos
