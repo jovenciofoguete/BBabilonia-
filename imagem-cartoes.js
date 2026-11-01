@@ -89,9 +89,18 @@
     var L = d.lojas || []; if (!L.length) return null;
     var id = p.loja_id || p.store_id || p.fornecedor_id || p.supplier_id;
     var u = p.user_id || p.owner_id || p.created_by || p.fornecedor_email;
-    return L.find(function (l) { return (id != null && l.id === id) || (u != null && (l.user_id === u || l.owner_id === u || l.email === u)); }) || null;
+    // a tabela lojas guarda o dono em dono_id (= supplier_id do produto)
+    return L.find(function (l) {
+      var dono = l.dono_id || l.user_id || l.owner_id;
+      return (id != null && (l.id === id || dono === id)) || (u != null && (dono === u || l.email === u));
+    }) || null;
   }
   function verificada(l) { return !!l && /aprov|verif|ativ|activ/i.test(String(l.estado || l.status || "")); }
+  // produtos sem fornecedor são publicados pela própria BBabilônia: contam como verificados
+  function prodVerificado(p) {
+    if (!(p.loja_id || p.store_id || p.fornecedor_id || p.supplier_id)) return true;
+    return verificada(lojaDe(p));
+  }
   function anos(l) {
     var t = l && Date.parse(l.created_at || l.criado_em || ""); if (!t) return 1;
     return Math.max(1, Math.ceil((Date.now() - t) / 31557600000));
@@ -154,7 +163,7 @@
   function filtrados() {
     var res = resAtual().slice(), t = semAc($("bbiTxt").value.trim());
     if (cat) res = res.filter(function (it) { return nomeCat(it.p.category_id) === cat; });
-    if (soVerif) res = res.filter(function (it) { return verificada(lojaDe(it.p)); });
+    if (soVerif) res = res.filter(function (it) { return prodVerificado(it.p); });
     if (t) {
       var pal = t.split(/\s+/);
       res = res.filter(function (it) {
