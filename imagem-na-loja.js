@@ -6,7 +6,9 @@
    - o modelo de imagens (~14 MB) fica guardado no telemóvel: só se descarrega uma vez;
    - as formas dos produtos novos calculadas no telemóvel ficam guardadas (não se repetem);
    - a lista de lojas já não atrasa a pesquisa;
-   - a preparação começa depois de a página inicial abrir, para não a atrasar. */
+   - a preparação começa depois de a página inicial abrir, para não a atrasar.
+   01/11/2026 (2): foto com vários produtos -> cada produto aparece separado na fila de cima
+   (até 9, da esquerda para a direita), como nas outras plataformas; a fila ocupa a largura toda. */
 (function () {
   if (window.__bbImgLoja) return; window.__bbImgLoja = true;
 
@@ -30,7 +32,14 @@
     "#bbiLoad .gi{width:40px;height:40px;border:3px solid #fff;border-right-color:transparent;border-radius:50%;margin:28px 0 16px;animation:bbiG .8s linear infinite}" +
     "@keyframes bbiG{to{transform:rotate(360deg)}}" +
     "#bbiLoad p{margin:0 20px;font-size:16px;text-align:center;line-height:1.4}" +
-    "#bbiLoad button{margin-top:34px;width:46px;height:46px;border-radius:50%;border:1.5px solid #fff;background:none;color:#fff;font-size:20px;cursor:pointer}";
+    "#bbiLoad button{margin-top:34px;width:46px;height:46px;border-radius:50%;border:1.5px solid #fff;background:none;color:#fff;font-size:20px;cursor:pointer}" +
+    /* fila dos produtos da foto: linha própria, largura toda, miniaturas maiores */
+    "#bbiFolha .tp{flex-wrap:wrap;row-gap:8px}" +
+    "#bbiObjs{order:-1;flex:1 1 100%!important;max-width:100%!important;gap:10px!important;padding:0 2px 9px!important}" +
+    "#bbiObjs .ob{width:64px!important;height:64px!important}" +
+    "#bbiObjs canvas{width:64px!important;height:64px!important;border-radius:8px!important;object-fit:contain}" +
+    "#bbiObjs .on canvas{border-color:#e4393c!important}" +
+    "#bbiObjs .on:after{border-top-color:#e4393c!important}";
   document.head.appendChild(css);
   var load = document.createElement("div"); load.id = "bbiLoad";
   load.innerHTML = '<div class="ft"><img alt=""></div><div class="gi"></div><p id="bbiMsg"></p><button type="button" aria-label="Cancelar">✕</button>';
@@ -213,8 +222,8 @@
   else window.addEventListener("load", comecarDepois);
 
   /* ---------- comparar ---------- */
-  function poucas(z) {   // foto inteira, até 6 objetos e 4 quadrados
-    return [z[0]].concat(z.filter(function (a) { return a.objeto; }).slice(0, 6), z.filter(function (a) { return a.grelha; }).slice(0, 4));
+  function poucas(z) {   // foto inteira e até 10 objetos (cada produto da foto)
+    return [z[0]].concat(z.filter(function (a) { return a.objeto; }).slice(0, 10));
   }
   function comparar(q) {   // todos com alguma semelhança, do mais parecido para o menos
     var melhor = new Map();
@@ -254,20 +263,31 @@
     return Number(p.price || 0).toLocaleString("pt-PT") + " " + (p.currency || "MZN");
   }
   function cats() { try { return (typeof categorias !== "undefined" && Array.isArray(categorias)) ? categorias : []; } catch (e) { return []; } }
+  function inter(a, b) {
+    return Math.max(0, Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x)) * Math.max(0, Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y));
+  }
   function dados(base, lista, vs) {
     var todas = lista.map(function (z, i) { return Object.assign({ z: z }, comparar(vs[i])); });
     var inteira = todas[0];
     var comRes = todas.filter(function (a) { return a.res.length; }).sort(function (a, b) { return b.topo - a.topo; });
+    // cada produto da foto separado; uma caixa que junta 2 ou mais produtos não entra
     var obj = comRes.filter(function (a) { return a.z.objeto; }), achados = [];
-    for (var i = 0; i < comRes.length && achados.length < 5; i++) {
-      var a = comRes[i];
-      if (!a.z.objeto) continue;
-      if (obj.filter(function (b) { return A.dentro(b.z, a.z); }).length >= 2) continue;
-      if (achados.length && a.topo < 0.65) continue;
-      if (!achados.some(function (b) { return A.sobrepoe(a.z, b.z); })) achados.push(a);
+    // ordem do imagem-analise.js: primeiro os produtos separados por cor (os maiores primeiro), depois as outras caixas
+    var porTam = todas.filter(function (a) { return a.z.objeto && a.res.length && a.topo >= 0.4; });
+    for (var i = 0; i < porTam.length && achados.length < 9; i++) {
+      var a = porTam[i];
+      if (!a.z.cor && obj.filter(function (b) { return A.dentro(b.z, a.z); }).length >= 2) continue;   // caixa que junta vários produtos
+      if (achados.some(function (b) {   // repetido? (dois produtos encostados podem partilhar um bocado da caixa)
+        if (a.z.cor && b.z.cor) return inter(a.z, b.z) / (a.z.w * a.z.h + b.z.w * b.z.h - inter(a.z, b.z)) > 0.5;
+        return A.sobrepoe(a.z, b.z);
+      })) continue;
+      // uma tira que atravessa vários produtos (cabeças dos manequins, cabide, prateleira) não é um produto
+      if (achados.filter(function (b) { return inter(a.z, b.z) > a.z.w * a.z.h * 0.12 && a.z.w > b.z.w * 1.4; }).length >= 2) continue;
+      achados.push(a);
     }
+    achados.sort(function (a, b) { return (a.z.x + a.z.w / 2) - (b.z.x + b.z.w / 2); });   // da esquerda para a direita
     var primeira = { z: inteira.z, res: inteira.res.length ? inteira.res : (comRes[0] ? comRes[0].res : []), topo: inteira.topo };
-    var sel = (achados.length && achados[0].topo > primeira.topo + 0.02) ? 1 : 0;
+    var sel = 0;   // começa na foto inteira (como nas outras plataformas); toca num produto da fila para ver só esse
     return { escolhas: [primeira].concat(achados), sel: sel, base: base, recorte: A.recorte, preco: preco,
       categorias: cats(), lojas: lojas, fechar: function () { fechar(); }, outraFoto: function () { fich.click(); } };
   }
@@ -303,11 +323,15 @@
       base.getContext("2d").drawImage(im, 0, 0, base.width, base.height);
       ocupado = true;
       A.usar(G, indice);
-      var lista = poucas(A.zonas(base)), vs = await A.vetores(base, lista.slice(0, 1));
+      // resultado da foto inteira primeiro; só depois se separam os produtos da foto (não atrasa nada)
+      var lista = [{ x: 0, y: 0, w: base.width, h: base.height, inteira: true }], vs = await A.vetores(base, lista);
       if (minha !== vez) { ocupado = false; return; }
-      ultimo = { minha: minha, base: base, lista: lista.slice(0, 1), vs: vs };
-      C.abrir(dados(base, lista.slice(0, 1), vs));          // resultado da foto inteira logo
+      ultimo = { minha: minha, base: base, lista: lista, vs: vs };
+      C.abrir(dados(base, lista, vs));
       load.style.display = "none";
+      await new Promise(function (r) { setTimeout(r, 60); });   // deixa o ecrã mostrar os resultados
+      if (minha !== vez) { ocupado = false; return; }
+      lista = lista.concat(poucas(A.zonas(base)).slice(1));
       if (lista.length > 1) {                               // depois os objetos da foto
         vs = vs.concat(await A.vetores(base, lista.slice(1)));
         if (minha !== vez) { ocupado = false; return; }
