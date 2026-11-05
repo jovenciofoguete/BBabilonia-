@@ -104,10 +104,10 @@
       var inp = d.createElement("input"); inp.id = "pedMin"; inp.type = "number"; inp.min = "1"; inp.step = "1"; inp.inputMode = "numeric"; inp.value = "1";
       var dica = d.createElement("div"); dica.style.cssText = "font-size:12px;color:#6b7280;margin:2px 0 8px";
       dica.textContent = "O cliente só pode comprar a partir desta quantidade (soma de todas as cores e tamanhos). Deixe 1 se vende à peça.";
-      var depois = d.getElementById("moeda") || preco;
-      depois.parentNode.insertBefore(dica, depois.nextSibling);
-      depois.parentNode.insertBefore(inp, dica);
-      depois.parentNode.insertBefore(lb, inp);
+      /* fica logo antes de "Descrição" (depois da caixa da moeda, que é montada por outro ficheiro) */
+      var ds = d.getElementById("desc"), antes = ds && ds.previousElementSibling && ds.previousElementSibling.tagName === "LABEL" ? ds.previousElementSibling : ds;
+      if (antes) { antes.parentNode.insertBefore(lb, antes); antes.parentNode.insertBefore(inp, antes); antes.parentNode.insertBefore(dica, antes); }
+      else { preco.parentNode.insertBefore(dica, preco.nextSibling); preco.parentNode.insertBefore(inp, dica); preco.parentNode.insertBefore(lb, inp); }
     }
     var sv = d.getElementById("sv"), sv0 = sv.onclick;
     sv.onclick = function (e) {
