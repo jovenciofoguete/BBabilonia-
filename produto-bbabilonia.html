@@ -21,6 +21,7 @@
       if(!w.document.getElementById("bb-pchat")){var sc=w.document.createElement("script");sc.id="bb-pchat";sc.src="produto-chat.js?v=1";w.document.body.appendChild(sc);}
       if(!w.document.getElementById("bb-pfoto")){var sf=w.document.createElement("script");sf.id="bb-pfoto";sf.src="foto-ampliar.js?v=1";w.document.body.appendChild(sf);}
       if(!w.document.getElementById("bb-paval")){var sa=w.document.createElement("script");sa.id="bb-paval";sa.src="avaliacoes-produto.js?v=1";w.document.body.appendChild(sa);}
+      if(!w.document.getElementById("bb-pmin")){var sm=w.document.createElement("script");sm.id="bb-pmin";sm.src="pedido-minimo.js?v=1";w.document.body.appendChild(sm);}
       w.document.addEventListener("click", function(){ ultimoClique = Date.now(); }, true);
       var original = w.Storage.prototype.setItem;
       w.Storage.prototype.setItem = function(chave, valor){
