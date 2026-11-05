@@ -48,12 +48,31 @@ header{position:sticky;top:0;z-index:10;background:#fff;padding:8px 10px;box-sha
 .card .mo{font-size:12px;color:var(--suave)}
 .estado{grid-column:1/-1;text-align:center;padding:40px 16px;color:var(--suave)}
 .estado a{display:inline-block;margin-top:12px;background:var(--laranja);color:#fff;font-weight:700;padding:10px 20px;border-radius:999px}
+/* Modo vendedor: só ver a loja */
+.voltar{flex:none;background:#1B2F6B;color:#fff;font-weight:700;font-size:13px;border-radius:999px;padding:8px 12px;white-space:nowrap}
+.vista{position:fixed;inset:0;z-index:9500;background:#fff;overflow-y:auto}
+.vista .topo{position:sticky;top:0;z-index:2;background:#fff;display:flex;align-items:center;gap:8px;padding:8px 10px;box-shadow:0 1px 0 var(--linha)}
+.vista .topo b{flex:1;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.vista .fechar{border:0;background:#1B2F6B;color:#fff;font:inherit;font-weight:700;font-size:13.5px;border-radius:999px;padding:8px 14px;cursor:pointer}
+.vista .aviso{background:#FFF4EC;color:#7a3e0c;font-size:13px;padding:9px 12px}
+.vista .fotos{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;background:#fafafa;scrollbar-width:none}
+.vista .fotos::-webkit-scrollbar{display:none}
+.vista .fotos img,.vista .fotos video{flex:none;width:100%;aspect-ratio:1/1;object-fit:contain;scroll-snap-align:start;background:#fafafa}
+.vista .nf{font-size:12px;color:var(--suave);text-align:center;padding:4px}
+.vista .cx{padding:12px 14px}
+.vista h2{font-size:17px;font-weight:600}
+.vista .pv{font-weight:800;font-size:22px;margin-top:4px}
+.vista .mv{font-size:13px;color:var(--suave);margin-top:2px}
+.vista .ds{font-size:14px;margin-top:12px;white-space:pre-wrap}
+.vista .cores{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+.vista .cores span{border:1px solid var(--linha);border-radius:8px;padding:5px 9px;font-size:13px}
 </style>
 </head>
 <body>
 <header>
   <a class="logo" href="index.html">B-<span>Babilônia</span></a>
   <label class="pesquisa"><input id="q" type="search" placeholder="Pesquisar nesta loja" autocomplete="off"></label>
+  <a class="voltar" id="bVoltar" href="painel-vendedor-v2.html" hidden>← Meu painel</a>
 </header>
 <div id="previa" class="previa" hidden></div>
 <section class="capa" id="capa">
@@ -73,6 +92,7 @@ const esc = t => String(t == null ? "" : t).replace(/[&<>"']/g, c => ({"&":"&amp
 const semAc = t => String(t || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
 const dono = new URLSearchParams(location.search).get("f") || "";
 let produtos = [], categorias = [], cat = null, termo = "";
+let modoVendedor = false;   // o dono a ver a própria loja: só ver, sem lado do cliente
 
 function sessao() {
   try {
@@ -138,13 +158,59 @@ function desenhar() {
   g.innerHTML = "";
   lista.forEach(p => {
     const a = document.createElement("a"), f = fotoDe(p), m = Number(p.pedido_minimo || p.min_order || 1);
-    a.className = "card"; a.href = "produto-bbabilonia.html?id=" + encodeURIComponent(p.id);
+    a.className = "card";
+    if (modoVendedor) { a.href = "#ver?id=" + encodeURIComponent(p.id); a.onclick = e => { e.preventDefault(); verProduto(p); }; }
+    else a.href = "produto-bbabilonia.html?id=" + encodeURIComponent(p.id);
     a.innerHTML = '<div class="ft">' + (f ? '<img loading="lazy" alt="' + esc(p.name) + '" src="' + esc(f) + '">' : '<div class="sem">Sem foto</div>') +
       (p.video_url ? '<span class="tag">Vídeo</span>' : "") + '</div><div class="in"><h3>' + esc(p.name || "Produto") + '</h3><div class="pr">' + preco(p) +
       '</div><div class="mo">Pedido mínimo: ' + m + (m === 1 ? " peça" : " peças") + "</div></div>";
     g.appendChild(a);
   });
 }
+/* Modo vendedor: janela só para ver o produto (sem carrinho, sem comprar, sem chat) */
+function listaFotos(p) {
+  const out = [];
+  const add = u => { if (u && typeof u === "string" && !out.includes(u)) out.push(u); };
+  add(p.image_url);
+  let im = p.images; if (typeof im === "string") { try { im = JSON.parse(im); } catch (e) { im = [im]; } }
+  if (Array.isArray(im)) im.forEach(a => add(typeof a === "string" ? a : (a && (a.url || a.foto || a.src))));
+  return out;
+}
+function coresDe(p) {
+  let v = p.variants; if (typeof v === "string") { try { v = JSON.parse(v); } catch (e) { v = []; } }
+  if (!Array.isArray(v)) return [];
+  return [...new Set(v.map(x => x && (x.cor || x.color)).filter(Boolean).map(String))];
+}
+function verProduto(p) {
+  fecharVista();
+  const fotos = listaFotos(p), m = Number(p.pedido_minimo || p.min_order || 1), cores = coresDe(p);
+  const w = document.createElement("div"); w.className = "vista"; w.id = "vista";
+  w.innerHTML = '<div class="topo"><b>' + esc(p.name || "Produto") + '</b><button type="button" class="fechar" id="fVista">✕ Fechar</button></div>' +
+    '<div class="aviso">Modo de visualização: está a ver o seu produto. Comprar, carrinho e chat são só para clientes.</div>' +
+    ((fotos.length || p.video_url) ? '<div class="fotos">' + fotos.map(u => '<img alt="' + esc(p.name) + '" src="' + esc(u) + '">').join("") +
+      (p.video_url ? '<video controls playsinline preload="metadata" src="' + esc(p.video_url) + '"></video>' : "") + '</div>' +
+      '<div class="nf">' + fotos.length + (fotos.length === 1 ? " foto" : " fotos") + (p.video_url ? " · 1 vídeo" : "") + (fotos.length + (p.video_url ? 1 : 0) > 1 ? " · deslize para o lado" : "") + '</div>' : "") +
+    '<div class="cx"><h2>' + esc(p.name || "Produto") + '</h2><div class="pv">' + preco(p) + '</div><div class="mv">Pedido mínimo: ' + m + (m === 1 ? " peça" : " peças") +
+    (p.category_id && nomeCat(p.category_id) ? " · " + esc(nomeCat(p.category_id)) : "") + '</div>' +
+    (cores.length ? '<div class="cores">' + cores.map(c => "<span>" + esc(c) + "</span>").join("") + "</div>" : "") +
+    (p.description ? '<p class="ds">' + esc(p.description) + "</p>" : "") + "</div>";
+  document.body.appendChild(w);
+  document.body.style.overflow = "hidden";
+  $("fVista").onclick = () => { if (location.hash.indexOf("#ver") === 0) history.back(); else fecharVista(); };
+  history.pushState({ vista: 1 }, "", "#ver?id=" + encodeURIComponent(p.id));
+}
+function fecharVista() { const v = $("vista"); if (v) v.remove(); document.body.style.overflow = ""; }
+window.addEventListener("popstate", fecharVista);
+
+function ativarModoVendedor() {
+  modoVendedor = true;
+  $("bVoltar").hidden = false;
+  document.querySelector(".logo").href = "painel-vendedor-v2.html";
+  $("bts").remove();                                   // sem "Contactar fornecedor" nem "Mais lojas"
+  const nav = document.querySelector(".bb-nav"); if (nav) nav.remove();   // sem menu do cliente
+  $("grelha").style.paddingBottom = "24px";
+}
+
 function semLoja(txt) {
   $("nome").textContent = "Loja não encontrada"; $("meta").textContent = "";
   $("grelha").innerHTML = '<div class="estado"><p>' + esc(txt) + '</p><a href="index.html">Ver todos os produtos</a></div>';
@@ -166,8 +232,8 @@ async function iniciar() {
   }
   if (euSou) {
     $("previa").hidden = false;
-    $("previa").textContent = previa ? "Pré-visualização: a sua loja ainda está em análise. Os clientes vão vê-la assim depois da aprovação." : "Está a ver a sua loja exatamente como os clientes a veem.";
-    $("bContactar").style.display = "none";
+    $("previa").textContent = previa ? "Pré-visualização: a sua loja ainda está em análise. Os clientes vão vê-la assim depois da aprovação." : "Está a ver a sua loja como os clientes a veem (só para ver: comprar, carrinho e chat ficam para os clientes).";
+    ativarModoVendedor();
   }
   try {
     const [p, c] = await Promise.all([
@@ -187,7 +253,10 @@ window.addEventListener("load", () => {
 });
 iniciar();
 </script>
-<script src="menu-babilonia.js"></script>
+<script>
+/* menu do cliente (Início, Chat, Carrinho, Meu Babilônia) só para clientes; o dono a ver a própria loja não o recebe */
+(function () { const s = sessao(); if (!(s && s.user && s.user.id === dono)) document.write('<script src="menu-babilonia.js"><\/script>'); else document.write('<script src="traducao.js"><\/script>'); })();
+</script>
 </body>
   </html>
   <script src="loja-nivel.js?v=1"></script>
