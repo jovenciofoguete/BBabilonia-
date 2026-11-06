@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="pt"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Importar loja • BBabilônia</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<style>
+:root{--az:#1565c0;--vd:#2e7d32;--ln:#d6dde6;--mu:#5f6b7a;--er:#c62828}
+*{box-sizing:border-box}
+body{margin:0;background:#f4f7fb;color:#1b2430;font:16px system-ui,sans-serif;padding:16px 16px 70px;max-width:620px;margin:auto}
+h1{font-size:22px;margin:4px 0 4px;color:var(--az)}
+.sub{color:var(--mu);margin:0 0 14px;font-size:14px}
+.cx{background:#fff;border:1px solid var(--ln);border-radius:14px;padding:14px;margin-bottom:14px}
+.cx h3{margin:0 0 6px;font-size:16px}
+.num{display:inline-block;width:26px;height:26px;border-radius:50%;background:var(--az);color:#fff;text-align:center;line-height:26px;font-size:14px;margin-right:6px}
+.nota{color:var(--mu);font-size:13px;margin:6px 0}
+label{display:block;margin:10px 0 4px;color:var(--mu);font-size:14px}
+input,select{width:100%;padding:12px;border-radius:10px;border:1px solid var(--ln);background:#fff;font:inherit}
+button{padding:12px 16px;border-radius:10px;border:1px solid var(--ln);background:#fff;font:inherit;cursor:pointer}
+.b{width:100%;margin-top:8px}
+.az{background:var(--az);border-color:var(--az);color:#fff;font-weight:600}
+.vd{background:var(--vd);border-color:var(--vd);color:#fff;font-weight:600;height:52px}
+button:disabled{opacity:.5}
+.hide{display:none}
+#m{margin-top:10px;font-weight:600;color:var(--az)}
+.barra{height:10px;background:#e3e8ef;border-radius:6px;overflow:hidden;margin-top:8px}
+.barra i{display:block;height:100%;width:0;background:var(--vd)}
+.lin{display:flex;gap:10px;align-items:center;border-top:1px solid var(--ln);padding:8px 0}
+.lin img{width:52px;height:52px;object-fit:cover;border-radius:8px;background:#eef2f7;flex:none}
+.lin .t{flex:1;min-width:0}
+.lin b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lin small{color:var(--mu)}
+.ok{color:var(--vd)}.er{color:var(--er)}
+.res{font-size:14px}
+</style></head><body>
+<h1>Importar a minha loja</h1>
+<p class="sub">Traga todos os produtos de outra plataforma (Alibaba, 1688, AliExpress…) de uma só vez, com um ficheiro Excel ou CSV.</p>
+<div id="erro" style="color:#c62828;font-weight:600"></div>
+<div id="login" class="cx">
+<h3>Entrar como fornecedor</h3>
+<label>Email</label><input id="em" type="email" autocomplete="email">
+<label>Palavra-passe</label><input id="pw" type="password" autocomplete="current-password">
+<button class="b az" id="ent">Entrar</button>
+</div>
+<div id="app" class="hide">
+<div class="cx">
+<h3><span class="num">1</span>Baixar o modelo</h3>
+<p class="nota">Abra no Excel e ponha uma linha por produto. Também aceita a lista de produtos exportada do Alibaba (colunas em inglês como "Product Name", "Price", "Image").</p>
+<p class="nota">Cores e tamanhos separados por <b>|</b> (ex.: Vermelho|Azul e S|M|L). Stock: um número para todos, ou por tamanho (ex.: S:10|M:5). Fotos: links das imagens ou nomes dos ficheiros (ex.: foto1.jpg|foto2.jpg).</p>
+<button class="b az" id="mod">⬇ Baixar modelo (CSV)</button>
+</div>
+<div class="cx">
+<h3><span class="num">2</span>Escolher o ficheiro de produtos</h3>
+<button class="b" id="bf">📄 Escolher Excel ou CSV</button>
+<p class="nota" id="nf"></p>
+</div>
+<div class="cx">
+<h3><span class="num">3</span>Fotos do telemóvel (opcional)</h3>
+<p class="nota">Só se no ficheiro escreveu nomes de fotos em vez de links. Pode escolher muitas de uma vez. As fotos não perdem qualidade.</p>
+<button class="b" id="bfo">🖼 Escolher fotos</button>
+<p class="nota" id="nfo"></p>
+</div>
+<div class="cx">
+<h3><span class="num">4</span>Categoria para os produtos sem categoria</h3>
+<p class="nota">Produtos cuja categoria do ficheiro não existir na BBabilônia vão para esta.</p>
+<select id="catp"><option value="">— A carregar categorias… —</option></select>
+</div>
+<div class="cx">
+<h3><span class="num">5</span>Rever e importar</h3>
+<div id="resumo" class="res nota">Ainda não escolheu o ficheiro.</div>
+<div id="lista"></div>
+<button class="b vd" id="imp" disabled>Importar todos os produtos</button>
+<div class="barra"><i id="bar"></i></div>
+<div id="m"></div>
+</div>
+</div>
+<input type="file" id="ff" accept=".csv,.xlsx,.xls,.txt,text/csv" hidden>
+<input type="file" id="ffo" accept="image/*" multiple hidden>
+<p id="ver" class="nota" style="text-align:center">A carregar a página…</p>
+<script>window.onerror=function(m,s,l){var d=document.getElementById("erro");if(d)d.textContent="Erro: "+m+" (linha "+l+")"};</script>
+<script>
+/* importar-loja-v6 - BBabilonia */
+window.addEventListener('unhandledrejection', function (e) { var d = document.getElementById('erro'); if (d) d.textContent = 'Erro: ' + ((e.reason && e.reason.message) || e.reason); });
+var Imp = (function () {
+function norm(t) {
+return String(t == null ? '' : t).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
+}
+var ALIAS = {
+nome: ['nome', 'nome do produto', 'produto', 'titulo', 'name', 'product name', 'product title', 'title', 'subject'],
+preco: ['preco', 'valor', 'price', 'unit price', 'fob price', 'fob', 'sale price', 'preco unitario'],
+moeda: ['moeda', 'currency'],
+descricao: ['descricao', 'description', 'detail', 'details', 'product description', 'detalhes'],
+categoria: ['categoria', 'category', 'product category', 'subcategoria'],
+cores: ['cores', 'cor', 'color', 'colors', 'colour', 'colours'],
+tamanhos: ['tamanhos', 'tamanho', 'size', 'sizes'],
+stock: ['stock', 'estoque', 'quantidade', 'quantity', 'inventory', 'qty'],
+moq: ['moq', 'min order', 'minimum order', 'minimum order quantity', 'pedido minimo', 'quantidade minima'],
+fotos: ['fotos', 'foto', 'imagens', 'imagem', 'images', 'image', 'image url', 'image urls', 'main image', 'photos', 'photo', 'pictures', 'picture'],
+video: ['video', 'video url', 'videos']
+};
+function campoDe(cab) {
+var n = norm(cab);
+for (var k in ALIAS) if (ALIAS[k].indexOf(n) > -1) return k;
+for (var k2 in ALIAS) for (var i = 0; i < ALIAS[k2].length; i++) {
+var a = ALIAS[k2][i];
+if (a.length > 3 && (n.indexOf(a) === 0)) return k2;
+}
+return null;
+}
+function separador(linha) {
+var c = { ';': 0, ',': 0, '\t': 0 }, q = false;
+for (var i = 0; i < linha.length; i++) {
+var ch = linha[i];
+if (ch === '"') q = !q; else if (!q && c[ch] != null) c[ch]++;
+}
+return c['\t'] >= c[';'] && c['\t'] >= c[','] && c['\t'] > 0 ? '\t' : (c[';'] >= c[','] ? ';' : ',');
+}
+function lerCSV(txt) {
+txt = String(txt).replace(/^﻿/, '');
+var prim = txt.split(/\r?\n/)[0] || '';
+var sep = separador(prim);
+var linhas = [], lin = [], cel = '', q = false;
+for (var i = 0; i < txt.length; i++) {
+var ch = txt[i];
+if (q) {
+if (ch === '"') { if (txt[i + 1] === '"') { cel += '"'; i++; } else q = false; }
+else cel += ch;
+} else if (ch === '"') q = true;
+else if (ch === sep) { lin.push(cel); cel = ''; }
+else if (ch === '\n' || ch === '\r') {
+if (ch === '\r' && txt[i + 1] === '\n') i++;
+lin.push(cel); cel = ''; linhas.push(lin); lin = [];
+} else cel += ch;
+}
+if (cel !== '' || lin.length) { lin.push(cel); linhas.push(lin); }
+return linhas.filter(function (l) { return l.some(function (c) { return String(c).trim() !== ''; }); });
+}
+function lista(v) {
+return String(v == null ? '' : v).split(/[|;\n]+/).map(function (s) { return s.trim(); }).filter(Boolean);
+}
+function fotosDe(v) {
+var s = String(v == null ? '' : v);
+var urls = s.match(/https?:\/\/[^\s|;"'<>]+?(?=,\s*https?:|[\s|;"'<>]|$)/g) || [];
+urls = urls.map(function (u) { return u.replace(/[),.]+$/, ''); });
+var resto = s.replace(/https?:\/\/[^\s|;"'<>]+/g, ' ');
+var nomes = resto.split(/[|;,\n]+/).map(function (x) { return x.trim(); }).filter(function (x) { return /\.(jpe?g|png|webp|gif|bmp|heic)$/i.test(x); });
+return urls.concat(nomes);
+}
+function precoDe(v) {
+var s = String(v == null ? '' : v).replace(/\s/g, '');
+var m = s.match(/\d[\d.,]*/);
+if (!m) return { valor: NaN, moeda: '' };
+var n = m[0];
+if (/,\d{1,2}$/.test(n) && n.indexOf('.') === -1) n = n.replace(',', '.');
+else if (/,\d{1,2}$/.test(n)) n = n.replace(/\./g, '').replace(',', '.');
+else n = n.replace(/,/g, '');
+var moeda = '';
+if (/US\$|USD|^\$|\$/i.test(s)) moeda = 'USD';
+else if (/€|EUR/i.test(s)) moeda = 'EUR';
+else if (/¥|CNY|RMB|元/i.test(s)) moeda = 'CNY';
+else if (/MZN|MT/i.test(s)) moeda = 'MZN';
+return { valor: parseFloat(n), moeda: moeda };
+}
+function stockDe(v, tamanhos) {
+var s = String(v == null ? '' : v).trim();
+var porT = {}, temPar = false;
+lista(s).forEach(function (p) {
+var m = p.match(/^(.+?)\s*[:=]\s*(\d+)$/);
+if (m) { porT[m[1].trim().toUpperCase()] = parseInt(m[2], 10); temPar = true; }
+});
+var geral = temPar ? 0 : (parseInt(s.replace(/[^\d]/g, ''), 10) || 0);
+return function (t) {
+if (temPar) return porT[String(t).toUpperCase()] || 0;
+return geral;
+};
+}
+function produtos(linhas) {
+if (!linhas.length) return { erro: 'O ficheiro está vazio.', itens: [] };
+var cab = linhas[0].map(campoDe);
+if (cab.indexOf('nome') === -1) return { erro: 'Não encontrei a coluna do nome do produto (ex.: "nome" ou "Product Name").', itens: [] };
+var itens = [];
+for (var i = 1; i < linhas.length; i++) {
+var r = {}, erros = [];
+cab.forEach(function (k, j) { if (k && r[k] == null) r[k] = linhas[i][j]; else if (k === 'fotos' && linhas[i][j]) r.fotos = (r.fotos || '') + '|' + linhas[i][j]; });
+var nome = String(r.nome || '').trim();
+if (!nome) continue;
+var p = precoDe(r.preco);
+if (!(p.valor > 0)) erros.push('sem preço');
+var moeda = String(r.moeda || '').trim().toUpperCase() || p.moeda || 'USD';
+var cores = lista(r.cores);
+var tams = lista(r.tamanhos);
+var st = stockDe(r.stock, tams);
+var fotos = fotosDe(r.fotos);
+if (!fotos.length) erros.push('sem fotos');
+var cs = cores.length ? cores : ['Única'];
+var ts = tams.length ? tams : ['Único'];
+var variants = [];
+cs.forEach(function (c) { ts.forEach(function (t) { var q = st(t); if (q > 0) variants.push({ cor: c, tamanho: t, stock: q }); }); });
+if (!variants.length) erros.push('sem stock');
+var moq = parseInt(String(r.moq || '').replace(/[^\d]/g, ''), 10) || null;
+itens.push({
+linha: i + 1,
+erros: erros,
+dados: {
+nome: nome, preco: p.valor, moeda: moeda,
+descricao: String(r.descricao || '').trim(),
+categoria: String(r.categoria || '').trim(),
+cores: cs, tamanhos: tams.length ? tams : ['Único'],
+variants: variants, fotos: fotos,
+video: /^https?:\/\//.test(String(r.video || '').trim()) ? String(r.video).trim() : '',
+moq: moq
+}
+});
+}
+return { erro: itens.length ? '' : 'Não há produtos com nome no ficheiro.', itens: itens };
+}
+function categoria(nome, cats) {
+var n = norm(nome);
+if (!n) return null;
+var ult = norm(String(nome).split(/>|›|\//).pop());
+var c = cats.filter(function (x) { return norm(x.name) === ult; });
+return c.length ? c[0].id : null;
+}
+var MODELO = '﻿nome;preco;moeda;descricao;categoria;cores;tamanhos;stock;moq;fotos;video\r\n' +
+'Vestido de festa;25.50;USD;Vestido longo de cetim;Vestido;Vermelho|Azul;S|M|L|XL;S:20|M:30|L:30|XL:10;5;foto1.jpg|foto2.jpg;\r\n' +
+'Sapatilha desportiva;18;USD;Leve e confortável;Calçados;Branco|Preto;38|39|40|41|42;50;10;sapatilha1.jpg|sapatilha2.jpg;\r\n';
+return { norm: norm, campoDe: campoDe, lerCSV: lerCSV, fotosDe: fotosDe, precoDe: precoDe, produtos: produtos, categoria: categoria, MODELO: MODELO, lista: lista };
+})();
+var SB_URL = 'https://dsfoqoeawvjafypycldz.supabase.co';
+if (!window.supabase) document.getElementById('erro').textContent = 'Sem ligação à internet: não carregou o Supabase. Atualize a página.';
+var sb = supabase.createClient(SB_URL, 'sb_publishable_BN4NiVcDab9CqdTY_odgDA_uUOhjja0', { auth: { lock: function (n, t, fn) { return fn(); } } });
+var $ = function (i) { return document.getElementById(i); };
+var user = null, itens = [], fotosLocais = {}, cats = [], aImportar = false;
+function msg(t) { $('m').textContent = t; }
+function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+async function init() {
+if (!user) try { var r = await Promise.race([sb.auth.getSession(), new Promise(function (ok) { setTimeout(function () { ok({ data: { session: null } }); }, 4000); })]); user = user || (r.data.session && r.data.session.user); }
+catch (e) { user = null; $('erro').textContent = 'Erro ao verificar a sessão: ' + (e.message || e); }
+$('login').classList.toggle('hide', !!user);
+$('app').classList.toggle('hide', !user);
+if (user) carregarCats();
+}
+function erro(t) { $('erro').textContent = t; }
+function limite(p, ms, txt) { return Promise.race([p, new Promise(function (ok, no) { setTimeout(function () { no(new Error(txt)); }, ms); })]); }
+$('ent').onclick = async function () {
+var b = $('ent'); erro('');
+if (!$('em').value.trim() || !$('pw').value) return erro('Escreva o email e a palavra-passe.');
+b.disabled = true; b.textContent = 'A entrar…';
+try {
+var r = await limite(sb.auth.signInWithPassword({ email: $('em').value.trim(), password: $('pw').value }), 20000, 'O servidor não respondeu em 20 segundos. Verifique a internet e toque em Entrar de novo.');
+if (r.error) throw new Error(/invalid login/i.test(r.error.message) ? 'Email ou palavra-passe errados.' : /not confirmed/i.test(r.error.message) ? 'Este email ainda não foi confirmado. Abra o email de confirmação.' : r.error.message);
+user = r.data && r.data.user;
+if (!user) throw new Error('Não foi possível entrar. Tente de novo.');
+await init();
+} catch (e) { var t = (e && e.message) || String(e); erro('Erro: ' + (/failed to fetch|network|load failed/i.test(t) ? 'Sem ligação à internet. Verifique a internet e toque em Entrar de novo.' : t)); }
+b.disabled = false; b.textContent = 'Entrar';
+};
+async function carregarCats() {
+var r = await sb.from('categories').select('id,name,parent_id').order('name').limit(5000);
+if (r.error) erro('Erro ao carregar categorias: ' + r.error.message);
+cats = r.data || [];
+var kids = {}, grupos = {};
+cats.forEach(function (c) { var k = c.parent_id || 'root'; (kids[k] = kids[k] || []).push(c); });
+function walk(c, path) {
+var ch = kids[c.id];
+if (!ch || !ch.length) { var g = path.length ? path.join(' › ') : 'Outras'; (grupos[g] = grupos[g] || []).push(c); return; }
+ch.forEach(function (x) { walk(x, path.concat(c.name)); });
+}
+(kids.root || []).forEach(function (c) { walk(c, []); });
+var folhas = [];
+Object.keys(grupos).forEach(function (g) { grupos[g].forEach(function (c) { folhas.push(c); }); });
+cats = folhas.length ? folhas : cats;
+$('catp').innerHTML = '<option value="">— Escolha a categoria —</option>' + Object.keys(grupos).sort(function (a, b) { return a.localeCompare(b, 'pt'); }).map(function (g) {
+return '<optgroup label="' + esc(g) + '">' + grupos[g].sort(function (a, b) { return a.name.localeCompare(b.name, 'pt'); }).map(function (c) { return '<option value="' + c.id + '">' + esc(c.name) + '</option>'; }).join('') + '</optgroup>';
+}).join('');
+mostrar();
+}
+$('mod').onclick = function () {
+var a = document.createElement('a');
+a.href = URL.createObjectURL(new Blob([Imp.MODELO], { type: 'text/csv;charset=utf-8' }));
+a.download = 'modelo-produtos-bbabilonia.csv';
+document.body.appendChild(a); a.click(); a.remove();
+};
+$('bf').onclick = function () { $('ff').click(); };
+$('bfo').onclick = function () { $('ffo').click(); };
+function carregarXLSX() {
+return new Promise(function (ok, no) {
+if (window.XLSX) return ok();
+var s = document.createElement('script');
+s.src = 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
+s.onload = ok;
+s.onerror = function () { no(new Error('Não consegui abrir o Excel. Verifique a internet ou guarde o ficheiro como CSV.')); };
+document.head.appendChild(s);
+});
+}
+$('ff').onchange = async function (e) {
+var f = e.target.files[0]; e.target.value = '';
+if (!f) return;
+$('nf').textContent = f.name;
+try {
+var linhas;
+if (/\.xlsx?$/i.test(f.name)) {
+await carregarXLSX();
+var wb = XLSX.read(await f.arrayBuffer(), { type: 'array' });
+linhas = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1, defval: '', raw: false });
+linhas = linhas.filter(function (l) { return l.some(function (c) { return String(c).trim() !== ''; }); });
+} else {
+linhas = Imp.lerCSV(await f.text());
+}
+var r = Imp.produtos(linhas);
+if (r.erro) { itens = []; $('resumo').innerHTML = '<span class="er">' + esc(r.erro) + '</span>'; $('lista').innerHTML = ''; $('imp').disabled = true; return; }
+itens = r.itens;
+mostrar();
+} catch (err) {
+$('resumo').innerHTML = '<span class="er">' + esc(err.message || err) + '</span>';
+}
+};
+$('ffo').onchange = function (e) {
+Array.prototype.forEach.call(e.target.files, function (f) { fotosLocais[f.name.toLowerCase()] = f; });
+e.target.value = '';
+$('nfo').textContent = Object.keys(fotosLocais).length + ' fotos escolhidas (se os nomes não coincidirem com o ficheiro, são usadas por ordem)';
+mostrar();
+};
+$('catp').onchange = mostrar;
+var porOrdem = {};
+function atribuirPorOrdem() {
+porOrdem = {};
+var usados = {}, faltam = [];
+itens.forEach(function (it) { it.dados.fotos.forEach(function (x) { if (/^https?:\/\//.test(x)) return; var k = x.toLowerCase(); if (fotosLocais[k]) usados[k] = 1; else if (faltam.indexOf(k) === -1) faltam.push(k); }); });
+var livres = Object.keys(fotosLocais).filter(function (k) { return !usados[k]; });
+faltam.forEach(function (k, i) { if (livres[i]) porOrdem[k] = fotosLocais[livres[i]]; });
+}
+function ficheiroDe(x) { var k = x.toLowerCase(); return fotosLocais[k] || porOrdem[k]; }
+function fotoEmFalta(d) {
+return d.fotos.filter(function (x) { return !/^https?:\/\//.test(x) && !ficheiroDe(x); });
+}
+function previa(d) {
+for (var i = 0; i < d.fotos.length; i++) {
+var x = d.fotos[i];
+if (/^https?:\/\//.test(x)) return x;
+var f = ficheiroDe(x);
+if (f) return f._prev || (f._prev = URL.createObjectURL(f));
+}
+return '';
+}
+function problemas(it) {
+var p = it.erros.slice();
+var falta = fotoEmFalta(it.dados);
+if (falta.length) p.push('falta escolher ' + falta.length + ' foto(s): ' + falta.slice(0, 2).join(', '));
+it.cat = Imp.categoria(it.dados.categoria, cats) || $('catp').value || null;
+if (!it.cat) p.push('sem categoria');
+return p;
+}
+function mostrar() {
+if (!itens.length) return;
+atribuirPorOrdem();
+var bons = 0, h = '';
+itens.forEach(function (it) {
+if (it.feito) { h += linha(it, '<span class="ok">✓ importado</span> · <a href="loja.html?f=' + encodeURIComponent(user.id) + '" style="color:#1565c0">Ver na loja</a>'); return; }
+var p = problemas(it);
+it.pronto = !p.length;
+if (it.pronto) bons++;
+var d = it.dados;
+h += linha(it, it.pronto
+? '<span class="ok">' + esc(d.preco + ' ' + d.moeda) + ' · ' + d.cores.length + ' cor(es) · ' + d.variants.length + ' variante(s)</span>'
+: '<span class="er">Linha ' + it.linha + ': ' + esc(p.join(', ')) + '</span>');
+});
+var feitos = itens.filter(function (x) { return x.feito; }).length;
+$('lista').innerHTML = h;
+$('resumo').innerHTML = '<b>' + itens.length + '</b> produtos no ficheiro · <span class="ok"><b>' + bons + '</b> prontos</span>' +
+(itens.length - bons - feitos ? ' · <span class="er"><b>' + (itens.length - bons - feitos) + '</b> com problemas (não serão importados)</span>' : '') +
+(feitos ? ' · <span class="ok">' + feitos + ' já importados</span>' : '');
+$('imp').disabled = aImportar || !bons;
+$('imp').textContent = bons ? 'Importar ' + bons + ' produto(s)' : 'Importar todos os produtos';
+}
+function linha(it, info) {
+var src = previa(it.dados);
+return '<div class="lin">' + (src ? '<img loading="lazy" referrerpolicy="no-referrer" src="' + esc(src) + '">' : '<img>') +
+'<div class="t"><b>' + esc(it.dados.nome) + '</b><small>' + info + '</small></div></div>';
+}
+async function enviarFicheiro(file) {
+var p = user.id + '/' + Date.now() + '-' + Math.random().toString(36).slice(2) + '-' + (file.name || 'foto.jpg').replace(/[^\w.]/g, '_');
+var r = await sb.storage.from('produtos').upload(p, file, { contentType: file.type || undefined });
+if (r.error) throw r.error;
+return sb.storage.from('produtos').getPublicUrl(p).data.publicUrl;
+}
+async function fotoParaUrl(x) {
+if (/^https?:\/\//.test(x)) {
+try {
+var resp = await fetch(x, { referrerPolicy: 'no-referrer' });
+if (!resp.ok) throw 0;
+var blob = await resp.blob();
+if (!/^image\//.test(blob.type)) throw 0;
+var nome = (x.split('?')[0].split('/').pop() || 'foto.jpg');
+return await enviarFicheiro(new File([blob], nome, { type: blob.type }));
+} catch (e) { return x; }
+}
+return await enviarFicheiro(ficheiroDe(x));
+}
+$('imp').onclick = async function () {
+var fila = itens.filter(function (x) { return x.pronto && !x.feito; });
+if (!fila.length) return;
+aImportar = true; $('imp').disabled = true;
+var ok = 0, falhas = [];
+for (var i = 0; i < fila.length; i++) {
+var it = fila[i], d = it.dados;
+msg('A importar ' + (i + 1) + ' de ' + fila.length + ': ' + d.nome);
+$('bar').style.width = Math.round(i / fila.length * 100) + '%';
+try {
+var imgs = [];
+for (var j = 0; j < d.fotos.length; j++) {
+var u = await fotoParaUrl(d.fotos[j]);
+if (imgs.indexOf(u) === -1) imgs.push(u);
+}
+var cs = d.cores.map(function (c, k) { return { nome: c, foto: imgs[Math.min(k, imgs.length - 1)], disponivel: true }; });
+var row = {
+name: d.nome, price: d.preco, currency: d.moeda, description: d.descricao,
+images: imgs, image_url: imgs[0], video_url: d.video || null,
+colors: cs, sizes: d.tamanhos, variants: d.variants,
+supplier_id: user.id, category_id: it.cat
+};
+var res = await sb.from('products').insert(row).select('id').single();
+if (res.error) throw new Error(res.error.message);
+if (d.moq) { try { await sb.from('products').update({ pedido_minimo: d.moq }).eq('id', res.data.id); } catch (e) {} try { await sb.from('products').update({ moq: d.moq }).eq('id', res.data.id); } catch (e) {} }
+it.feito = true; ok++;
+} catch (e) {
+falhas.push('Linha ' + it.linha + ' (' + d.nome + '): ' + (e.message || e));
+}
+}
+$('bar').style.width = '100%';
+aImportar = false;
+mostrar();
+msg('Concluído: ' + ok + ' produto(s) importado(s)' + (falhas.length ? ' · ' + falhas.length + ' falharam' : ' ✓'));
+if (ok) { var lk = 'loja.html?f=' + encodeURIComponent(user.id); $('m').innerHTML += '<a id="verloja" href="' + lk + '" style="display:block;text-align:center;background:#1565c0;color:#fff;text-decoration:none;padding:14px;border-radius:10px;margin-top:10px;font-weight:600">Ver os produtos na minha loja →</a>'; }
+if (falhas.length) $('m').innerHTML += '<div class="er" style="font-weight:400;font-size:13px;margin-top:6px">' + falhas.map(esc).join('<br>') + '</div>';
+};
+init();
+document.getElementById('ver').textContent = 'Página pronta ✓ (v6)';
+/* fim importar-loja-v6 */
+</script>
+<script src="fornecedor-aprovacao-v3.js"></script>
+</body></html>
+<!-- fim importar-loja-v6 -->
