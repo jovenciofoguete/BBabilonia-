@@ -57,7 +57,7 @@ async function carregar(){
  var r=await sb.from('disputas').select('*').eq('vendedor_id',eu.id).order('updated_at',{ascending:false}).limit(300);
  lista=r.data||[];desenhar();
 }
-$('voltar').onclick=function(){if(history.length>1)history.back();else location.href='painel-vendedor.html'};
+$('voltar').onclick=function(){if(history.length>1)history.back();else location.href='painel-vendedor-v2.html#encomendas'};
 async function abrir(){var s=(await sb.auth.getSession()).data.session;eu=s?s.user:null;$('login').classList.toggle('hide',!!eu);if(eu)carregar()}
 $('ent').onclick=async function(){var r=await sb.auth.signInWithPassword({email:$('em').value.trim(),password:$('pw').value});if(r.error){$('lmsg').textContent='Email ou palavra-passe errados.';return}abrir()};
 abrir();
