@@ -1,44 +1,56 @@
-/* descricao-produto.js — B-Babilônia: mostra a descrição que o fornecedor escreveu ao registar o produto,
-   na página do produto do cliente (produto-loja.html, aberta por produto-bbabilonia.html).
-   Fica por baixo do nome e por cima do preço (como no Alibaba). Textos longos ficam encolhidos com "Ver mais". Não altera os outros ficheiros. */
-(function () {
-  if (window.__bbDescricao) return; window.__bbDescricao = 1;
-  var d = document;
-  var css = d.createElement("style");
-  css.textContent =
-    "#bb-desc{margin:4px 0 6px;font-family:system-ui,sans-serif;color:#222}" +
-    "#bb-desc .tx{white-space:pre-wrap;word-break:break-word;font-size:14.5px;line-height:1.5;color:#333}" +
-    "#bb-desc .tx.curto{max-height:4.5em;overflow:hidden;-webkit-mask-image:linear-gradient(#000 70%,transparent);mask-image:linear-gradient(#000 70%,transparent)}" +
-    "#bb-desc button{margin-top:8px;border:0;background:#f3f4f6;color:#111;border-radius:999px;padding:7px 14px;font:600 13.5px system-ui,sans-serif;cursor:pointer}";
-  d.head.appendChild(css);
-
-  function texto(p) { return String((p && (p.description || p.descricao)) || "").trim(); }
-
-  function mostrar() {
-    var p = window.P; if (!p) return false;
-    var t = texto(p), box = d.getElementById("bb-desc");
-    if (!t) { if (box) box.remove(); return true; }
-    if (!box) {
-      box = d.createElement("div"); box.id = "bb-desc";
-      box.innerHTML = '<div class="tx"></div>';
-      var pr = d.getElementById("preco");
-      if (pr && pr.parentNode) pr.parentNode.insertBefore(box, pr);
-      else { var det = d.getElementById("detalhes"); if (det && det.parentNode) det.parentNode.insertBefore(box, det.nextSibling); else d.body.appendChild(box); }
-    }
-    var tx = box.querySelector(".tx");
-    if (tx.textContent !== t) {
-      tx.textContent = t;
-      var bt = box.querySelector("button"); if (bt) bt.remove();
-      if (t.length > 160 || t.split("\n").length > 3) {
-        tx.classList.add("curto");
-        bt = d.createElement("button"); bt.type = "button"; bt.textContent = "Ver mais";
-        bt.onclick = function () { var c = tx.classList.toggle("curto"); bt.textContent = c ? "Ver mais" : "Ver menos"; };
-        box.appendChild(bt);
-      }
-    }
-    return true;
-  }
-
-  var n = 0;
-  (function esperar() { if (mostrar()) return; if (++n < 100) setTimeout(esperar, 300); })();
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Produto – BBabilônia</title>
+<script>
+/* (06/11/2026) no subdomínio do vendedor (suppliers.bbabilonia.com) a página de compra não abre:
+   o vendedor vê o produto só em modo de visualização (produto-vendedor.html);
+   quem não tem sessão (cliente com link antigo) vai para a loja https://bbabilonia.com. Na loja fica tudo igual. */
+(function(){
+  if(!/^suppliers\./i.test(location.hostname))return;
+  window.__bbVend=1;
+  var s=null;try{s=JSON.parse(localStorage.getItem("sb-dsfoqoeawvjafypycldz-auth-token")||"null")}catch(e){}
+  var ir=(s&&s.access_token)?"produto-vendedor.html"+location.search:"https://bbabilonia.com/produto-bbabilonia.html"+location.search;
+  try{if(window.top!==window&&window.top.location.hostname===location.hostname){window.top.location.replace(ir);return}}catch(e){}
+  location.replace(ir);
 })();
+</script>
+<style>
+  html,body{margin:0;height:100%;background:#0f1220}
+  iframe{border:0;width:100%;height:100vh;height:100dvh;display:block}
+</style>
+</head>
+<body>
+<iframe id="f" title="Produto"></iframe>
+<script>
+(function(){
+  if(window.__bbVend)return;
+  var f = document.getElementById("f");
+  var ultimoClique = 0;
+  f.addEventListener("load", function(){
+    try{
+      var w = f.contentWindow;
+      if(!w.document.getElementById("bb-pchat")){var sc=w.document.createElement("script");sc.id="bb-pchat";sc.src="produto-chat.js?v=1";w.document.body.appendChild(sc);}
+      if(!w.document.getElementById("bb-pfoto")){var sf=w.document.createElement("script");sf.id="bb-pfoto";sf.src="foto-ampliar.js?v=1";w.document.body.appendChild(sf);}
+      if(!w.document.getElementById("bb-paval")){var sa=w.document.createElement("script");sa.id="bb-paval";sa.src="avaliacoes-produto.js?v=1";w.document.body.appendChild(sa);}
+      if(!w.document.getElementById("bb-pmin")){var sm=w.document.createElement("script");sm.id="bb-pmin";sm.src="pedido-minimo.js?v=1";w.document.body.appendChild(sm);}
+      if(!w.document.getElementById("bb-pdesc")){var sd=w.document.createElement("script");sd.id="bb-pdesc";sd.src="descricao-produto.js?v=1";w.document.body.appendChild(sd);}
+      w.document.addEventListener("click", function(){ ultimoClique = Date.now(); }, true);
+      var original = w.Storage.prototype.setItem;
+      w.Storage.prototype.setItem = function(chave, valor){
+        var antes = this.getItem(chave);
+        original.apply(this, arguments);
+        if(chave === "carrinho" && valor !== antes && Date.now() - ultimoClique < 3000){
+          setTimeout(function(){ location.href = "carrinho.html"; }, 600);
+        }
+      };
+    }catch(e){}
+  });
+  f.src = "produto-loja.html" + location.search;
+})();
+</script>
+</body>
+</html>
+<script src="indice-produto.js"></script>
