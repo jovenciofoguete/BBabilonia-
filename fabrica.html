@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="pt"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>B-Babilônia</title>
+<style>
+html,body{margin:0;height:100%;background:#fff}
+#f{position:fixed;inset:0;width:100%;height:100%;border:0;display:block}
+</style></head><body>
+<iframe id="f" title="B-Babilônia"></iframe>
+<script>
+/* fabrica.html — B-Babilônia
+   Abre as páginas do fornecedor/fábrica no idioma do telemóvel e pede para escolher o idioma na 1.ª visita.
+   ?p=criar    -> loja-criar.html
+   ?p=importar -> importar-loja-v7.html
+   Não altera esses ficheiros: carrega-os aqui dentro e junta a tradução (fornecedor-idioma.js). */
+(function () {
+  var PAG = { criar: 'loja-criar.html', importar: 'importar-loja-v7.html' };
+  var p = new URLSearchParams(location.search).get('p');
+  var f = document.getElementById('f');
+  f.src = PAG[p] || PAG.criar;
+
+  f.addEventListener('load', function () {
+    var d; try { d = f.contentDocument; } catch (e) { return; }
+    if (!d || !d.body) return;
+    try { document.title = d.title || document.title; } catch (e) {}
+    // nomes de produtos e ficheiros não são traduzidos
+    ['lista', 'nf', 'en', 'nome', 'desc', 'outro'].forEach(function (id) { var el = d.getElementById(id); if (el) el.setAttribute('translate', 'no'); });
+    // links abrem na janela inteira (não dentro desta página)
+    d.addEventListener('click', function (e) {
+      var a = e.target.closest ? e.target.closest('a[href]') : null;
+      if (a && !a.target && !/^(mailto|tel|javascript):|^#/i.test(a.getAttribute('href'))) a.target = '_top';
+    }, true);
+    // tradução no idioma escolhido (se a página ainda não a tiver)
+    if (!d.querySelector('script[src*="fornecedor-idioma.js"]')) {
+      var s = d.createElement('script'); s.src = 'fornecedor-idioma.js?v=1'; d.head.appendChild(s);
+    }
+  });
+})();
+</script>
+<script src="idioma-primeiro.js?v=1"></script>
+</body></html>
