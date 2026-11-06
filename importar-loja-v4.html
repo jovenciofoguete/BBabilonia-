@@ -392,4 +392,40 @@ if (!fila.length) return;
 aImportar = true; $('imp').disabled = true;
 var ok = 0, falhas = [];
 for (var i = 0; i < fila.length; i++) {
-var it = fila[i], d = it
+var it = fila[i], d = it.dados;
+msg('A importar ' + (i + 1) + ' de ' + fila.length + ': ' + d.nome);
+$('bar').style.width = Math.round(i / fila.length * 100) + '%';
+try {
+var imgs = [];
+for (var j = 0; j < d.fotos.length; j++) {
+var u = await fotoParaUrl(d.fotos[j]);
+if (imgs.indexOf(u) === -1) imgs.push(u);
+}
+var cs = d.cores.map(function (c, k) { return { nome: c, foto: imgs[Math.min(k, imgs.length - 1)], disponivel: true }; });
+var row = {
+name: d.nome, price: d.preco, currency: d.moeda, description: d.descricao,
+images: imgs, image_url: imgs[0], video_url: d.video || null,
+colors: cs, sizes: d.tamanhos, variants: d.variants,
+supplier_id: user.id, category_id: it.cat
+};
+var res = await sb.from('products').insert(row).select('id').single();
+if (res.error) throw new Error(res.error.message);
+if (d.moq) { try { await sb.from('products').update({ moq: d.moq }).eq('id', res.data.id); } catch (e) {} }
+it.feito = true; ok++;
+} catch (e) {
+falhas.push('Linha ' + it.linha + ' (' + d.nome + '): ' + (e.message || e));
+}
+}
+$('bar').style.width = '100%';
+aImportar = false;
+mostrar();
+msg('Concluído: ' + ok + ' produto(s) importado(s)' + (falhas.length ? ' · ' + falhas.length + ' falharam' : ' ✓'));
+if (falhas.length) $('m').innerHTML += '<div class="er" style="font-weight:400;font-size:13px;margin-top:6px">' + falhas.map(esc).join('<br>') + '</div>';
+};
+init();
+document.getElementById('ver').textContent = 'Página pronta ✓ (v4)';
+/* fim importar-loja-v4 */
+</script>
+<script src="fornecedor-aprovacao-v3.js"></script>
+</body></html>
+<!-- fim importar-loja-v4 -->
