@@ -28,6 +28,11 @@ button{border:0;border-radius:999px;padding:9px 14px;font:inherit;font-weight:70
 .nl .pt{background:#ef4444}.nl b{color:var(--roxo2)}
 .av b{display:block;font-size:15px}.av span{display:block;font-size:14px;color:var(--suave);word-break:break-word}
 .av small{font-size:12px;color:var(--suave)}
+.av>div{flex:1;min-width:0}
+.lx{flex:none;align-self:center;background:#fee2e2;color:#b91c1c;border-radius:999px;width:38px;height:38px;padding:0;font-size:17px}
+.b3{background:#fee2e2;color:#b91c1c}.b3.cf{background:#b91c1c;color:#fff}
+.bts{display:flex;gap:6px;flex-wrap:wrap}
+#amsg{font-size:13.5px;color:#b91c1c;margin-top:6px}
 .vazio{text-align:center;color:var(--suave);padding:20px 4px;font-size:14px}
 .msg{font-size:14px;margin-top:8px;color:var(--suave)}.er{color:#b91c1c}
 .hide{display:none!important}
@@ -53,7 +58,8 @@ button{border:0;border-radius:999px;padding:9px 14px;font:inherit;font-weight:70
    <div class="msg" id="pmsg"></div>
   </div>
   <div class="sec">
-   <div class="linha" style="margin-bottom:6px"><b id="cont">Avisos</b><button class="b2" id="todas">Marcar todas como lidas</button></div>
+   <div class="linha" style="margin-bottom:6px"><b id="cont">Avisos</b><div class="bts"><button class="b2" id="todas">Marcar todas como lidas</button><button class="b3" id="apagarTodas">🗑 Apagar todas</button></div></div>
+   <div id="amsg" class="hide"></div>
    <div id="lista"><div class="vazio">A carregar…</div></div>
   </div>
  </div>
@@ -93,8 +99,9 @@ function desenhar(){
  var n=avisos.filter(function(a){return!a.lido}).length;
  $('cont').textContent=n?('Avisos ('+n+' por ler)'):'Avisos';
  $('lista').innerHTML=avisos.length?avisos.map(function(a,i){
-  return '<div class="av'+(a.lido?'':' nl')+'" data-i="'+i+'"><i class="pt"></i><div><b>'+esc(a.titulo)+'</b><span>'+esc(a.texto)+'</span><small>'+quando(a.created_at)+'</small></div></div>'}).join('')
+  return '<div class="av'+(a.lido?'':' nl')+'" data-i="'+i+'"><i class="pt"></i><div><b>'+esc(a.titulo)+'</b><span>'+esc(a.texto)+'</span><small>'+quando(a.created_at)+'</small></div><button class="lx" data-x="'+i+'" aria-label="Apagar aviso">🗑</button></div>'}).join('')
   :'<div class="vazio">Ainda não tem avisos.</div>';
+ document.querySelectorAll('.lx').forEach(function(bt){bt.onclick=function(ev){ev.stopPropagation();apagarUm(+bt.getAttribute('data-x'),bt)}});
  document.querySelectorAll('.av').forEach(function(el){el.onclick=async function(){
   var a=avisos[+el.getAttribute('data-i')];
   if(!a.lido){a.lido=true;sb.from('avisos').update({lido:true}).eq('id',a.id).then(function(){},function(){});}
@@ -108,6 +115,25 @@ async function carregar(){
  if(r.error){$('lista').innerHTML='<div class="vazio">Não foi possível carregar os avisos.</div>';return}
  avisos=r.data||[];desenhar();
 }
+function erroApagar(){var m=$('amsg');m.textContent='Não foi possível apagar. Tente de novo.';m.classList.remove('hide');setTimeout(function(){m.classList.add('hide')},4000)}
+/* apagar um aviso (só se o servidor confirmar que apagou) */
+async function apagarUm(i,bt){
+ var a=avisos[i];if(!a)return;bt.disabled=true;
+ var r=await sb.from('avisos').delete().eq('id',a.id).eq('user_id',eu.id).select('id');
+ if(r.error||!r.data||!r.data.length){bt.disabled=false;erroApagar();return}
+ avisos=avisos.filter(function(x){return x.id!==a.id});desenhar();
+}
+/* apagar todos: 1.º toque pede confirmação, 2.º toque (em 4 s) apaga */
+var confTodas=null;
+$('apagarTodas').onclick=async function(){
+ var b=this;if(!eu||!avisos.length)return;
+ if(!confTodas){b.classList.add('cf');b.textContent='Toque de novo para apagar';confTodas=setTimeout(function(){confTodas=null;b.classList.remove('cf');b.textContent='🗑 Apagar todas'},4000);return}
+ clearTimeout(confTodas);confTodas=null;b.disabled=true;b.textContent='A apagar…';
+ var r=await sb.from('avisos').delete().eq('user_id',eu.id).select('id');
+ b.disabled=false;b.classList.remove('cf');b.textContent='🗑 Apagar todas';
+ if(r.error||!r.data||!r.data.length){erroApagar();return}
+ carregar();
+};
 /* ao abrir, os avisos ficam vistos (o número do sino desaparece), mas os pontos continuam visíveis nesta visita */
 async function marcarVistos(){
  if(!eu)return;
@@ -155,5 +181,4 @@ abrir();
 })();
 </script>
 </body>
-  </html>
-  
+</html>
