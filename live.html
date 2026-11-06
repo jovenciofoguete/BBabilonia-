@@ -29,7 +29,7 @@ input{width:100%;padding:13px;border-radius:10px;border:1px solid #2a3a5c;backgr
 </style>
 </head>
 <body>
-<header><span>🔴 Live B-Babilônia</span><a href="painel-vendedor.html" id="voltar">Painel</a></header>
+<header><span>🔴 Live B-Babilônia</span><a href="painel-vendedor-v2.html" id="voltar">← Painel</a></header>
 <main>
   <div class="palco">
     <video id="video" autoplay playsinline muted></video>
@@ -116,7 +116,7 @@ $('btComecar').onclick = async function () {
     var pub = room.localParticipant.getTrackPublication(LK.Track.Source.Camera);
     if (pub && pub.track) pub.track.attach($('video'));
     vazio(''); aoVivo(true); contar(); msg('');
-    $('link').textContent = location.origin + '/live.html?sala=' + j.sala;
+    $('link').textContent = 'https://bbabilonia.com/live.html?sala=' + j.sala;
     mostrar('btComecar', false); mostrar('btVirar', true); mostrar('btTerminar', true); mostrar('caixaLink', true);
   } catch (e) {
     msg('Não foi possível começar: ' + e.message + '. Verifique se deu permissão à câmara e ao microfone.');
