@@ -90,4 +90,5 @@
   }
   observar();
 })();
-    
+/* (06/11/2026) MOQ + "Negociável" nos cartões, no lugar das cores */
+(function () { if (document.querySelector('script[src*="moq-cartao.js"]')) return; var s = document.createElement("script"); s.src = "moq-cartao.js?v=1"; document.head.appendChild(s); })();
