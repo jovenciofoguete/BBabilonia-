@@ -13,3 +13,5 @@
   if (l !== "zh") L.unshift("traducao-rapida.js?v=1");
   L.forEach(function (src) { var s = document.createElement("script"); s.src = src; s.async = false; document.head.appendChild(s); });
 })();
+/* fotos privadas do chat e dos links de pagamento: abre-as com link temporário (fotos-privadas.js) */
+(function(){if(typeof document==="undefined"||window.__bbFotosPriv||document.querySelector("script[src*=\"fotos-privadas.js\"]"))return;var s=document.createElement("script");s.src="fotos-privadas.js?v=1";(document.head||document.documentElement).appendChild(s)})();

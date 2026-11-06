@@ -132,3 +132,5 @@
   if (typeof window !== 'undefined') window.FiltroImagem = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
 })();
+/* fotos privadas do chat e dos links de pagamento: abre-as com link temporário (fotos-privadas.js) */
+(function(){if(typeof document==="undefined"||window.__bbFotosPriv||document.querySelector("script[src*=\"fotos-privadas.js\"]"))return;var s=document.createElement("script");s.src="fotos-privadas.js?v=1";(document.head||document.documentElement).appendChild(s)})();
