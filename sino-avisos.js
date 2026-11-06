@@ -3,9 +3,14 @@
    Fica dentro do menu de baixo (como no Alibaba), entre Carrinho e Meu Babilônia.
    Nas páginas sem menu de baixo continua o sino flutuante (só com sessão iniciada).
    Ao abrir avisos.html, os avisos ficam vistos e o número do sino desaparece;
-   só volta a aparecer quando chegar um aviso novo. */
+   só volta a aparecer quando chegar um aviso novo.
+   (06/11/2026) No subdomínio do vendedor (suppliers.bbabilonia.com) o sino leva a avisos-vendedor.html
+   e a página de avisos do cliente passa para a do vendedor. Na loja (bbabilonia.com) fica tudo igual. */
 (function(){
 var d=document;
+var VEND=/^suppliers\./i.test(location.hostname);
+var PAGINA_AVISOS=VEND?"avisos-vendedor.html":"avisos.html";
+if(VEND&&(location.pathname.split("/").pop()||"")==="avisos.html"){location.replace("avisos-vendedor.html"+location.hash);return;}
 if(window.BBSino)return;window.BBSino=1;
 var NAAVISOS=(location.pathname.split("/").pop()||"")==="avisos.html";
 var URL_SB="https://dsfoqoeawvjafypycldz.supabase.co",CHAVE="sb_publishable_BN4NiVcDab9CqdTY_odgDA_uUOhjja0";
@@ -26,7 +31,7 @@ async function token(){
 }
 var SVG='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>';
 function criarNoMenu(nav){
-  btn=d.createElement("a");btn.href="avisos.html";btn.className="bb-av"+(NAAVISOS?" on":"");btn.setAttribute("aria-label","Avisos");
+  btn=d.createElement("a");btn.href=PAGINA_AVISOS;btn.className="bb-av"+(NAAVISOS?" on":"");btn.setAttribute("aria-label","Avisos");
   btn.innerHTML='<span class="b">'+SVG+'</span><span class="n" style="display:none"></span>Avisos';
   var ult=nav.querySelector('a[href="conta.html"]');
   if(ult)nav.insertBefore(btn,ult);else nav.appendChild(btn);
@@ -43,7 +48,7 @@ function criar(){
    ".bb-sino i{position:absolute;top:-4px;right:-4px;min-width:22px;height:22px;border-radius:11px;background:#ef4444;color:#fff;font:800 12px system-ui,sans-serif;font-style:normal;"+
    "display:flex;align-items:center;justify-content:center;padding:0 5px;border:2px solid #fff}";
   d.head.appendChild(css);
-  btn=d.createElement("a");btn.className="bb-sino";btn.href="avisos.html";btn.setAttribute("aria-label","Avisos");btn.style.display="none";
+  btn=d.createElement("a");btn.className="bb-sino";btn.href=PAGINA_AVISOS;btn.setAttribute("aria-label","Avisos");btn.style.display="none";
   btn.innerHTML=SVG+'<i style="display:none"></i>';
   d.body.appendChild(btn);
 }
