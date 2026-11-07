@@ -68,3 +68,5 @@
   new MutationObserver(montar).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["class"] });
   montar();
 })();
+/* (07/11/2026) procurar, denúncias, notas internas e números dos agentes (atendimento-extras.js) e "Esqueci a palavra-passe" (esqueci.js) */
+(function(){["atendimento-extras.js","esqueci.js"].forEach(function(f){if(document.querySelector("script[src*=\""+f+"\"]"))return;var s=document.createElement("script");s.src=f+"?v=1";(document.head||document.documentElement).appendChild(s)})})();

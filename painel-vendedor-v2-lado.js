@@ -28,3 +28,5 @@
 })();
 /* (07/11/2026) caixa "📢 Pedidos dos clientes" no painel (pedidos-extra.js) */
 (function(){if(document.querySelector("script[src*=\"pedidos-extra.js\"]"))return;var s=document.createElement("script");s.src="pedidos-extra.js?v=1";(document.head||document.documentElement).appendChild(s)})();
+/* (07/11/2026) gestão em massa, exportar, fechar a loja (painel-vendedor-v2-extras.js) e "Esqueci a palavra-passe" (esqueci.js) */
+(function(){["painel-vendedor-v2-extras.js","esqueci.js"].forEach(function(f){if(document.querySelector("script[src*=\""+f+"\"]"))return;var s=document.createElement("script");s.src=f+"?v=1";(document.head||document.documentElement).appendChild(s)})})();

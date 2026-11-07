@@ -63,3 +63,5 @@
       tudo();
     }).catch(function () {});
 })();
+/* (07/11/2026) "⭐ Em destaque" na página inicial (destaques.js) e "Seguir"/"Denunciar" na página da loja (loja-extras.js) */
+(function(){var pg=location.pathname.split("/").pop()||"index.html",f=pg==="loja.html"?"loja-extras.js":(pg==="index.html"?"destaques.js":"");if(!f||document.querySelector("script[src*=\""+f+"\"]"))return;var s=document.createElement("script");s.src=f+"?v=1";(document.head||document.documentElement).appendChild(s)})();

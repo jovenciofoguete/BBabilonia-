@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Recuperar a palavra-passe · BBabilônia</title>
+<meta name="robots" content="noindex">
+<meta name="color-scheme" content="light">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0}
+body{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:#eef2f7;color:#0f172a;line-height:1.45}
+.capa{background:linear-gradient(135deg,#10b981,#0ea5e9 55%,#2563eb);color:#fff;padding:24px 18px 60px;border-radius:0 0 28px 28px}
+.capa .m{font-size:12px;letter-spacing:2.5px;font-weight:800;color:#fde68a}
+.capa h1{font-size:22px;margin-top:8px}.capa p{font-size:14px;opacity:.92;margin-top:4px}
+main{max-width:440px;margin:-40px auto 0;padding:0 14px 40px}
+.box{background:#fff;border-radius:18px;padding:18px;box-shadow:0 8px 22px #0f172a1a}
+label{display:block;font-size:14px;font-weight:700;color:#475569;margin:6px 0 6px}
+input{width:100%;padding:13px;border:2px solid #e2e8f0;border-radius:12px;font:inherit;font-size:16px}
+input:focus{outline:none;border-color:#0ea5e9}
+button{display:block;width:100%;margin-top:14px;padding:14px;border:0;border-radius:14px;font:inherit;font-size:16px;font-weight:800;color:#fff;background:linear-gradient(90deg,#10b981,#0ea5e9);cursor:pointer}
+button:disabled{opacity:.55}
+.msg{margin-top:12px;font-size:14.5px;color:#dc2626}.msg.ok{color:#047857}
+.pq{font-size:13px;color:#64748b;margin-top:12px}
+a.volta{display:block;text-align:center;margin-top:14px;font-weight:700;color:#2563eb;text-decoration:none}
+</style>
+</head>
+<body>
+<div class="capa"><div class="m">BBABILÔNIA</div><h1>🔑 Recuperar a palavra-passe</h1><p>Enviamos para o seu email um link para criar uma palavra-passe nova.</p></div>
+<main>
+ <div class="box">
+  <label for="em">Email da sua conta</label>
+  <input id="em" type="email" autocomplete="email" placeholder="o.seu@email.com">
+  <button id="env">Enviar o link</button>
+  <div class="msg" id="msg"></div>
+  <p class="pq">Não chegou? Veja também a pasta de spam ou de promoções. Por segurança, só pode pedir um link novo depois de alguns minutos.</p>
+  <a class="volta" href="javascript:history.back()">← Voltar</a>
+ </div>
+</main>
+<script>
+(function(){
+  var sb = supabase.createClient("https://dsfoqoeawvjafypycldz.supabase.co", "sb_publishable_BN4NiVcDab9CqdTY_odgDA_uUOhjja0", { auth: { persistSession: false } });
+  var em = document.getElementById("em"), b = document.getElementById("env"), m = document.getElementById("msg");
+  var q = new URLSearchParams(location.search).get("email"); if (q) em.value = q;
+  b.onclick = async function () {
+    var e = em.value.trim(); m.className = "msg"; m.textContent = "";
+    if (!/^\S+@\S+\.\S+$/.test(e)) { m.textContent = "Escreva o email da sua conta."; return; }
+    b.disabled = true; b.textContent = "A enviar…";
+    var r = await sb.auth.resetPasswordForEmail(e, { redirectTo: location.origin + "/nova-palavra-passe.html" });
+    b.disabled = false; b.textContent = "Enviar o link";
+    if (r.error) {
+      m.textContent = /rate|seconds|limit/i.test(r.error.message) ? "Já pediu um link há pouco. Espere alguns minutos e tente de novo." : r.error.message;
+      return;
+    }
+    m.className = "msg ok";
+    m.textContent = "Se existir uma conta com " + e + ", o link já foi enviado. Abra o email e toque no link para criar a palavra-passe nova.";
+  };
+  em.addEventListener("keydown", function (ev) { if (ev.key === "Enter") b.click(); });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nova palavra-passe · BBabilônia</title>
+<meta name="robots" content="noindex">
+<meta name="color-scheme" content="light">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0}
+body{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:#eef2f7;color:#0f172a;line-height:1.45}
+.capa{background:linear-gradient(135deg,#10b981,#0ea5e9 55%,#2563eb);color:#fff;padding:24px 18px 60px;border-radius:0 0 28px 28px}
+.capa .m{font-size:12px;letter-spacing:2.5px;font-weight:800;color:#fde68a}
+.capa h1{font-size:22px;margin-top:8px}.capa p{font-size:14px;opacity:.92;margin-top:4px}
+main{max-width:440px;margin:-40px auto 0;padding:0 14px 40px}
+.box{background:#fff;border-radius:18px;padding:18px;box-shadow:0 8px 22px #0f172a1a}
+label{display:block;font-size:14px;font-weight:700;color:#475569;margin:10px 0 6px}
+input{width:100%;padding:13px;border:2px solid #e2e8f0;border-radius:12px;font:inherit;font-size:16px}
+input:focus{outline:none;border-color:#0ea5e9}
+button,a.bt{display:block;width:100%;margin-top:14px;padding:14px;border:0;border-radius:14px;font:inherit;font-size:16px;font-weight:800;color:#fff;background:linear-gradient(90deg,#10b981,#0ea5e9);cursor:pointer;text-align:center;text-decoration:none}
+button:disabled{opacity:.55}
+.msg{margin-top:12px;font-size:14.5px;color:#dc2626}.msg.ok{color:#047857}
+.hide{display:none}
+</style>
+</head>
+<body>
+<div class="capa"><div class="m">BBABILÔNIA</div><h1>🔑 Nova palavra-passe</h1><p>Escreva a palavra-passe nova da sua conta.</p></div>
+<main>
+ <div class="box">
+  <div id="espera">A verificar o link…</div>
+  <div id="form" class="hide">
+   <label for="p1">Palavra-passe nova (mínimo 6)</label><input id="p1" type="password" autocomplete="new-password">
+   <label for="p2">Repita a palavra-passe nova</label><input id="p2" type="password" autocomplete="new-password">
+   <button id="gr">Guardar a palavra-passe nova</button>
+  </div>
+  <div class="msg" id="msg"></div>
+  <a class="bt hide" id="entrar" href="/">Entrar na conta</a>
+  <a class="bt hide" id="denovo" href="recuperar.html" style="background:#e2e8f0;color:#0f172a">Pedir um link novo</a>
+ </div>
+</main>
+<script>
+(function(){
+  var $ = function (i) { return document.getElementById(i); };
+  var h = location.hostname, volta = /^suppliers\./i.test(h) ? "/painel-vendedor-v2.html" : /^(admin|administrator)\./i.test(h) ? "/painel-admin.html" : /^(service|atendimento)\./i.test(h) ? "/atendimento.html" : "/conta.html";
+  $("entrar").href = volta;
+  var hp = new URLSearchParams(location.hash.slice(1));
+  if (hp.get("error") || hp.get("error_code")) {
+    $("espera").classList.add("hide");
+    $("msg").textContent = /expired/i.test(hp.get("error_code") || hp.get("error_description") || "") ? "Este link já expirou ou já foi usado. Peça um link novo." : "Link inválido. Peça um link novo.";
+    $("denovo").classList.remove("hide");
+    return;
+  }
+  var sb = supabase.createClient("https://dsfoqoeawvjafypycldz.supabase.co", "sb_publishable_BN4NiVcDab9CqdTY_odgDA_uUOhjja0", { auth: { persistSession: false, detectSessionInUrl: true } });
+  var pronto = false;
+  function mostrar() { if (pronto) return; pronto = true; $("espera").classList.add("hide"); $("form").classList.remove("hide"); try { history.replaceState(null, "", location.pathname); } catch (e) {} }
+  sb.auth.onAuthStateChange(function (ev, s) { if (s && (ev === "PASSWORD_RECOVERY" || ev === "SIGNED_IN" || ev === "INITIAL_SESSION")) mostrar(); });
+  setTimeout(async function () {
+    var s = (await sb.auth.getSession()).data.session;
+    if (s) return mostrar();
+    if (!pronto) { $("espera").classList.add("hide"); $("msg").textContent = "Abra esta página a partir do link que recebeu no email."; $("denovo").classList.remove("hide"); }
+  }, 2500);
+  $("gr").onclick = async function () {
+    var a = $("p1").value, b = $("p2").value, m = $("msg"); m.className = "msg"; m.textContent = "";
+    if (a.length < 6) { m.textContent = "Escreva pelo menos 6 letras ou números."; return; }
+    if (a !== b) { m.textContent = "As duas palavras-passe não são iguais."; return; }
+    this.disabled = true;
+    var r = await sb.auth.updateUser({ password: a });
+    this.disabled = false;
+    if (r.error) { m.textContent = /different|same/i.test(r.error.message) ? "A palavra-passe nova tem de ser diferente da antiga." : r.error.message; return; }
+    try { await sb.auth.signOut({ scope: "local" }); } catch (e) {}
+    $("form").classList.add("hide");
+    m.className = "msg ok"; m.textContent = "✓ Palavra-passe mudada. Já pode entrar com a palavra-passe nova.";
+    $("entrar").classList.remove("hide");
+  };
+})();
+</script>
+</body>
+</html>

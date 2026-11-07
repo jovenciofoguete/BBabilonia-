@@ -53,3 +53,5 @@
   new MutationObserver(pintar).observe(document.body, { childList: true, subtree: true });
   pintar();
 })();
+/* (07/11/2026) novidades do painel do dono (painel-admin-extras.js) e "Esqueci a palavra-passe" (esqueci.js) */
+(function(){["painel-admin-extras.js","esqueci.js"].forEach(function(f){if(document.querySelector("script[src*=\""+f+"\"]"))return;var s=document.createElement("script");s.src=f+"?v=1";(document.head||document.documentElement).appendChild(s)})})();

@@ -39,3 +39,5 @@
 (function(){if(typeof document==="undefined"||window.__bbFotosPriv||document.querySelector("script[src*=\"fotos-privadas.js\"]"))return;var s=document.createElement("script");s.src="fotos-privadas.js?v=1";(document.head||document.documentElement).appendChild(s)})();
 /* (07/11/2026) "Publicar o que procuro" em Meu Babilônia e rastreamento em tempo real nos pedidos (pedidos-extra.js) */
 (function(){if(document.querySelector("script[src*=\"pedidos-extra.js\"]"))return;var s=document.createElement("script");s.src="pedidos-extra.js?v=1";(document.head||document.documentElement).appendChild(s)})();
+/* (07/11/2026) favoritos, lojas seguidas, vistos, perfil e apagar a conta (conta-extras.js) e "Esqueci a palavra-passe" (esqueci.js) */
+(function(){["conta-extras.js","esqueci.js"].forEach(function(f){if(document.querySelector("script[src*=\""+f+"\"]"))return;var s=document.createElement("script");s.src=f+"?v=1";(document.head||document.documentElement).appendChild(s)})})();

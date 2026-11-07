@@ -71,3 +71,5 @@
   }
   setTimeout(iniciar, 1500);
 })();
+/* (07/11/2026) ❤️ favoritos, 🚩 denunciar e "vistos recentemente" na página do produto (produto-extras.js) */
+(function(){if(window.__bbVend||document.querySelector("script[src*=\"produto-extras.js\"]"))return;var s=document.createElement("script");s.src="produto-extras.js?v=1";(document.head||document.documentElement).appendChild(s)})();
