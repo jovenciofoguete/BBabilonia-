@@ -75,6 +75,8 @@
     new RegExp('\\b' + POSSE + '\\s+' + APARELHO + '\\s*(?:\\?|$|por favor|pf|pfv|pls|please|plz)'),
     // "peço / manda / dá-me / give me … contacto/whats"
     new RegExp('\\b(?:peco|pede|pedir|pedia|quero|queria|preciso|manda|mande|envia|envie|passa|passe|deixa|deixe|partilha|partilhe|compartilha|compartilhe|share|dame|pasame|da me|de me|me da|me de|give me|send me|can i get|can i have)\\b[^.!?]{0,25}\\b' + CONTACTO + '\\b'),
+    // (07/11/2026) "peço seu número", "manda o teu número" (pedido de número sem dizer de quê); "peço seu número de sapato/cintura" continua a passar
+    new RegExp('\\b(?:peco|pede|pedir|pedia|quero|queria|preciso|manda|mande|envia|envie|passa|passe|deixa|deixe|partilha|partilhe|da me|de me|me da|me de|give me|send me)\\b[^.!?]{0,8}\\b' + POSSE + '\\s+' + NUMERO + '\\b(?!\\s+(?:de\\s+|do\\s+|da\\s+|of\\s+)?(?:sapato|sapatos|calcado|calcados|pe|pes|cintura|tamanho|roupa|anel|dedo|camisa|calca|calcas|size|shoe|shoes))'),
     // "qual o contacto / whats"
     new RegExp('\\b(?:qual|quais|what|cual)\\b[^.!?]{0,15}\\b' + CONTACTO + '\\b')
   ];
