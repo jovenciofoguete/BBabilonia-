@@ -1,6 +1,8 @@
-/* BBabilônia · fotos-privadas.js
-   Troca os links públicos das fotos do chat e dos links de pagamento (pasta chat-imagens)
-   por links privados temporários, só para quem tem sessão iniciada e permissão.
+/* BBabilônia · fotos-privadas.js (versão 2)
+   Troca os links públicos das fotos do chat e dos links de pagamento (pastas chat-imagens e chat-privado)
+   por links privados temporários, só para quem tem sessão iniciada e permissão:
+   cliente, vendedor, funcionários do vendedor, agentes de atendimento e dono.
+   Versão 2: lê também a sessão do atendimento (agentes), que fica guardada à parte.
    Funciona também dentro dos iframes da mesma página (chat-novo2 → chat-novo → chat).
    Foto com contorno verde = já está a abrir pelo link privado. */
 (function () {
@@ -9,18 +11,28 @@
 
   var U = 'https://dsfoqoeawvjafypycldz.supabase.co';
   var K = 'sb_publishable_BN4NiVcDab9CqdTY_odgDA_uUOhjja0';
-  var SK = 'sb-dsfoqoeawvjafypycldz-auth-token';
+  var SK = 'sb-dsfoqoeawvjafypycldz-auth-token';   // sessão da loja (cliente, vendedor, funcionário, dono)
+  var SK_ATD = 'bb-atd';                            // sessão do atendimento (agentes) — sessionStorage
   var VALIDADE = 6 * 3600; // segundos
   var RE = /\/storage\/v1\/object\/(?:public|authenticated)\/(chat-imagens|chat-privado)\/([^?#]+)/;
   var cache = {}; // chave -> {url, ate} | {erro, ate} | {p: Promise}
 
-  function token() {
+  function tokenDe(txt) {
     try {
-      var s = JSON.parse(localStorage.getItem(SK) || 'null');
+      var s = JSON.parse(txt || 'null');
       if (!s) return null;
       if (s.currentSession) s = s.currentSession;
-      return s.access_token || null;
+      if (!s.access_token) return null;
+      if (s.expires_at && s.expires_at * 1000 < Date.now()) return null; // expirado
+      return s.access_token;
     } catch (e) { return null; }
+  }
+  function lerSessao(onde, chave) {
+    try { return tokenDe(window[onde].getItem(chave)); } catch (e) { return null; }
+  }
+  function token() {
+    // nas páginas do atendimento vale a sessão do agente; nas outras, a da loja
+    return lerSessao('sessionStorage', SK_ATD) || lerSessao('localStorage', SK);
   }
 
   function assinar(bucket, caminho) {
