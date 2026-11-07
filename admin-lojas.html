@@ -3,6 +3,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Aprovar lojas • BBabilônia</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="verificar-documentos.js?v=1"></script>
 <style>
 :root{--bg:#111;--card:#1c1c1f;--line:#2c2c30;--tx:#f3f3f3;--mut:#9a9aa2;--ac:#ff4d6a;--ok:#2e9d62}
 *{box-sizing:border-box}
@@ -29,6 +30,10 @@ button{padding:12px 14px;border-radius:10px;border:1px solid var(--line);backgro
 .chk input{width:auto;margin:3px 0 0}
 button:disabled{opacity:.4}
 #m{margin-top:12px;color:var(--ac)}
+.vst{font-size:12.5px;font-weight:700;border-radius:999px;padding:3px 9px;white-space:nowrap}
+.v-ok{background:#123d27;color:#5fe39a}.v-at{background:#4a3a05;color:#ffd36b}.v-su{background:#4d1220;color:#ff8a9a}.v-cz{background:#2c2c30;color:#9a9aa2}
+.vres summary{cursor:pointer;color:var(--mut);font-size:13px;margin:2px 0 4px}
+.vres ul li{line-height:1.35}
 </style></head><body>
 <div class="topo"><h1>Aprovar lojas</h1><button id="sair" class="hide">Sair</button></div>
 
@@ -52,7 +57,7 @@ const ADMIN='jovenciofoguete1904@gmail.com',PAGINA=20;
 const $=i=>document.getElementById(i);
 const msg=t=>$('m').textContent=t||'';
 const ESTADOS=[['pendente','Em análise'],['aprovada','Aprovadas'],['rejeitada','Rejeitadas'],['suspensa','Suspensas']];
-const TIPOS={id:'BI ou passaporte',morada:'Comprovativo de morada',banco:'Comprovativo da conta bancária',registo:'Registo da empresa',nuit:'NUIT da empresa',rep:'BI do representante',cert:'Certificados dos produtos'};
+const TIPOS={id:'BI ou passaporte',morada:'Comprovativo de morada',banco:'Comprovativo da conta bancária',registo:'Registo da empresa',nuit:'NUIT da empresa',rep:'BI do representante',cert:'Certificados dos produtos',prova:'🎥 Vídeo de prova ao vivo'};
 const COMUM=['Documentos legíveis, completos e dentro da validade','O nome no documento de identificação é o mesmo do titular da loja e da conta bancária','O país da loja corresponde ao país dos documentos (morada e identificação)','Nome e descrição da loja sem contactos externos (WhatsApp, Instagram, links) e sem produtos proibidos','Países e meios de envio preenchidos'];
 const INDIV=['BI ou passaporte (frente e verso) visível','Comprovativo de morada recente','Comprovativo da conta bancária em nome da própria pessoa'];
 const EMP=['Registo ou certidão da empresa válido, com o mesmo nome da loja','Identificação fiscal da empresa (NUIT) presente','BI ou passaporte do representante da empresa','Comprovativo de morada da empresa','Comprovativo da conta bancária em nome da empresa','Certificados dos produtos, se o tipo de produto os exigir'];
@@ -145,12 +150,24 @@ function desenharLoja(l){
       if(u.error){if(w)w.close();return msg('Erro: '+u.error.message)}
       if(w)w.location.href=u.data.signedUrl;else location.href=u.data.signedUrl;
     };
-    r.appendChild(s);r.appendChild(b);dd.appendChild(r);
+    const est=document.createElement('span');est.className='vst v-cz';est.textContent='🔍 por verificar';
+    const dir=document.createElement('div');dir.style.cssText='display:flex;gap:6px;align-items:center';dir.appendChild(est);dir.appendChild(b);
+    r.appendChild(s);r.appendChild(dir);dd.appendChild(r);
+    const res=document.createElement('details');res.className='vres hide';dd.appendChild(res);
+    x._ui={est,res};
   });
+  if(lista.length){
+    const vb=document.createElement('button');vb.textContent='🔍 Verificar documentos (anti-falsificação)';vb.style.cssText='width:100%;margin-top:8px';
+    vb.onclick=()=>verificarLoja(l,lista,vb);dd.appendChild(vb);
+    if(l.estado==='pendente')filaVerificar.push(()=>verificarLoja(l,lista,vb));
+  }
   c.appendChild(dd);
   const tipos=lista.map(x=>x.tipo);
   const emp=(l.tipo||'')==='empresa'||tipos.includes('registo')||tipos.includes('nuit');
-  const itens=COMUM.concat(emp?EMP:INDIV);
+  const prova=lista.find(x=>x.tipo==='prova');
+  const codProva=prova?((/-prova-(BB-[A-Z0-9]+)\./.exec(prova.ficheiro)||[])[1]||'?'):'';
+  if(!prova){const sp=document.createElement('div');sp.className='v';sp.style.cssText='color:#ffd36b;margin-top:6px';sp.textContent='⚠️ Sem vídeo de prova ao vivo (loja registada antes desta regra). Peça uma videochamada antes de aprovar.';dd.appendChild(sp)}
+  const itens=COMUM.concat(emp?EMP:INDIV).concat(prova?['Vídeo de prova: aparecem o rosto, o documento original na mão e o papel com o código '+codProva]:[]);
   let aprovar=null;
   const ck=document.createElement('div');ck.className='chk';
   const ct=document.createElement('div');ct.className='k';ct.textContent='Confirme antes de aprovar ('+(emp?'empresa':'pessoa individual')+')';ck.appendChild(ct);
@@ -166,6 +183,7 @@ function desenharLoja(l){
     const b=document.createElement('button');b.textContent=n;if(cl)b.className=cl;
     if(e==='aprovada'){aprovar=b;b.disabled=true}
     b.onclick=async()=>{
+      if(e==='aprovada'&&lista.some(x=>x._r&&x._r.nivel==='suspeito')&&!confirm('Há documentos SUSPEITOS nesta loja. Confirmou no registo oficial e quer aprovar mesmo assim?'))return;
       b.disabled=true;msg('A guardar…');
       const r=await sb.from('lojas').update({estado:e}).eq('id',l.id).select();
       if(r.error){b.disabled=false;return msg('Erro: '+r.error.message)}
@@ -177,5 +195,61 @@ function desenharLoja(l){
   c.appendChild(ac);
   $('lista').appendChild(c);
 }
+/* ---- verificador próprio de documentos (verificar-documentos.js) ---- */
+let filaVerificar=[],aCorrer=false;
+async function correrFila(){
+  if(aCorrer)return;aCorrer=true;
+  while(filaVerificar.length){const f=filaVerificar.shift();try{await f()}catch(e){}}
+  aCorrer=false;
+}
+const NV={ok:['v-ok','✅ sem sinais'],atencao:['v-at','⚠️ atenção'],suspeito:['v-su','🚨 suspeito']};
+async function verificarLoja(l,lista,vb){
+  if(vb._a)return;vb._a=1;vb.disabled=true;
+  if(!window.BBVerificaDoc){vb.textContent='Falta o ficheiro verificar-documentos.js no GitHub';vb._a=0;vb.disabled=false;return}
+  let susp=0,aten=0;
+  for(const x of lista){
+    const u=x._ui;if(!u)continue;
+    if(x.tipo==='prova'){
+      const cod=(/-prova-(BB-[A-Z0-9]+)\./.exec(x.ficheiro)||[])[1]||'?';
+      u.est.className='vst v-at';u.est.textContent='🎥 ver vídeo';
+      u.res.innerHTML='<summary>O que confirmar no vídeo</summary><div class="k" style="color:var(--tx)">Toque em Ver e confirme: o rosto da pessoa, o documento original na mão (o mesmo dos ficheiros) e o papel com o código <b style="font-size:17px;letter-spacing:2px">'+cod+'</b>. Se o código for outro ou não aparecer, rejeite.</div>';
+      u.res.classList.remove('hide');u.res.open=true;continue;
+    }
+    u.est.className='vst v-cz';u.est.textContent='⏳ a verificar…';
+    try{
+      const d=await sb.storage.from('documentos-loja').download(x.ficheiro);
+      if(d.error)throw d.error;
+      const r=await BBVerificaDoc.analisar(d.data,x.ficheiro);
+      await duplicados(l,x,r);
+      x._r=r;
+      if(r.nivel==='suspeito')susp++;else if(r.nivel==='atencao')aten++;
+      u.est.className='vst '+NV[r.nivel][0];u.est.textContent=NV[r.nivel][1];
+      u.res.innerHTML='<summary>Ver análise ('+r.sinais.length+(r.sinais.length===1?' sinal':' sinais')+')</summary>';
+      u.res.appendChild(BBVerificaDoc.cartao(r));
+      u.res.classList.remove('hide');
+      if(r.nivel!=='ok')u.res.open=true;
+    }catch(e){u.est.className='vst v-cz';u.est.textContent='❌ não abriu';u.res.innerHTML='<summary>Erro</summary><div class="k">'+String(e&&e.message||e)+'</div>';u.res.classList.remove('hide')}
+  }
+  vb.textContent=susp?('🚨 '+susp+' documento(s) suspeito(s)'+(aten?' · '+aten+' com atenção':'')+' — toque para verificar de novo'):aten?('⚠️ '+aten+' documento(s) para rever com atenção — toque para verificar de novo'):'✅ Documentos sem sinais fortes — toque para verificar de novo';
+  vb._a=0;vb.disabled=false;
+}
+/* o mesmo documento já foi usado noutra loja? (tabela doc_verificacoes) */
+async function duplicados(l,x,r){
+  try{
+    await sb.from('doc_verificacoes').upsert({ficheiro:x.ficheiro,loja_id:String(l.id),tipo:x.tipo||'',dhash:r.dhash,sha:r.sha,nivel:r.nivel,pontos:r.pontos,sinais:r.sinais.map(s=>s.t),verificado_em:new Date().toISOString()});
+    const o=await sb.from('doc_verificacoes').select('ficheiro,loja_id,dhash,sha').neq('loja_id',String(l.id)).limit(5000);
+    if(o.error)throw o.error;
+    const iguais=(o.data||[]).filter(d=>(r.sha&&d.sha===r.sha)||(r.dhash&&d.dhash&&!/^0+$|^f+$/.test(r.dhash)&&BBVerificaDoc.distancia(r.dhash,d.dhash)<=5));
+    if(iguais.length){
+      const ids=[...new Set(iguais.map(d=>d.loja_id))];
+      const n=await sb.from('lojas').select('id,nome').in('id',ids);
+      const nomes=((n.data)||[]).map(z=>z.nome||z.id);
+      r.sinais.unshift({p:8,t:'Este documento (ou quase igual) já foi enviado por outra loja: '+(nomes.length?nomes.join(', '):ids.join(', '))+'.'});
+      r.pontos+=8;r.nivel=r.pontos>=7?'suspeito':r.pontos>=3?'atencao':'ok';
+    }
+  }catch(e){r.info.push('Comparação com outras lojas indisponível (falta correr o SQL da tabela doc_verificacoes).')}
+}
+const _carregar=carregar;
+carregar=async function(mais){if(!mais)filaVerificar=[];await _carregar(mais);correrFila()};
 iniciar();
 </script></body></html>

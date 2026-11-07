@@ -20,6 +20,9 @@ button{padding:12px 16px;border-radius:10px;border:1px solid var(--line);backgro
 .doc.ok small{color:var(--ok)}
 #m{margin-top:12px;color:var(--ac)}.hide{display:none}
 .est{font-size:20px;font-weight:700;margin:6px 0}
+#pvCod{display:inline-block;color:#fff;background:#2c2c30;border-radius:8px;padding:4px 10px;font-size:24px;letter-spacing:3px;margin:6px 0;font-family:monospace}
+#pvV{width:100%;border-radius:10px;margin-top:8px;background:#000;display:none;max-height:60vh}
+#pvEst.ok{color:var(--ok)}
 </style></head><body>
 <h1>Criar a minha loja</h1>
 <div class="box">Para vender na BBabilônia a loja é verificada. Os documentos ficam privados: só você e a equipa da BBabilônia os veem.</div>
@@ -57,6 +60,12 @@ button{padding:12px 16px;border-radius:10px;border:1px solid var(--line);backgro
  <h3>Documentos</h3>
  <div id="docs"></div>
 
+ <h3>Prova ao vivo *</h3>
+ <div class="box">1) Escreva este código num papel:<br><span id="pvCod"></span><br>2) Grave aqui um vídeo curto (5 a 15 segundos), ao vivo, a mostrar: o seu rosto, o documento original na mão (BI ou registo da empresa) e o papel com o código.<br>O vídeo só pode ser gravado agora pela câmara (não dá para escolher da galeria). Fica privado: só a equipa da BBabilônia o vê.</div>
+ <video id="pvV" playsinline muted></video>
+ <div style="display:flex;gap:8px;margin-top:8px"><button id="pvGravar" type="button" style="flex:1">🎥 Abrir câmara</button><button id="pvVirar" type="button" class="hide">🔄 Virar</button></div>
+ <small id="pvEst" style="display:block;color:var(--mut);margin-top:6px">Ainda não gravado</small>
+
  <button class="p" id="env">Enviar para análise</button>
 </div>
 <div id="m"></div>
@@ -92,6 +101,44 @@ function pick(k,el){
  d.querySelector('small').textContent=files[k]?files[k].name:'Nenhum ficheiro';
 }
 $('tipo').onchange=desenharDocs;
+
+/* ---- prova ao vivo: vídeo gravado agora, com código aleatório (contra documentos feitos por IA ou montados) ---- */
+const PV_COD=(()=>{const a='ABCDEFGHJKLMNPQRSTUVWXYZ23456789',r=new Uint32Array(6);crypto.getRandomValues(r);return 'BB-'+Array.from(r,x=>a[x%a.length]).join('')})();
+let pvBlob=null,pvStream=null,pvFace='user',pvRec=null,pvT=null,pvSeg=0;
+$('pvCod').textContent=PV_COD;
+function pvEst(t,ok){$('pvEst').textContent=t;$('pvEst').className=ok?'ok':''}
+function pvFechar(){if(pvStream){pvStream.getTracks().forEach(t=>t.stop());pvStream=null}}
+async function pvAbrir(){
+ pvFechar();
+ pvStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:pvFace,width:{ideal:1280},height:{ideal:720}},audio:false});
+ const v=$('pvV');v.controls=false;v.removeAttribute('src');v.srcObject=pvStream;v.muted=true;v.style.display='block';await v.play().catch(()=>{});
+}
+$('pvGravar').onclick=async()=>{
+ if(pvRec&&pvRec.state==='recording'){pvRec.stop();return}
+ if(!pvStream){
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia||!window.MediaRecorder)return pvEst('Este navegador não grava vídeo. Use o Chrome ou o Safari atualizado.');
+  try{await pvAbrir()}catch(e){return pvEst('Não foi possível abrir a câmara: permita o acesso à câmara e toque outra vez.')}
+  $('pvGravar').textContent='⏺ Começar a gravar';$('pvVirar').classList.remove('hide');pvEst('Mostre o rosto, o documento e o papel com o código '+PV_COD+'.');return;
+ }
+ const tipos=['video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm','video/mp4'];
+ const mt=tipos.find(t=>MediaRecorder.isTypeSupported&&MediaRecorder.isTypeSupported(t))||'';
+ const ch=[];
+ try{pvRec=new MediaRecorder(pvStream,mt?{mimeType:mt,videoBitsPerSecond:1200000}:{})}catch(e){pvRec=new MediaRecorder(pvStream)}
+ pvRec.ondataavailable=e=>{if(e.data&&e.data.size)ch.push(e.data)};
+ pvRec.onstop=()=>{
+  clearInterval(pvT);
+  const tipo=String(pvRec.mimeType||mt||'video/webm').split(';')[0];
+  pvFechar();$('pvVirar').classList.add('hide');
+  if(pvSeg<5){pvBlob=null;$('pvV').style.display='none';$('pvGravar').textContent='🎥 Abrir câmara';return pvEst('O vídeo ficou curto demais ('+pvSeg+' s). Grave pelo menos 5 segundos.')}
+  pvBlob=new Blob(ch,{type:tipo});
+  const v=$('pvV');v.srcObject=null;v.src=URL.createObjectURL(pvBlob);v.controls=true;
+  $('pvGravar').textContent='🎥 Gravar outra vez';pvEst('Vídeo gravado ✓ ('+pvSeg+' s). Veja se aparece tudo; se não, grave outra vez.',true);
+ };
+ pvSeg=0;pvBlob=null;pvRec.start(500);
+ $('pvGravar').textContent='⏹ Parar';$('pvVirar').classList.add('hide');pvEst('A gravar… 0 s / 15 s');
+ pvT=setInterval(()=>{pvSeg++;pvEst('A gravar… '+pvSeg+' s / 15 s');if(pvSeg>=15&&pvRec.state==='recording')pvRec.stop()},1000);
+};
+$('pvVirar').onclick=async()=>{pvFace=pvFace==='user'?'environment':'user';try{await pvAbrir()}catch(e){pvEst('Não foi possível virar a câmara.')}};
 $('mundo').onchange=()=>$('pbox').classList.toggle('hide',$('mundo').checked);
 $('busca').oninput=()=>{const q=$('busca').value.trim().toLowerCase();
  document.querySelectorAll('#pl .ck').forEach(l=>l.style.display=l.dataset.n.includes(q)?'':'none')};
@@ -126,6 +173,7 @@ $('env').onclick=async()=>{
  if(!meios.length)return msg('Escolha pelo menos um meio de envio.');
  const falta=DOCS[tipo].find(d=>d[2]&&!files[d[0]]);
  if(falta)return msg('Falta enviar: '+falta[1]);
+ if(!pvBlob)return msg('Falta gravar o vídeo de prova ao vivo (com o código '+PV_COD+').');
  $('env').disabled=true;
  try{
   const subidos=[];let i=0;
@@ -137,6 +185,12 @@ $('env').onclick=async()=>{
    if(error)throw error;
    subidos.push({tipo:d[0],ficheiro:p});
   }
+  msg('A enviar o vídeo de prova…');
+  const ext=/mp4/.test(pvBlob.type)?'mp4':'webm';
+  const pv=user.id+'/'+Date.now()+'-prova-'+PV_COD+'.'+ext;
+  const {error:ev}=await sb.storage.from('documentos-loja').upload(pv,pvBlob,{contentType:pvBlob.type||('video/'+ext)});
+  if(ev)throw ev;
+  subidos.push({tipo:'prova',ficheiro:pv});
   msg('A criar a loja…');
   const {data,error}=await sb.from('lojas').insert({dono_id:user.id,nome:nome,tipo:tipo,pais:$('pais').value,descricao:$('desc').value.trim(),envia_mundo:mundo,paises_entrega:mundo?[]:pe,meios_envio:meios}).select('id').single();
   if(error)throw error;
