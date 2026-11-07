@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Rastreamento em tempo real · BBabilônia</title>
+<meta name="color-scheme" content="light">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0}
+body{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:#f3f6fb;color:#1b1740;line-height:1.4}
+a{color:inherit;text-decoration:none}button{font:inherit;cursor:pointer}
+.top{background:linear-gradient(135deg,#10b981,#0ea5e9 55%,#2563eb);color:#fff;padding:12px 12px 16px;position:sticky;top:0;z-index:20;box-shadow:0 4px 14px #0002}
+.top .l{display:flex;align-items:center;gap:8px}
+.top .vt{border:0;background:#ffffff2e;color:#fff;width:38px;height:38px;border-radius:50%;font-size:22px;line-height:1;flex:none}
+.top h1{font-size:18px;flex:1}
+.vivo{font-size:12px;font-weight:800;background:#ffffff2e;border-radius:999px;padding:4px 10px;display:none;align-items:center;gap:5px}
+.vivo.on{display:inline-flex}
+.vivo i{width:8px;height:8px;border-radius:50%;background:#4ade80;animation:pisca 1.2s infinite}
+@keyframes pisca{50%{opacity:.25}}
+main{max-width:640px;margin:0 auto;padding:12px 12px 110px}
+.cx{background:#fff;border-radius:16px;padding:14px;margin-bottom:12px;box-shadow:0 4px 14px #0ea5e914}
+.cx h2{font-size:16px;margin-bottom:8px}
+.l1{display:flex;justify-content:space-between;font-size:13px;color:#64748b}
+.num{font-size:19px;font-weight:900;letter-spacing:.5px;word-break:break-all;margin:4px 0}
+.dica{font-size:12.5px;color:#64748b;margin-top:4px}
+.bt{display:block;width:100%;border:0;border-radius:14px;padding:13px;font-weight:800;font-size:15px;text-align:center;background:#e0f2fe;color:#0369a1;margin-top:8px}
+.bt.p{background:linear-gradient(90deg,#10b981,#0ea5e9);color:#fff;box-shadow:0 6px 16px #0ea5e955}
+.bt:disabled{opacity:.5}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.bdg{display:inline-block;font-size:12px;font-weight:800;border-radius:999px;padding:3px 10px;background:#fef3c7;color:#92400e}
+.bdg.ok{background:#d1fae5;color:#047857}.bdg.no{background:#fee2e2;color:#b91c1c}
+.tl{position:relative;margin-top:6px}
+.ev{position:relative;padding:0 0 16px 40px}
+.ev:before{content:"";position:absolute;left:14px;top:30px;bottom:0;width:3px;background:#e2e8f0}
+.ev:last-child:before{display:none}
+.ev .ic{position:absolute;left:0;top:0;width:31px;height:31px;border-radius:50%;background:#e2e8f0;display:grid;place-items:center;font-size:15px}
+.ev:first-child .ic{background:linear-gradient(135deg,#10b981,#0ea5e9);box-shadow:0 0 0 5px #0ea5e922}
+.ev b{display:block;font-size:15px}
+.ev:first-child b{color:#047857}
+.ev .lc{font-size:13.5px;color:#334155;margin-top:1px}
+.ev .nt{font-size:13.5px;color:#475569;margin-top:3px;white-space:pre-wrap}
+.ev .dt{font-size:12px;color:#64748b;margin-top:2px}
+.ev .ap{border:0;background:#fee2e2;color:#b91c1c;border-radius:999px;font-size:12px;font-weight:700;padding:3px 10px;margin-top:5px}
+.ev.novo{animation:entra 1.2s}
+@keyframes entra{from{background:#ecfdf5}to{background:transparent}}
+label.lb{display:block;font-size:13.5px;font-weight:700;color:#334155;margin:12px 0 4px}
+.cp{width:100%;padding:11px;border:2px solid #e2e8f0;border-radius:12px;font-size:16px;font-family:inherit;background:#fff;color:#1b1740}
+.cp:focus{outline:none;border-color:#0ea5e9}
+.cp.erro{border-color:#dc2626!important;background:#fff5f5}
+textarea.cp{min-height:80px;resize:vertical}
+.aviso-campo{display:none;color:#b91c1c;font-size:13.5px;margin-top:5px;line-height:1.5}
+.aviso-campo mark{background:#fee2e2;color:#b91c1c;border:1px solid #fca5a5;border-radius:5px;padding:0 4px;font-weight:800}
+.msg{font-size:14px;margin-top:8px;color:#dc2626;min-height:18px}.msg.ok{color:#047857}
+.vazio{text-align:center;color:#64748b;font-size:14px;padding:18px 8px}
+.res{display:block;width:100%;text-align:left;border:0;border-bottom:1px solid #eef2f7;background:#fff;padding:11px 4px;font-size:14.5px;color:#1b1740}
+.res small{display:block;color:#64748b;font-size:12.5px}
+.hide{display:none!important}
+</style>
+</head>
+<body>
+<div class="top">
+  <div class="l"><button class="vt" id="voltar" aria-label="Voltar">&#8592;</button><h1>📍 Rastreamento</h1><span class="vivo" id="vivo"><i></i>Ao vivo</span></div>
+</div>
+<main>
+  <section id="v-entrar" class="cx hide">
+    <h2>Entre na sua conta</h2>
+    <label class="lb" for="em">Email</label><input class="cp" id="em" type="email" autocomplete="username">
+    <label class="lb" for="pw">Palavra-passe</label><input class="cp" id="pw" type="password" autocomplete="current-password">
+    <button class="bt p" id="bEntrar">Entrar</button>
+    <p class="msg" id="entMsg"></p>
+  </section>
+
+  <section id="v-procurar" class="cx hide">
+    <h2>🔎 Procurar pedido</h2>
+    <p class="dica">Escreva o número do pedido (os 8 primeiros caracteres chegam) ou o número de rastreamento.</p>
+    <input class="cp" id="pq" type="search" autocomplete="off" placeholder="Ex.: 3f9a1c2b" style="margin-top:8px">
+    <button class="bt p" id="bPq">Procurar</button>
+    <div id="pqRes"></div>
+  </section>
+
+  <section id="v-sem" class="cx hide"><p class="vazio" id="semTxt">Abra o rastreamento a partir de “Os meus pedidos”.</p><a class="bt p" href="pedidos.html" id="semLk">Os meus pedidos</a></section>
+
+  <section id="v-pedido" class="hide">
+    <div class="cx" id="cab"></div>
+    <div class="cx" id="formBox"></div>
+    <div class="cx"><h2>Histórico do envio</h2><div class="tl" id="tl"></div></div>
+  </section>
+</main>
+<script>
+var sb = supabase.createClient('https://dsfoqoeawvjafypycldz.supabase.co', 'sb_publishable_BN4NiVcDab9CqdTY_odgDA_uUOhjja0');
+var VEND = /^suppliers\./i.test(location.hostname);
+var $ = function (i) { return document.getElementById(i); };
+var PED = new URLSearchParams(location.search).get('pedido'), info = null, canal = null, vistos = {}, eu = null, podeProcurar = false;
+var ESTADOS = [
+  ['recolhido', '🚚 Recolhido pela transportadora'], ['em_transito', '✈️ Em trânsito'], ['saiu_origem', '🛫 Saiu do país de origem'],
+  ['chegou_destino', '🛬 Chegou ao país de destino'], ['alfandega', '🛃 Na alfândega'], ['alfandega_ok', '✅ Libertado da alfândega'],
+  ['armazem', '🏬 No armazém da logística / agente de carga'], ['saiu_entrega', '🛵 Saiu para entrega'], ['tentativa', '⚠️ Tentativa de entrega falhada'],
+  ['atraso', '⏳ Atraso no transporte'], ['entregue_local', '📍 Entregue no destino (falta o cliente confirmar)']];
+var PAISES = 'AF AL DZ AD AO AG AR AM AU AT AZ BS BH BD BB BY BE BZ BJ BT BO BA BW BR BN BG BF BI CV KH CM CA CF TD CL CN CO KM CG CD CR CI HR CU CY CZ DK DJ DM DO EC EG SV GQ ER EE SZ ET FJ FI FR GA GM GE DE GH GR GD GT GN GW GY HT HN HK HU IS IN ID IR IQ IE IL IT JM JP JO KZ KE KI KW KG LA LV LB LS LR LY LI LT LU MO MG MW MY MV ML MT MH MR MU MX FM MD MC MN ME MA MZ MM NA NR NP NL NZ NI NE NG MK NO OM PK PW PS PA PG PY PE PH PL PT PR QA RO RU RW KN LC VC WS SM ST SA SN RS SC SL SG SK SI SB SO ZA SS ES LK SD SR SE CH SY TW TJ TZ TH TL TG TO TT TN TR TM TV UG UA AE GB US UY UZ VU VA VE VN YE ZM ZW'.split(' ');
+
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+function nomePais(c) { if (!c) return ''; try { return new Intl.DisplayNames([navigator.language || 'pt', 'pt'], { type: 'region' }).of(c) || c; } catch (e) { return c; } }
+function quando(d) { try { return new Date(d).toLocaleString('pt-PT', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }); } catch (e) { return ''; } }
+function mostrar(v) { ['entrar', 'procurar', 'sem', 'pedido'].forEach(function (x) { $('v-' + x).classList.toggle('hide', x !== v); }); }
+
+/* ---------- contactos proibidos (as mesmas regras do servidor) ---------- */
+var MAU = /(https?:|www\.|@|\.(com|net|org|cn|mz|me|io|app|link|shop)\b|whats|wechat|weixin|telegram|instagram|facebook|tiktok|wpp|zap|gmail|hotmail|[0-9][0-9 .#()\/_*+-]{4,}[0-9])/i;
+function textoOk(t) { return !t || !MAU.test(t); }
+function marcar(el) {
+  var v = el.value.trim(), ok = textoOk(v), av = el.nextElementSibling;
+  if (!av || !av.classList.contains('aviso-campo')) { av = document.createElement('div'); av.className = 'aviso-campo'; el.parentNode.insertBefore(av, el.nextSibling); }
+  el.classList.toggle('erro', !ok);
+  if (ok) { av.style.display = 'none'; return true; }
+  /* marca a vermelho as palavras que fazem parte do contacto encontrado */
+  var tk = [], m, re = /\S+/g, g = new RegExp(MAU.source, 'gi'), zonas = [];
+  while ((m = re.exec(v))) tk.push({ w: m[0], a: m.index, b: m.index + m[0].length });
+  while ((m = g.exec(v))) { zonas.push([m.index, m.index + m[0].length]); if (!m[0].length) g.lastIndex++; }
+  var h = tk.filter(function (t) { return zonas.some(function (z) { return t.a < z[1] && t.b > z[0]; }); }).map(function (t) { return '<mark>' + esc(t.w) + '</mark>'; });
+  av.innerHTML = '⚠️ Este texto contém contactos ou outros meios de comunicação. ' + (h.length ? 'Apague: ' + h.join(' ') : 'Escreva só o local.');
+  av.style.display = 'block';
+  return false;
+}
+
+/* ---------- site da transportadora ---------- */
+function linkTransp(t, n) {
+  var e = encodeURIComponent(n), x = String(t || '').toLowerCase();
+  if (/dhl/.test(x)) return 'https://www.dhl.com/global-en/home/tracking/tracking-express.html?submit=1&tracking-id=' + e;
+  if (/fedex/.test(x)) return 'https://www.fedex.com/fedextrack/?trknbr=' + e;
+  if (/ups/.test(x)) return 'https://www.ups.com/track?tracknum=' + e;
+  if (/aramex/.test(x)) return 'https://www.aramex.com/track/results?ShipmentNumber=' + e;
+  return 'https://t.17track.net/pt#nums=' + e;
+}
+
+/* ---------- desenhar ---------- */
+function desenhar() {
+  var p = info, est = p.cancelado ? '<span class="bdg no">Cancelado</span>' : p.recebido ? '<span class="bdg ok">Recebido</span>' : p.enviado ? '<span class="bdg">A caminho</span>' : '<span class="bdg">Ainda não enviado</span>';
+  var h = '<div class="l1"><span>Pedido ' + esc(String(p.id).slice(0, 8)) + '</span><span>' + est + '</span></div>';
+  if (p.rastreio) {
+    var l17 = 'https://t.17track.net/pt#nums=' + encodeURIComponent(p.rastreio), lt = linkTransp(p.transportadora, p.rastreio);
+    h += '<div class="dica" style="margin-top:8px">Transportadora: <b>' + esc(p.transportadora || '—') + '</b></div><div class="num">' + esc(p.rastreio) + '</div>' +
+      (p.shipped_at ? '<div class="dica">Enviado em ' + quando(p.shipped_at) + '</div>' : '') +
+      '<div class="g2"><button class="bt" id="bCop">📋 Copiar número</button><a class="bt p" target="_blank" rel="noopener" href="' + esc(lt) + '">🌍 Ver na transportadora</a></div>' +
+      (lt !== l17 ? '<a class="bt" target="_blank" rel="noopener" href="' + esc(l17) + '">Ver também em 17TRACK</a>' : '') +
+      '<p class="dica">O site da transportadora mostra os passos dela. Aqui em baixo aparecem também as atualizações do fornecedor e da equipa BBabilônia, sozinhas, sem recarregar.</p>';
+  } else h += '<p class="dica" style="margin-top:8px">O fornecedor ainda não marcou este pedido como enviado. Quando marcar, o número de rastreamento aparece aqui sozinho.</p>';
+  $('cab').innerHTML = h;
+  if ($('bCop')) $('bCop').onclick = function () { var b = this; (navigator.clipboard ? navigator.clipboard.writeText(p.rastreio) : Promise.reject()).then(function () { b.textContent = '✓ Copiado'; }, function () { prompt('Copie o número:', p.rastreio); }); };
+
+  var ev = p.eventos || [];
+  $('tl').innerHTML = ev.length ? ev.map(function (e) {
+    var lugar = [e.local_cidade, nomePais(e.local_pais)].filter(Boolean).join(', '), novo = info._carregado && !vistos[e.id];
+    var quem = e.origem === 'vendedor' ? 'Fornecedor' : e.origem === 'agente' || e.origem === 'admin' ? 'Equipa BBabilônia' : 'Automático';
+    var apagar = p.papel !== 'cliente' && e.origem !== 'sistema' && (p.papel === 'admin' || p.papel === 'agente' || (e.meu && Date.now() - new Date(e.created_at) < 30 * 6e4));
+    return '<div class="ev' + (novo ? ' novo' : '') + '"><span class="ic">' + esc((e.rotulo || '').split(' ')[0]) + '</span><b>' + esc((e.rotulo || e.estado).replace(/^\S+\s/, '')) + '</b>' +
+      (lugar ? '<div class="lc">📍 ' + esc(lugar) + '</div>' : '') + (e.nota ? '<div class="nt">' + esc(e.nota) + '</div>' : '') +
+      '<div class="dt">' + quando(e.created_at) + ' · ' + quem + '</div>' + (apagar ? '<button class="ap" data-ap="' + esc(e.id) + '">Apagar</button>' : '') + '</div>';
+  }).join('') : '<p class="vazio">Ainda sem atualizações.</p>';
+  ev.forEach(function (e) { vistos[e.id] = 1; }); info._carregado = true;
+
+  var pode = p.papel !== 'cliente' && p.enviado && !p.cancelado && !p.recebido;
+  $('formBox').classList.toggle('hide', !pode);
+  if (pode && !$('fE')) {
+    var ult = ''; try { ult = localStorage.getItem('bb_rast_pais') || ''; } catch (e) {}
+    var ps = PAISES.map(function (c) { return { c: c, n: nomePais(c) }; }).sort(function (a, b) { return a.n.localeCompare(b.n); });
+    $('formBox').innerHTML = '<h2>➕ Atualizar o rastreamento</h2><p class="dica">O cliente recebe logo um aviso no telemóvel.</p>' +
+      '<label class="lb" for="fE">Estado do envio *</label><select class="cp" id="fE"><option value="">— Escolha —</option>' + ESTADOS.map(function (s) { return '<option value="' + s[0] + '">' + esc(s[1]) + '</option>'; }).join('') + '</select>' +
+      '<div class="g2"><div><label class="lb" for="fP">País</label><select class="cp" id="fP"><option value="">—</option>' + ps.map(function (o) { return '<option value="' + o.c + '"' + (o.c === ult ? ' selected' : '') + '>' + esc(o.n) + '</option>'; }).join('') + '</select></div>' +
+      '<div><label class="lb" for="fC">Cidade</label><input class="cp" id="fC" maxlength="60" placeholder="Ex.: Guangzhou"></div></div>' +
+      (p.papel === 'vendedor' ? '' : '<label class="lb" for="fN">Nota para o cliente</label><textarea class="cp" id="fN" maxlength="300" placeholder="Ex.: A aguardar documentos na alfândega"></textarea>') +
+      '<button class="bt p" id="fOk">Guardar atualização</button><p class="msg" id="fMsg"></p>';
+    ['fC', 'fN'].forEach(function (i) { if ($(i)) $(i).oninput = function () { marcar(this); }; });
+    $('fOk').onclick = guardar;
+  }
+}
+
+async function carregar() {
+  if (!PED) return;
+  var r = await sb.rpc('rastreio_info', { p_pedido: PED });
+  if (r.error) { $('semTxt').textContent = /sem acesso/i.test(r.error.message) ? 'Este pedido não pertence a esta conta. Entre com a conta do pedido.' : r.error.message; mostrar('sem'); return; }
+  info = Object.assign(r.data, { _carregado: info && info._carregado });
+  mostrar('pedido'); desenhar();
+}
+
+async function guardar() {
+  var b = $('fOk'), m = $('fMsg'); m.className = 'msg'; m.textContent = '';
+  if (!$('fE').value) return (m.textContent = 'Escolha o estado do envio.');
+  var okC = marcar($('fC')), okN = $('fN') ? marcar($('fN')) : true;
+  if (!okC || !okN) return (m.textContent = 'O texto contém contactos ou outros meios de comunicação. Apague o que está a vermelho.');
+  b.disabled = true;
+  var r = await sb.rpc('rastreio_adicionar', { p_pedido: PED, p_estado: $('fE').value, p_pais: $('fP').value || null, p_cidade: $('fC').value.trim() || null, p_nota: $('fN') ? $('fN').value.trim() || null : null });
+  b.disabled = false;
+  if (r.error) { m.textContent = r.error.message; return; }
+  try { localStorage.setItem('bb_rast_pais', $('fP').value || ''); } catch (e) {}
+  $('fE').value = ''; $('fC').value = ''; if ($('fN')) $('fN').value = '';
+  m.className = 'msg ok'; m.textContent = '✅ Atualização guardada. O cliente foi avisado.';
+  setTimeout(function () { if (m.className === 'msg ok') m.textContent = ''; }, 4000);
+  carregar();
+}
+
+document.addEventListener('click', async function (e) {
+  var b = e.target.closest && e.target.closest('[data-ap]'); if (!b) return;
+  if (!confirm('Apagar esta atualização?')) return;
+  b.disabled = true;
+  var r = await sb.rpc('rastreio_apagar', { p_id: Number(b.getAttribute('data-ap')) });
+  if (r.error) { alert(r.error.message); b.disabled = false; return; }
+  carregar();
+});
+
+/* ---------- tempo real ---------- */
+function ligarTempoReal() {
+  if (canal || !PED) return;
+  canal = sb.channel('rastreio-' + PED)
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'rastreio_eventos', filter: 'pedido_id=eq.' + PED }, function () { carregar(); })
+    .subscribe(function (st) { $('vivo').classList.toggle('on', st === 'SUBSCRIBED'); });
+}
+setInterval(function () { if (!document.hidden && info) carregar(); }, 30000);
+document.addEventListener('visibilitychange', function () { if (!document.hidden && info) carregar(); });
+
+/* ---------- procurar (dono e agentes) ---------- */
+$('bPq').onclick = async function () {
+  var t = $('pq').value.trim(); if (t.length < 4) { $('pqRes').innerHTML = '<p class="vazio">Escreva pelo menos 4 letras ou números.</p>'; return; }
+  $('pqRes').innerHTML = '<p class="vazio">A procurar…</p>';
+  var r = await sb.rpc('rastreio_procurar', { p_txt: t });
+  if (r.error) { $('pqRes').innerHTML = '<p class="vazio">' + esc(r.error.message) + '</p>'; return; }
+  var l = r.data || [];
+  $('pqRes').innerHTML = l.length ? l.map(function (o) { return '<a class="res" href="rastreio.html?pedido=' + encodeURIComponent(o.id) + '">Pedido ' + esc(String(o.id).slice(0, 8)) + ' · ' + esc(o.status || '') + '<small>' + esc(o.customer_name || '') + (o.rastreio ? ' · ' + esc(o.transportadora || '') + ' ' + esc(o.rastreio) : '') + ' · ' + quando(o.created_at) + '</small></a>'; }).join('') : '<p class="vazio">Nenhum pedido encontrado.</p>';
+};
+$('pq').addEventListener('keydown', function (e) { if (e.key === 'Enter') $('bPq').click(); });
+
+/* ---------- entrar e arranque ---------- */
+$('bEntrar').onclick = async function () {
+  $('entMsg').textContent = '';
+  var r = await sb.auth.signInWithPassword({ email: $('em').value.trim(), password: $('pw').value });
+  if (r.error) { $('entMsg').textContent = 'Email ou palavra-passe incorretos.'; return; }
+  iniciar();
+};
+$('voltar').onclick = function () {
+  if (history.length > 1) history.back();
+  else location.href = VEND ? 'fornecedor-envios.html' : 'pedidos.html';
+};
+async function iniciar() {
+  var s = (await sb.auth.getSession()).data.session;
+  if (!s) { mostrar('entrar'); return; }
+  eu = s.user;
+  if (VEND) { $('semLk').href = 'fornecedor-envios.html'; $('semLk').textContent = 'Os meus envios'; }
+  if (PED) { await carregar(); ligarTempoReal(); return; }
+  var t = await sb.rpc('rastreio_procurar', { p_txt: '' });
+  if (!t.error) mostrar('procurar'); else mostrar('sem');
+}
+iniciar();
+</script>
+<script>
+if (!/^suppliers\./i.test(location.hostname)) { var s = document.createElement('script'); s.src = 'menu-babilonia.js'; document.body.appendChild(s); }
+</script>
+</body>
+</html>

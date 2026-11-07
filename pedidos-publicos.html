@@ -69,12 +69,17 @@ textarea.cp{min-height:96px;resize:vertical}
 .aviso-campo{display:none;color:#b91c1c;font-size:13.5px;margin-top:5px;line-height:1.5}
 .aviso-campo mark{background:#fee2e2;color:#b91c1c;border:1px solid #fca5a5;border-radius:5px;padding:0 4px;font-weight:800}
 .dica{font-size:12.5px;color:#64748b;margin-top:4px}
+.conta{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12.5px;margin:6px 0 0 46px;opacity:.95}
+.conta button{border:0;background:#ffffff2e;color:#fff;border-radius:999px;padding:4px 10px;font-size:12px;font-weight:700;flex:none}
+.adm{background:#fef2f2;border:2px solid #fecaca;border-radius:14px;padding:10px 12px;margin-top:12px}
+.adm b{color:#991b1b;font-size:13.5px}
 </style>
 </head>
 <body>
 <div class="top">
   <div class="l"><button class="vt" id="voltar" aria-label="Voltar">&#8592;</button><h1>📢 Pedidos dos clientes</h1></div>
   <p id="sub">Publique o que procura e receba ofertas dos fornecedores.</p>
+  <div class="conta hide" id="conta"><span id="contaTxt"></span><button id="trocar">Trocar de conta</button></div>
   <div class="abas" id="abas">
     <button data-v="todos" class="on">Todos os pedidos</button>
     <button data-v="meus">Os meus pedidos</button>
@@ -99,23 +104,23 @@ textarea.cp{min-height:96px;resize:vertical}
   <section id="v-meus" class="hide"><div id="meus"><p class="vazio">A carregar…</p></div></section>
 
   <section id="v-publicar" class="hide">
-    <div class="cx">
+    <form class="cx" id="fForm" autocomplete="off" onsubmit="return false">
       <h2>O que procura?</h2>
       <p class="dica">Os fornecedores da BBabilônia veem o seu pedido e enviam ofertas. Não escreva contactos, links ou redes sociais: o pedido é recusado.</p>
-      <label class="lb" for="fT">Título *</label><input class="cp" id="fT" maxlength="120" placeholder="Ex.: Vestidos de cetim para festa">
-      <label class="lb" for="fD">Descrição</label><textarea class="cp" id="fD" maxlength="2000" placeholder="Cores, tamanhos, material, qualidade, como quer receber…"></textarea>
+      <label class="lb" for="fT">Título *</label><input class="cp" id="fT" maxlength="120" autocomplete="off" placeholder="Ex.: Vestidos de cetim para festa">
+      <label class="lb" for="fD">Descrição</label><textarea class="cp" id="fD" maxlength="2000" autocomplete="off" placeholder="Cores, tamanhos, material, qualidade, como quer receber…"></textarea>
       <div class="g2">
-        <div><label class="lb" for="fQ">Quantidade</label><input class="cp" id="fQ" type="number" min="1" inputmode="numeric" placeholder="Ex.: 50"></div>
+        <div><label class="lb" for="fQ">Quantidade</label><input class="cp" id="fQ" type="number" min="1" inputmode="numeric" autocomplete="off" placeholder="Ex.: 50"></div>
         <div><label class="lb" for="fU">Unidade</label><select class="cp" id="fU"><option>peças</option><option>pares</option><option>conjuntos</option><option>caixas</option><option>kg</option><option>toneladas</option><option>metros</option><option>litros</option><option>unidades</option></select></div>
       </div>
-      <label class="lb" for="fC">Categoria *</label><input class="cp" id="fC" readonly placeholder="Toque para escolher a categoria 🔍" style="cursor:pointer"><p class="dica">Todos os fornecedores desta categoria recebem o aviso do seu pedido.</p>
+      <label class="lb" for="fC">Categoria *</label><input class="cp" id="fC" readonly autocomplete="off" placeholder="Toque para escolher a categoria 🔍" style="cursor:pointer"><p class="dica">Todos os fornecedores desta categoria recebem o aviso do seu pedido.</p>
       <label class="lb" for="fP">País de entrega</label><select class="cp" id="fP"></select>
       <label class="lb">Fotos de referência (até 6)</label>
       <div class="fotos" id="fFotos"><label class="add" id="fAdd">📷<br>Juntar<input id="fFile" type="file" accept="image/jpeg,image/png,image/webp" multiple hidden></label></div>
       <p class="dica">Cada foto é verificada: fotos com contactos, links, redes sociais ou código QR não são aceites.</p>
-      <button class="bt p" id="fPub">Publicar pedido</button>
+      <button type="button" class="bt p" id="fPub">Publicar pedido</button>
       <p class="msg" id="fMsg"></p>
-    </div>
+    </form>
   </section>
 </main>
 
@@ -132,7 +137,7 @@ var EXATAS=["link","links","site","sites","website","web","url","contacto","cont
 var FRASES=["nossa plataforma","outra plataforma","fora da plataforma","ponto com","manda mensagem","me chama","chama no","me adiciona","adiciona me","me liga","fale comigo","me procura","procure no","procura no","te convido"];
 var NUMEROS="zero um dois tres quatro cinco seis sete oito nove one two three four five six seven eight nine".split(" ");
 var UNID=/(?:usd|mzn|us\$|\$|mt)\s*\d[\d.]*|\d+(?:\.\d+)?\s*(?:cm|mm|kg|g|mts|mt|m|ml|l|usd|mzn|us\$|pcs|pc|pecas|unidades|un|dias|tn|ton|w|kw|v|gb|tb|ghz|mah|polegadas|meticais|dolares)(?![a-z])|\d+(?:\.\d+)?\s*[%$]/gi;
-function norm(s){return s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"");}
+function norm(s){return s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");}
 function leet(w){return w.replace(/0/g,"o").replace(/1/g,"i").replace(/3/g,"e").replace(/4/g,"a").replace(/5/g,"s").replace(/\$/g,"s").replace(/@/g,"a");}
 function skel(w){return w.replace(/[aeiou]/g,"").replace(/(.)\1+/g,"$1");}
 function lev(a,b){var p=[],i,j;for(j=0;j<=b.length;j++)p[j]=j;for(i=1;i<=a.length;i++){var c=[i];for(j=1;j<=b.length;j++)c[j]=Math.min(p[j]+1,c[j-1]+1,p[j-1]+(a[i-1]===b[j-1]?0:1));p=c;}return p[b.length];}
@@ -205,9 +210,12 @@ var U = 'https://dsfoqoeawvjafypycldz.supabase.co';
 var K = 'sb_publishable_BN4NiVcDab9CqdTY_odgDA_uUOhjja0';
 var SK = 'sb-dsfoqoeawvjafypycldz-auth-token';
 var BUCKET = 'pedidos-publicos';
+var ADMIN = 'jovenciofoguete1904@gmail.com';
 var VEND = /^suppliers\./i.test(location.hostname);
+var PAINEL_ADM = /^(admin|administrator)\./i.test(location.hostname);
+var SO_OFERTAS = VEND || PAINEL_ADM; /* no painel do vendedor e do dono não há lado do cliente (publicar / os meus pedidos) */
 var $ = function (i) { return document.getElementById(i); };
-var eu = null, pedidos = [], minhasOfertas = {}, vista = 'todos', novas = [];
+var eu = null, euEmail = '', souAdmin = false, pedidos = [], minhasOfertas = {}, vista = 'todos', novas = [];
 
 function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
 function ler() { try { return JSON.parse(localStorage.getItem(SK) || 'null'); } catch (e) { return null; } }
@@ -228,6 +236,8 @@ async function token() {
   }
   return s.access_token;
 }
+/* o utilizador vem do próprio token (nunca de dados antigos guardados no telemóvel) */
+function doToken(t) { try { var b = t.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'); while (b.length % 4) b += '='; var d = JSON.parse(decodeURIComponent(escape(atob(b)))); return { id: d.sub, email: d.email || '' }; } catch (e) { return null; } }
 async function api(path, metodo, corpo) {
   var t = await token();
   var r = await fetch(U + '/rest/v1/' + path, { method: metodo || 'GET',
@@ -263,13 +273,15 @@ function marcarTodos(ids) {
 }
 document.addEventListener('input', function (e) { var el = e.target; if (el && el.matches && el.matches('#fT,#fD,#oT')) marcar(el); });
 function fotosDe(p) { var f = p.fotos; if (typeof f === 'string') { try { f = JSON.parse(f); } catch (e) { f = []; } } return Array.isArray(f) ? f : []; }
+function eMeu(p) { return !!eu && String(p.cliente_id || '') === String(eu); }
 
 /* ---------- navegação ---------- */
 function mostrar(v) {
+  if (SO_OFERTAS && (v === 'meus' || v === 'publicar')) v = 'todos';
   vista = v;
   ['entrar', 'todos', 'meus', 'publicar'].forEach(function (x) { $('v-' + x).classList.toggle('hide', x !== v); });
   Array.prototype.forEach.call($('abas').querySelectorAll('button'), function (b) { b.classList.toggle('on', b.getAttribute('data-v') === v); });
-  $('abas').classList.toggle('hide', v === 'entrar');
+  $('abas').classList.toggle('hide', v === 'entrar' || SO_OFERTAS);
   if (v !== 'entrar' && location.hash !== '#' + v) history.replaceState({}, '', '#' + v);
   if (v === 'todos') desenharTodos();
   if (v === 'meus') carregarMeus();
@@ -278,12 +290,12 @@ function mostrar(v) {
 $('abas').onclick = function (e) { var b = e.target.closest('button[data-v]'); if (b) mostrar(b.getAttribute('data-v')); };
 $('voltar').onclick = function () {
   if ($('modal').classList.contains('on')) return fechar();
-  if (history.length > 1) history.back(); else location.href = VEND ? 'painel-vendedor-v2.html' : 'conta.html';
+  if (history.length > 1) history.back(); else location.href = VEND ? 'painel-vendedor-v2.html' : PAINEL_ADM ? 'painel-admin.html' : 'conta.html';
 };
 function fechar() { $('modal').classList.remove('on'); $('modalCx').innerHTML = ''; }
 $('modal').onclick = function (e) { if (e.target === $('modal')) fechar(); };
 
-/* ---------- entrar ---------- */
+/* ---------- entrar / trocar de conta ---------- */
 $('bEntrar').onclick = async function () {
   $('entMsg').textContent = '';
   try {
@@ -291,8 +303,16 @@ $('bEntrar').onclick = async function () {
       body: JSON.stringify({ email: $('em').value.trim(), password: $('pw').value }) });
     var j = await r.json();
     if (!r.ok || !j.access_token) throw new Error('Email ou palavra-passe incorretos.');
-    guardar(j); iniciar();
+    guardar(j); limparFormulario(); iniciar();
   } catch (e) { $('entMsg').textContent = e.message; }
+};
+$('trocar').onclick = async function () {
+  if (!confirm('Sair desta conta para entrar com outra?')) return;
+  var t = await token();
+  try { if (t) await fetch(U + '/auth/v1/logout', { method: 'POST', headers: { apikey: K, Authorization: 'Bearer ' + t } }); } catch (e) {}
+  localStorage.removeItem(SK); eu = null; euEmail = ''; souAdmin = false; pedidos = []; minhasOfertas = {}; minhasCats = null;
+  limparFormulario(); $('conta').classList.add('hide'); $('em').value = ''; $('pw').value = '';
+  mostrar('entrar');
 };
 
 /* ---------- lista de todos os pedidos ---------- */
@@ -304,11 +324,11 @@ async function carregarTodos() {
     o.forEach(function (x) { minhasOfertas[x.pedido_id] = x; });
   } catch (e) {}
 }
-function semAcento(t) { return String(t || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); }
+function semAcento(t) { return String(t || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''); }
 function cartao(p, meu) {
   var f = fotosDe(p)[0];
   var ft = f ? '<img class="ft" loading="lazy" src="' + esc(f.m || f.u) + '" alt="">' : '<div class="ft">📦</div>';
-  var tags = (meu ? '<span class="bdg b4">O meu pedido</span>' : '') + (minhasOfertas[p.id] ? '<span class="bdg b2">Já fez oferta</span>' : '') +
+  var tags = (meu && !SO_OFERTAS ? '<span class="bdg b4">O meu pedido</span>' : '') + (minhasOfertas[p.id] ? '<span class="bdg b2">Já fez oferta</span>' : '') +
     (p.estado === 'fechado' ? '<span class="bdg b3">Fechado</span>' : '');
   return '<button class="card" data-id="' + esc(p.id) + '">' + ft + '<div class="t"><b>' + esc(p.titulo) + '</b>' +
     (p.descricao ? '<div class="d">' + esc(p.descricao) + '</div>' : '') +
@@ -318,9 +338,9 @@ function cartao(p, meu) {
 function desenharTodos() {
   var q = semAcento($('pesq').value.trim()), pal = q.split(/\s+/).filter(Boolean);
   var l = pedidos.filter(function (p) { var t = semAcento(p.titulo + ' ' + (p.descricao || '') + ' ' + (p.categoria || '')); return pal.every(function (w) { return t.indexOf(w) > -1; }); });
-  if (minhasCats && soArea) l = l.filter(function (p) { return p.cliente_id === eu || daMinhaArea(p); });
-  $('lista').innerHTML = l.length ? l.map(function (p) { return cartao(p, p.cliente_id === eu); }).join('')
-    : '<p class="vazio">' + (minhasCats && soArea && pedidos.length ? 'Ainda não há pedidos na sua área. Toque em “Todos os pedidos” para ver os outros.' : pedidos.length ? 'Nenhum pedido com essa pesquisa.' : 'Ainda não há pedidos publicados. Seja o primeiro: toque em “+ Publicar o que procuro”.') + '</p>';
+  if (minhasCats && soArea) l = l.filter(function (p) { return eMeu(p) || daMinhaArea(p); });
+  $('lista').innerHTML = l.length ? l.map(function (p) { return cartao(p, eMeu(p)); }).join('')
+    : '<p class="vazio">' + (minhasCats && soArea && pedidos.length ? 'Ainda não há pedidos na sua área. Toque em “Todos os pedidos” para ver os outros.' : pedidos.length ? 'Nenhum pedido com essa pesquisa.' : (SO_OFERTAS ? 'Ainda não há pedidos publicados pelos clientes.' : 'Ainda não há pedidos publicados. Seja o primeiro: toque em “+ Publicar o que procuro”.')) + '</p>';
 }
 $('pesq').oninput = desenharTodos;
 $('lista').onclick = function (e) { var b = e.target.closest('.card'); if (b) abrirPedido(b.getAttribute('data-id')); };
@@ -335,15 +355,29 @@ function moedas() {
   try { if (Intl.supportedValuesOf) { var s = Intl.supportedValuesOf('currency'); if (s && s.length) l = l.concat(s.filter(function (c) { return l.indexOf(c) < 0; })); } } catch (e) {}
   return l;
 }
+/* dono da plataforma: apagar qualquer publicação (e as ofertas dela) */
+async function apagarComoDono(p, b) {
+  if (!confirm('Apagar a publicação "' + p.titulo + '" e todas as ofertas dela? O cliente deixa de a ver.')) return;
+  var txt = b.textContent; b.disabled = true; b.textContent = 'A apagar…';
+  try {
+    await api('rpc/bb_dono_apagar_pedido_publico', 'POST', { p_id: String(p.id) });
+    fechar(); await carregarTodos(); desenharTodos();
+  } catch (e) {
+    b.disabled = false; b.textContent = txt;
+    alert(/function|does not exist|42883|PGRST202/i.test(e.message + ' ' + (e.code || '')) ? 'Falta correr o SQL do dono no Supabase.' : e.message);
+  }
+}
 function abrirPedido(id) {
   var p = pedidos.filter(function (x) { return String(x.id) === String(id); })[0]; if (!p) return;
-  var meu = p.cliente_id === eu, of = minhasOfertas[p.id];
+  var meu = eMeu(p), of = minhasOfertas[p.id];
   var h = '<h2>' + esc(p.titulo) + '</h2>' + galeria(p) +
     (p.descricao ? '<p style="white-space:pre-wrap;font-size:14.5px;margin:6px 0">' + esc(p.descricao) + '</p>' : '') +
     '<p class="dica">' + (p.quantidade ? 'Quantidade: <b>' + esc(p.quantidade) + ' ' + esc(p.unidade || '') + '</b> · ' : '') + (p.categoria ? 'Categoria: ' + esc(p.categoria) + ' · ' : '') +
     (p.pais ? 'Entrega: ' + esc(nomePais(p.pais)) + ' · ' : '') + 'Publicado a ' + dataCurta(p.created_at) + ' · ' + (p.n_ofertas || 0) + ' oferta(s)</p>';
-  if (meu) h += '<a class="bt p" href="#meus" id="mVer">Ver as ofertas que recebeu</a>';
-  else {
+  if (souAdmin) h += '<div class="adm"><b>👑 Dono da plataforma</b><button class="bt x" id="admApagar" style="margin-top:8px">🗑️ Apagar esta publicação</button></div>';
+  if (meu && !SO_OFERTAS) h += '<a class="bt p" href="#meus" id="mVer">Ver as ofertas que recebeu</a>';
+  else if (meu && SO_OFERTAS) h += '<p class="dica" style="margin-top:10px">Esta publicação foi feita com esta mesma conta, por isso não pode fazer oferta nela.</p>';
+  else if (!PAINEL_ADM) {
     h += '<h2 style="margin-top:14px">' + (of ? 'A sua oferta (pode alterar)' : 'Fazer uma oferta') + '</h2>' +
       '<div class="g2"><div><label class="lb" for="oP">Preço por unidade *</label><input class="cp" id="oP" type="number" min="0" step="0.01" inputmode="decimal" value="' + esc(of ? of.preco : '') + '"></div>' +
       '<div><label class="lb" for="oM">Moeda</label><select class="cp" id="oM">' + moedas().map(function (c) { return '<option' + ((of ? of.moeda : 'USD') === c ? ' selected' : '') + '>' + c + '</option>'; }).join('') + '</select></div></div>' +
@@ -355,6 +389,7 @@ function abrirPedido(id) {
   h += '<button class="bt" id="mFechar">Fechar</button><p class="msg" id="oMsg"></p>';
   $('modalCx').innerHTML = h; $('modal').classList.add('on');
   $('mFechar').onclick = fechar;
+  if ($('admApagar')) $('admApagar').onclick = function () { apagarComoDono(p, this); };
   if ($('mVer')) $('mVer').onclick = function (e) { e.preventDefault(); fechar(); mostrar('meus'); };
   if ($('oOk')) $('oOk').onclick = async function () {
     var b = this, m = $('oMsg'); m.className = 'msg'; m.textContent = '';
@@ -403,7 +438,8 @@ async function carregarMeus() {
   $('meus').innerHTML = '<p class="vazio">A carregar…</p>';
   try {
     var l = await api('pedidos_publicos?select=*&cliente_id=eq.' + eu + '&order=created_at.desc') || [];
-    if (!l.length) { $('meus').innerHTML = '<div class="cx vazio">Ainda não publicou nenhum pedido.<button class="bt p" id="irPub">+ Publicar o que procuro</button></div>'; $('irPub').onclick = function () { mostrar('publicar'); }; return; }
+    l = l.filter(eMeu);
+    if (!l.length) { $('meus').innerHTML = '<div class="cx vazio">Ainda não publicou nenhum pedido com esta conta (' + esc(euEmail) + ').<button class="bt p" id="irPub">+ Publicar o que procuro</button></div>'; $('irPub').onclick = function () { mostrar('publicar'); }; return; }
     var ids = l.map(function (p) { return p.id; });
     var ofs = await api('ofertas_pedido?select=*&pedido_id=in.(' + ids.join(',') + ')&order=created_at.asc') || [];
     var nomes = {};
@@ -478,6 +514,15 @@ function preencherPaises() {
   var meu = prefs().pais || ((navigator.language || '').split('-')[1] || '').toUpperCase();
   $('fP').innerHTML = '<option value="">— Escolha —</option>' + l.map(function (o) { return '<option value="' + o.c + '"' + (o.c === meu ? ' selected' : '') + '>' + esc(o.n) + '</option>'; }).join('');
 }
+/* o formulário começa sempre vazio (o navegador não pode repor o texto de outra pessoa) */
+function limparFormulario() {
+  ['fT', 'fD', 'fQ', 'fC'].forEach(function (i) { var el = $(i); if (el) { el.value = ''; el.classList.remove('erro'); } });
+  Array.prototype.forEach.call(document.querySelectorAll('#fForm .aviso-campo'), function (a) { a.style.display = 'none'; a.innerHTML = ''; });
+  novas.forEach(function (f) { try { URL.revokeObjectURL(f.prev); } catch (e) {} }); novas = []; selCat = null;
+  if ($('fMsg')) { $('fMsg').className = 'msg'; $('fMsg').textContent = ''; }
+  desenharFotos();
+}
+window.addEventListener('pageshow', function (e) { if (e.persisted) limparFormulario(); });
 function aleatorio() { var a = new Uint8Array(6); crypto.getRandomValues(a); return Array.prototype.map.call(a, function (b) { return ('0' + b.toString(16)).slice(-2); }).join(''); }
 function desenharFotos() {
   var box = $('fFotos'), add = $('fAdd');
@@ -551,6 +596,7 @@ $('fPub').onclick = async function () {
   b.disabled = true;
   try {
     var t = await token(); if (!t) throw new Error('Entre na conta outra vez.');
+    var dono = doToken(t); if (dono && dono.id) eu = dono.id;
     var fotos = [];
     for (var i = 0; i < novas.length; i++) {
       m.className = 'msg ok'; m.textContent = 'A enviar a foto ' + (i + 1) + ' de ' + novas.length + '…';
@@ -563,8 +609,7 @@ $('fPub').onclick = async function () {
     var corpo = { titulo: tit, descricao: desc || null, quantidade: qtd, unidade: $('fU').value, categoria: selCat.caminho.slice(0, 80), category_id: selCat.id, pais: $('fP').value || null, fotos: fotos };
     try { await api('pedidos_publicos', 'POST', corpo); }
     catch (e1) { if (/category_id/i.test(e1.message)) throw new Error('Falta correr o SQL do aviso por categoria no Supabase.'); throw e1; }
-    novas.forEach(function (f) { try { URL.revokeObjectURL(f.prev); } catch (e) {} }); novas = []; desenharFotos();
-    ['fT', 'fD', 'fQ', 'fC'].forEach(function (i) { $(i).value = ''; }); selCat = null;
+    limparFormulario();
     m.className = 'msg ok'; m.textContent = '✅ Pedido publicado. Os fornecedores já o podem ver.';
     await carregarTodos();
     setTimeout(function () { mostrar('meus'); }, 1200);
@@ -626,7 +671,7 @@ function daMinhaArea(p) {
 }
 function desenharFiltroArea() {
   var f = $('filtroArea');
-  if (!minhasCats) { f.classList.add('hide'); return; }
+  if (!minhasCats || PAINEL_ADM) { f.classList.add('hide'); return; }
   f.classList.remove('hide');
   f.innerHTML = '<button data-a="1" class="' + (soArea ? 'on' : '') + '">🎯 Da minha área</button><button data-a="0" class="' + (soArea ? '' : 'on') + '">Todos os pedidos</button>';
 }
@@ -634,13 +679,17 @@ $('filtroArea').onclick = function (e) { var b = e.target.closest('button[data-a
 
 /* ---------- arranque ---------- */
 async function iniciar() {
-  var t = await token(), s = ler();
-  if (!t || !s || !s.user) { mostrar('entrar'); return; }
-  eu = s.user.id;
+  var t = await token(), quem = t && doToken(t);
+  if (!t || !quem || !quem.id) { $('conta').classList.add('hide'); mostrar('entrar'); return; }
+  if (eu && eu !== quem.id) limparFormulario();
+  eu = quem.id; euEmail = String(quem.email || '').toLowerCase(); souAdmin = euEmail === ADMIN;
+  $('contaTxt').textContent = 'Conta: ' + euEmail + (souAdmin ? ' 👑' : '');
+  $('conta').classList.remove('hide');
   if (VEND) { $('sub').textContent = 'Veja o que os clientes procuram e faça ofertas.'; $('lCriar').classList.add('hide'); }
+  if (PAINEL_ADM) { $('sub').textContent = 'Todas as publicações dos clientes. Como dono, pode apagar qualquer uma.'; $('lCriar').classList.add('hide'); soArea = false; }
   preencherPaises();
   try { await api('rpc/bb_fechar_pedidos_antigos', 'POST', {}); } catch (e) {}
-  try { await Promise.all([carregarTodos(), carregarMinhasCats()]); desenharFiltroArea(); }
+  try { await Promise.all([carregarTodos(), PAINEL_ADM ? Promise.resolve() : carregarMinhasCats()]); desenharFiltroArea(); }
   catch (e) { $('lista').innerHTML = '<p class="vazio">' + esc(/relation|does not exist|42P01/i.test(e.message + ' ' + e.code) ? 'Falta correr o SQL dos pedidos no Supabase.' : e.message) + '</p>'; }
   var h = (location.hash || '').slice(1);
   mostrar(['todos', 'meus', 'publicar'].indexOf(h) > -1 ? h : 'todos');
@@ -652,11 +701,13 @@ async function iniciar() {
     history.replaceState({}, '', location.pathname + location.hash);
   }
 }
+/* se a conta mudar noutra página, esta página acompanha */
+window.addEventListener('storage', function (e) { if (e.key === SK) iniciar(); });
 iniciar();
 </script>
 <script>
-/* menu de baixo da loja (só no lado do cliente; no painel do vendedor não leva ao lado do cliente) */
-if (!/^suppliers\./i.test(location.hostname)) { var s = document.createElement('script'); s.src = 'menu-babilonia.js'; document.body.appendChild(s); }
+/* menu de baixo da loja (só no lado do cliente; no painel do vendedor e do dono não leva ao lado do cliente) */
+if (!/^(suppliers|admin|administrator)\./i.test(location.hostname)) { var s = document.createElement('script'); s.src = 'menu-babilonia.js'; document.body.appendChild(s); }
 </script>
 </body>
 </html>

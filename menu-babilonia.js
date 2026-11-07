@@ -1,3 +1,14 @@
+/* (07/11/2026) Painel do dono (administrator.bbabilonia.com): não tem lado do cliente.
+   As páginas da loja (início, produto, carrinho, conta, avisos…) abrem na loja verdadeira, bbabilonia.com,
+   que é como os clientes a veem. Ficam no painel só "Pedidos dos clientes" e o rastreamento. */
+(function(){
+var h=location.hostname;if(!/^(admin|administrator)\./i.test(h))return;
+var pg=location.pathname.split("/").pop()||"index.html";
+if(/^(pedidos-publicos|publicacoes|rastreio)\.html$/.test(pg))return;
+window.BBPrefs=window.BBPrefs||{ler:function(){return{}},abrir:function(){}};
+var alvo="https://bbabilonia.com/"+pg+location.search+location.hash;
+try{window.top.location.replace(alvo)}catch(e){location.replace(alvo)}
+})();
 /* menu-babilonia.js — BBabilônia
    1) Menu fixo em baixo: Início, Chat, Carrinho, Meu Babilônia
    2) Na primeira visita: janela País / Idioma / Moeda
@@ -136,5 +147,5 @@ window.BBPrefs.converter=function(valor,de,r){
 function iniciar(){menu();taxas();if(!pref().escolhido)janela()}
 if(d.body)iniciar();else d.addEventListener("DOMContentLoaded",iniciar);
 })();
-/* sino de avisos */(function(){if(document.querySelector("script[src*=\"sino-avisos.js\"]"))return;var s=document.createElement("script");s.src="sino-avisos.js";document.head.appendChild(s)})();
+/* sino de avisos */(function(){if(/^(admin|administrator)\./i.test(location.hostname))return;if(document.querySelector("script[src*=\"sino-avisos.js\"]"))return;var s=document.createElement("script");s.src="sino-avisos.js";document.head.appendChild(s)})();
 /* separador "Disputa e reembolso" nos pedidos */(function(){var p=location.pathname.split("/").pop();if(p!=="conta.html"&&p!=="pedidos.html")return;if(document.querySelector("script[src*=\"pedidos-disputa.js\"]"))return;var s=document.createElement("script");s.src="pedidos-disputa.js";document.head.appendChild(s)})();/* tradução para o idioma escolhido */(function(){if(document.querySelector("script[src*=\"traducao.js\"]"))return;var s=document.createElement("script");s.src="traducao.js";document.head.appendChild(s)})();
