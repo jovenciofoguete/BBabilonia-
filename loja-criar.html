@@ -38,6 +38,10 @@ button{padding:12px 16px;border-radius:10px;border:1px solid var(--line);backgro
  <h3>A sua loja</h3>
  <div class="box"><div id="en" style="color:var(--tx);font-size:17px"></div><div class="est" id="ee"></div><div id="em2"></div></div>
 </div>
+<div id="sairBox" class="hide" style="margin-top:14px">
+ <div class="box">Sessão iniciada como <b id="quem" style="color:var(--tx)"></b></div>
+ <button id="sairConta" type="button" style="width:100%;margin-top:8px">Sair e entrar com outra conta</button>
+</div>
 
 <div id="form" class="hide">
  <label>Tipo de vendedor</label>
@@ -147,6 +151,7 @@ async function init(){
  const {data}=await sb.auth.getSession();user=data.session&&data.session.user;
  $('login').classList.toggle('hide',!!user);
  $('form').classList.add('hide');$('estado').classList.add('hide');
+ $('sairBox').classList.toggle('hide',!user);if(user)$('quem').textContent=user.email||'';
  if(!user)return;
  const {data:l,error}=await sb.from('lojas').select('nome,estado,motivo').eq('dono_id',user.id).maybeSingle();
  if(error){msg('Erro: '+error.message);return}
@@ -199,6 +204,7 @@ $('env').onclick=async()=>{
   init();
  }catch(e){msg('Erro: '+(e.message||e));$('env').disabled=false}
 };
+$('sairConta').onclick=async()=>{await sb.auth.signOut();user=null;msg('');init()};
 montar();init();
 </script></body></html>
 <script src="pesquisa-pais-loja.js"></script>
