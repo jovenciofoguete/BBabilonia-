@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Pedidos dos clientes · Admin BBabilônia</title>
+<meta name="color-scheme" content="light">
+<style>
+*{box-sizing:border-box;margin:0}
+body{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:#f1effb;color:#1b1740;line-height:1.4;padding-bottom:40px}
+.capa{background:linear-gradient(135deg,#1e1b4b,#5b21b6 55%,#9333ea);color:#fff;padding:20px 16px 54px;border-radius:0 0 26px 26px}
+.capa .lg{font-size:13px;letter-spacing:2px;color:#fcd34d;font-weight:bold}
+.capa a{display:inline-block;margin-top:10px;background:#ffffff26;color:#fff;text-decoration:none;font-size:14px;font-weight:700;border-radius:999px;padding:7px 14px}
+.capa h1{font-size:23px;margin-top:12px}.capa p{font-size:14px;color:#e9d5ff;margin-top:4px}
+main{max-width:720px;margin:-38px auto 0;padding:0 14px}
+.cx{background:#fff;border-radius:16px;padding:14px;margin-bottom:12px;box-shadow:0 6px 18px #4c1d9522}
+input,select{width:100%;padding:11px;border:1.5px solid #ddd;border-radius:10px;font-size:16px;background:#fff;color:#1b1740}
+.fl{display:grid;grid-template-columns:1fr auto;gap:8px}
+.p{display:flex;gap:12px;border-top:1px solid #ece9f7;padding:12px 0}.p:first-child{border-top:0}
+.p img,.p .sf{flex:none;width:72px;height:72px;border-radius:10px;object-fit:cover;background:#f3f3f3;display:grid;place-items:center;font-size:24px}
+.p .t{flex:1;min-width:0}.p b{display:block;font-size:15px}
+.p .d{font-size:13px;color:#475569;margin-top:2px;white-space:pre-wrap;word-break:break-word}
+.p .m{font-size:12.5px;color:#6b7280;margin-top:4px}
+.bdg{display:inline-block;font-size:11.5px;font-weight:800;border-radius:999px;padding:2px 8px;margin-right:4px}
+.ab{background:#d1fae5;color:#047857}.fe{background:#e5e7eb;color:#374151}
+.bts{margin-top:8px;display:flex;gap:6px;flex-wrap:wrap}
+button{border:0;border-radius:999px;padding:8px 13px;font:inherit;font-size:13px;font-weight:700;cursor:pointer;background:#f3f0ff;color:#5b21b6}
+button.x{background:#fee2e2;color:#b91c1c}button:disabled{opacity:.5}
+.b1{width:100%;border-radius:12px;padding:13px;font-size:15px;background:#7c3aed;color:#fff;margin-top:8px}
+.msg{font-size:14px;color:#b91c1c;margin-top:8px}.ok{color:#047857}
+.vazio{text-align:center;color:#6b7280;padding:18px 4px;font-size:14px}
+.hide{display:none!important}
+</style>
+</head>
+<body>
+<div class="capa">
+  <div class="lg">BBABILÔNIA · ADMIN</div>
+  <a href="/" id="voltar">← Voltar ao painel</a>
+  <h1>📢 Pedidos dos clientes</h1>
+  <p>Ver, fechar e apagar publicações impróprias.</p>
+</div>
+<main>
+  <div class="cx hide" id="login">
+    <input id="em" type="email" placeholder="Email" autocomplete="username" style="margin-bottom:8px">
+    <input id="pw" type="password" placeholder="Palavra-passe" autocomplete="current-password">
+    <button class="b1" id="ent">Entrar</button><p class="msg" id="lmsg"></p>
+  </div>
+  <div class="hide" id="painel">
+    <div class="cx fl"><input id="pq" type="search" placeholder="Pesquisar título, descrição, categoria"><select id="est" style="width:auto"><option value="">Todos</option><option value="aberto">Abertos</option><option value="fechado">Fechados</option></select></div>
+    <div class="cx"><p class="msg" id="amsg"></p><div id="lista"><p class="vazio">A carregar…</p></div></div>
+  </div>
+</main>
+<script>
+var U = 'https://dsfoqoeawvjafypycldz.supabase.co', K = 'sb_publishable_BN4NiVcDab9CqdTY_odgDA_uUOhjja0', SK = 'sb-dsfoqoeawvjafypycldz-auth-token';
+var $ = function (i) { return document.getElementById(i); }, todos = [];
+if (!/^administrator\./i.test(location.hostname)) $('voltar').href = 'admin.html';
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+function ler() { try { var s = JSON.parse(localStorage.getItem(SK) || 'null'); if (s && s.currentSession) s = s.currentSession; return s; } catch (e) { return null; } }
+async function token() {
+  var s = ler(); if (!s || !s.access_token) return null;
+  if (s.expires_at && s.expires_at * 1000 < Date.now() + 30000) {
+    try {
+      var r = await fetch(U + '/auth/v1/token?grant_type=refresh_token', { method: 'POST', headers: { apikey: K, 'Content-Type': 'application/json' }, body: JSON.stringify({ refresh_token: s.refresh_token }) });
+      var j = await r.json(); if (!r.ok || !j.access_token) return null;
+      j.expires_at = j.expires_at || Math.floor(Date.now() / 1000) + (j.expires_in || 3600); localStorage.setItem(SK, JSON.stringify(j)); s = j;
+    } catch (e) { return null; }
+  }
+  return s.access_token;
+}
+async function api(path, metodo, corpo) {
+  var t = await token();
+  var r = await fetch(U + '/rest/v1/' + path, { method: metodo || 'GET', headers: { apikey: K, Authorization: 'Bearer ' + (t || K), 'Content-Type': 'application/json', Prefer: 'return=representation' }, body: corpo ? JSON.stringify(corpo) : undefined });
+  var x = await r.text(), j = null; try { j = x ? JSON.parse(x) : null; } catch (e) {}
+  if (!r.ok) throw new Error((j && j.message) || ('Erro ' + r.status));
+  return j;
+}
+function semAcento(t) { return String(t || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); }
+function fotos(p) { var f = p.fotos; if (typeof f === 'string') { try { f = JSON.parse(f); } catch (e) { f = []; } } return Array.isArray(f) ? f : []; }
+function desenhar() {
+  var q = semAcento($('pq').value.trim()), e = $('est').value;
+  var l = todos.filter(function (p) { return (!e || p.estado === e) && (!q || semAcento(p.titulo + ' ' + (p.descricao || '') + ' ' + (p.categoria || '')).indexOf(q) > -1); });
+  $('lista').innerHTML = l.length ? l.map(function (p) {
+    var f = fotos(p)[0];
+    return '<div class="p">' + (f ? '<a href="' + esc(f.u) + '" target="_blank"><img src="' + esc(f.m || f.u) + '" alt="" loading="lazy"></a>' : '<div class="sf">📦</div>') +
+      '<div class="t"><b>' + esc(p.titulo) + '</b>' + (p.descricao ? '<div class="d">' + esc(p.descricao) + '</div>' : '') +
+      '<div class="m"><span class="bdg ' + (p.estado === 'aberto' ? 'ab">Aberto' : 'fe">Fechado') + '</span>' + esc(p.categoria || '') + (p.quantidade ? ' · ' + esc(p.quantidade) + ' ' + esc(p.unidade || '') : '') +
+      ' · ' + new Date(p.created_at).toLocaleDateString('pt-PT') + ' · ' + (p.n_ofertas || 0) + ' oferta(s) · ' + fotos(p).length + ' foto(s)</div>' +
+      '<div class="bts">' + (p.estado === 'aberto' ? '<button data-f="' + esc(p.id) + '">Fechar</button>' : '') + '<button class="x" data-a="' + esc(p.id) + '">🗑 Apagar</button></div></div></div>';
+  }).join('') : '<p class="vazio">Nenhum pedido.</p>';
+}
+async function carregar() {
+  try { todos = await api('pedidos_publicos?select=*&order=created_at.desc&limit=500') || []; desenhar(); }
+  catch (e) { $('lista').innerHTML = '<p class="vazio">' + esc(e.message) + '</p>'; }
+}
+function semPermissao() { $('amsg').className = 'msg'; $('amsg').textContent = 'Sem permissão. Entre com a conta do dono e confirme a impressão digital no painel do admin; depois volte a esta página.'; }
+$('lista').onclick = async function (ev) {
+  var b = ev.target.closest('[data-f],[data-a]'); if (!b) return;
+  var apagar = b.hasAttribute('data-a'), id = b.getAttribute(apagar ? 'data-a' : 'data-f');
+  if (apagar && !confirm('Apagar esta publicação e as ofertas dela? Não dá para desfazer.')) return;
+  b.disabled = true; $('amsg').textContent = '';
+  try {
+    var r = apagar ? await api('pedidos_publicos?id=eq.' + encodeURIComponent(id), 'DELETE') : await api('pedidos_publicos?id=eq.' + encodeURIComponent(id), 'PATCH', { estado: 'fechado' });
+    if (!r || !r.length) { semPermissao(); b.disabled = false; return; }
+    $('amsg').className = 'msg ok'; $('amsg').textContent = apagar ? '✅ Publicação apagada.' : '✅ Pedido fechado.';
+    carregar();
+  } catch (e) { $('amsg').className = 'msg'; $('amsg').textContent = e.message; b.disabled = false; }
+};
+$('pq').oninput = desenhar; $('est').onchange = desenhar;
+$('ent').onclick = async function () {
+  try {
+    var r = await fetch(U + '/auth/v1/token?grant_type=password', { method: 'POST', headers: { apikey: K, 'Content-Type': 'application/json' }, body: JSON.stringify({ email: $('em').value.trim(), password: $('pw').value }) });
+    var j = await r.json(); if (!r.ok || !j.access_token) throw new Error('Email ou palavra-passe errados.');
+    j.expires_at = j.expires_at || Math.floor(Date.now() / 1000) + (j.expires_in || 3600); localStorage.setItem(SK, JSON.stringify(j)); iniciar();
+  } catch (e) { $('lmsg').textContent = e.message; }
+};
+async function iniciar() {
+  var t = await token();
+  $('login').classList.toggle('hide', !!t); $('painel').classList.toggle('hide', !t);
+  if (t) carregar();
+}
+iniciar();
+</script>
+</body>
+</html>
