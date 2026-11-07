@@ -1,18 +1,25 @@
-/* chat-melhorias.js — BBabilônia (versão 2)
+/* chat-melhorias.js — BBabilônia (versão 3)
    Carregado pelo chat-novo.html dentro do chat.html (depois dos outros ficheiros do chat). Não altera nenhum ficheiro.
    1) Bloqueia "chamada"/"chamadas" em qualquer mensagem ("seu número" sozinho continua a passar).
    2) Envio mais rápido: a verificação por tradução espera no máximo 3 segundos (antes podia ficar presa).
    3) O chat fica sempre na última mensagem (também depois de as fotos carregarem), a não ser que a pessoa
       tenha subido para ler mensagens antigas.
    4) Apagar mensagem: carregar sem largar numa mensagem sua → "Apagar para todos".
-      Versão 2: só até 2 minutos depois de enviar; a mensagem apagada desaparece (sem "Mensagem apagada"). */
+      Versão 3: só até 2 minutos depois de enviar; nos 2 lados fica só uma linha pequena "Usuário cancelou mensagem". */
 (function () {
   if (window.__bbChatMelhorias) return;
   window.__bbChatMelhorias = 1;
 
   var BLOQ = 'Não pode pedir ou enviar contactos (número, telefone, email) fora da plataforma.';
   var LIMITE = 2 * 60 * 1000;   // 2 minutos para apagar
-  var TARDE = 'Já não pode apagar: só até 2 minutos depois de enviar.';
+  var TARDE = 'Já não pode cancelar: só até 2 minutos depois de enviar.';
+  var FRASE = { pt: 'Usuário cancelou mensagem', en: 'User cancelled a message', zh: '用户撤回了一条消息',
+    fr: "L'utilisateur a annulé un message", es: 'El usuario canceló un mensaje' };
+  function frase() {
+    var l = 'pt';
+    try { l = String((JSON.parse(localStorage.getItem('bb_prefs') || '{}') || {}).idioma || navigator.language || 'pt').split('-')[0].toLowerCase(); } catch (e) {}
+    return FRASE[l] || FRASE.pt;
+  }
   var $ = function (i) { return document.getElementById(i); };
 
   function normal(t) {
@@ -116,8 +123,8 @@
     menu = document.createElement('div');
     menu.id = 'bb-apagar';
     menu.style.cssText = 'position:fixed;z-index:99999;background:#fff;border-radius:12px;box-shadow:0 4px 18px #0004;overflow:hidden;font:15px system-ui,sans-serif';
-    menu.innerHTML = '<button type="button" data-a="apagar" style="display:block;width:100%;padding:14px 22px;border:0;background:#fff;color:#c00;font:inherit;text-align:left">🗑️ Apagar para todos</button>' +
-      '<button type="button" data-a="nao" style="display:block;width:100%;padding:12px 22px;border:0;border-top:1px solid #eee;background:#fff;color:#333;font:inherit;text-align:left">Cancelar</button>';
+    menu.innerHTML = '<button type="button" data-a="apagar" style="display:block;width:100%;padding:14px 22px;border:0;background:#fff;color:#c00;font:inherit;text-align:left">🗑️ Cancelar mensagem</button>' +
+      '<button type="button" data-a="nao" style="display:block;width:100%;padding:12px 22px;border:0;border-top:1px solid #eee;background:#fff;color:#333;font:inherit;text-align:left">Voltar</button>';
     document.body.appendChild(menu);
     var w = menu.offsetWidth, h = menu.offsetHeight;
     menu.style.left = Math.max(8, Math.min(x - w / 2, window.innerWidth - w - 8)) + 'px';
@@ -126,19 +133,19 @@
       var a = e.target && e.target.getAttribute('data-a');
       if (a === 'nao') return fecharMenu();
       if (a !== 'apagar') return;
-      e.target.disabled = true; e.target.textContent = 'A apagar…';
+      e.target.disabled = true; e.target.textContent = 'A cancelar…';
       try {
         var m = m0 || await idDaMensagem(el);
         if (!m) throw new Error('Atualize a conversa e tente outra vez.');
         if (passou(m)) throw new Error(TARDE);
         await window.api('rpc/apagar_mensagem', 'POST', { p_id: String(m.id) });
         fecharMenu();
-        el.remove();               // desaparece logo, sem "Mensagem apagada"
+        marcar(el);                // fica logo a linha pequena "Usuário cancelou mensagem"
         window.ultimo = '';
         if (typeof window.carregar === 'function') await window.carregar(true);
       } catch (err) {
         fecharMenu();
-        aviso(/apagar_mensagem/.test(err.message) ? 'Falta correr o SQL de apagar mensagens no Supabase.' : (err.message || 'Não foi possível apagar.'));
+        aviso(/apagar_mensagem/.test(err.message) ? 'Falta correr o SQL de cancelar mensagens no Supabase.' : (err.message || 'Não foi possível cancelar.'));
       }
     };
   }
@@ -149,7 +156,7 @@
     var t = null, alvo = null, px = 0, py = 0;
     function minha(e) {
       var el = e.target && e.target.closest && e.target.closest('.m');
-      if (!el || !el.classList.contains('eu')) return null;
+      if (!el || !el.classList.contains('eu') || el.classList.contains('bb-canc')) return null;
       return el;
     }
     b.addEventListener('touchstart', function (e) {
@@ -168,8 +175,49 @@
     });
     document.addEventListener('click', function (e) { if (menu && !menu.contains(e.target)) fecharMenu(); }, true);
     var st = document.createElement('style');
-    st.textContent = '#msgs .m.eu{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}';
+    st.textContent = '#msgs .m.eu{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}' +
+      '#msgs .m.bb-canc{background:none!important;box-shadow:none!important;border:0!important;max-width:100%!important;margin:2px auto!important;padding:2px 8px!important;text-align:center}' +
+      '#msgs .m.bb-canc>*:not(.bb-c){display:none!important}' +
+      '#msgs .bb-c{display:block;font-size:11.5px;color:#8a8a8a;font-style:italic;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}';
     document.head.appendChild(st);
+  }
+
+  /* ---------- 5) mensagens canceladas: só uma linha pequena, nos 2 lados ---------- */
+  function marcar(el) {
+    if (!el || el.getAttribute('data-bb-canc')) return;
+    el.setAttribute('data-bb-canc', '1');
+    el.classList.add('bb-canc');
+    el.innerHTML = '<span class="bb-c"></span>';
+    el.firstChild.textContent = frase();
+  }
+  var aMarcar = false, deNovo = false, tm = null;
+  async function marcarCanceladas() {
+    if (aMarcar) { deNovo = true; return; }
+    var b = box();
+    if (!b || !window.conv || typeof window.api !== 'function') return;
+    aMarcar = true;
+    try {
+      var lista = await window.api('mensagens?select=id,dados&conversa_id=eq.' + window.conv.id + '&order=created_at.asc');
+      var els = b.querySelectorAll('.m');
+      if (lista && lista.length === els.length) {
+        lista.forEach(function (x, i) {
+          var d = x.dados;
+          if (typeof d === 'string') { try { d = JSON.parse(d); } catch (e) { d = null; } }
+          if (d && (d.cancelada === true || d.cancelada === 'true')) marcar(els[i]);
+        });
+      }
+    } catch (e) {}
+    finally {
+      aMarcar = false;
+      if (deNovo) { deNovo = false; marcarCanceladas(); }
+    }
+  }
+  function vigiarCanceladas() {
+    var b = box();
+    if (!b || b.__bbC) return;
+    b.__bbC = 1;
+    new MutationObserver(function () { clearTimeout(tm); tm = setTimeout(marcarCanceladas, 120); }).observe(b, { childList: true });
+    marcarCanceladas();
   }
 
   /* liga tudo (o chat pode ainda estar a abrir) */
@@ -178,6 +226,7 @@
     protegerEnvio();
     var ok = vigiarRolagem();
     vigiarApagar();
+    vigiarCanceladas();
     if (!ok || typeof window.mandar !== 'function') { if (++n < 200) setTimeout(ligar, 150); return; }
     // volta a confirmar mais tarde (outros ficheiros do chat podem trocar o envio depois)
     setTimeout(protegerEnvio, 1500); setTimeout(protegerEnvio, 5000);
