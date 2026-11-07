@@ -1,20 +1,23 @@
-/* chat-melhorias.js — BBabilônia
+/* chat-melhorias.js — BBabilônia (versão 2)
    Carregado pelo chat-novo.html dentro do chat.html (depois dos outros ficheiros do chat). Não altera nenhum ficheiro.
    1) Bloqueia "chamada"/"chamadas" em qualquer mensagem ("seu número" sozinho continua a passar).
    2) Envio mais rápido: a verificação por tradução espera no máximo 3 segundos (antes podia ficar presa).
    3) O chat fica sempre na última mensagem (também depois de as fotos carregarem), a não ser que a pessoa
       tenha subido para ler mensagens antigas.
-   4) Apagar mensagem: carregar sem largar numa mensagem sua → "Apagar para todos". */
+   4) Apagar mensagem: carregar sem largar numa mensagem sua → "Apagar para todos".
+      Versão 2: só até 2 minutos depois de enviar; a mensagem apagada desaparece (sem "Mensagem apagada"). */
 (function () {
   if (window.__bbChatMelhorias) return;
   window.__bbChatMelhorias = 1;
 
   var BLOQ = 'Não pode pedir ou enviar contactos (número, telefone, email) fora da plataforma.';
+  var LIMITE = 2 * 60 * 1000;   // 2 minutos para apagar
+  var TARDE = 'Já não pode apagar: só até 2 minutos depois de enviar.';
   var $ = function (i) { return document.getElementById(i); };
 
   function normal(t) {
     t = String(t || '').toLowerCase();
-    if (t.normalize) t = t.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    if (t.normalize) t = t.normalize('NFD').replace(/[̀-ͯ]/g, '');
     return t;
   }
 
@@ -80,7 +83,7 @@
     return true;
   }
 
-  /* ---------- 4) apagar mensagem ---------- */
+  /* ---------- 4) apagar mensagem (até 2 minutos) ---------- */
   var menu = null;
   function fecharMenu() { if (menu) { menu.remove(); menu = null; } }
   function aviso(t) {
@@ -92,11 +95,23 @@
     var b = box(), els = Array.prototype.slice.call(b.querySelectorAll('.m'));
     var i = els.indexOf(el);
     if (i < 0 || !window.conv || typeof window.api !== 'function') return null;
-    var lista = await window.api('mensagens?select=id,remetente_id&conversa_id=eq.' + window.conv.id + '&order=created_at.asc');
+    var lista = await window.api('mensagens?select=id,remetente_id,created_at&conversa_id=eq.' + window.conv.id + '&order=created_at.asc');
     if (!lista || lista.length !== els.length) return null;
     return lista[i];
   }
-  function abrirMenu(el, x, y) {
+  function passou(m) {
+    var t = Date.parse(m && m.created_at);
+    return !isNaN(t) && Date.now() - t > LIMITE;
+  }
+  /* antes de abrir o menu: confirma a hora; depois dos 2 minutos só mostra o aviso */
+  async function talvezAbrir(el, x, y) {
+    try {
+      var m = await idDaMensagem(el);
+      if (m && passou(m)) { aviso(TARDE); return; }
+      abrirMenu(el, x, y, m);
+    } catch (e) { abrirMenu(el, x, y, null); }
+  }
+  function abrirMenu(el, x, y, m0) {
     fecharMenu();
     menu = document.createElement('div');
     menu.id = 'bb-apagar';
@@ -113,10 +128,12 @@
       if (a !== 'apagar') return;
       e.target.disabled = true; e.target.textContent = 'A apagar…';
       try {
-        var m = await idDaMensagem(el);
+        var m = m0 || await idDaMensagem(el);
         if (!m) throw new Error('Atualize a conversa e tente outra vez.');
+        if (passou(m)) throw new Error(TARDE);
         await window.api('rpc/apagar_mensagem', 'POST', { p_id: String(m.id) });
         fecharMenu();
+        el.remove();               // desaparece logo, sem "Mensagem apagada"
         window.ultimo = '';
         if (typeof window.carregar === 'function') await window.carregar(true);
       } catch (err) {
@@ -133,14 +150,13 @@
     function minha(e) {
       var el = e.target && e.target.closest && e.target.closest('.m');
       if (!el || !el.classList.contains('eu')) return null;
-      if (/Mensagem apagada/.test(el.textContent)) return null;
       return el;
     }
     b.addEventListener('touchstart', function (e) {
       alvo = minha(e); if (!alvo) return;
       px = e.touches[0].clientX; py = e.touches[0].clientY;
       clearTimeout(t);
-      t = setTimeout(function () { if (alvo) abrirMenu(alvo, px, py); }, 550);
+      t = setTimeout(function () { if (alvo) talvezAbrir(alvo, px, py); }, 550);
     }, { passive: true });
     b.addEventListener('touchmove', function (e) {
       if (Math.abs(e.touches[0].clientX - px) > 10 || Math.abs(e.touches[0].clientY - py) > 10) clearTimeout(t);
@@ -148,7 +164,7 @@
     b.addEventListener('touchend', function () { clearTimeout(t); }, { passive: true });
     b.addEventListener('contextmenu', function (e) {
       var el = minha(e); if (!el) return;
-      e.preventDefault(); clearTimeout(t); abrirMenu(el, e.clientX, e.clientY);
+      e.preventDefault(); clearTimeout(t); talvezAbrir(el, e.clientX, e.clientY);
     });
     document.addEventListener('click', function (e) { if (menu && !menu.contains(e.target)) fecharMenu(); }, true);
     var st = document.createElement('style');
