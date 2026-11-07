@@ -319,7 +319,7 @@ $('trocar').onclick = async function () {
 async function carregarTodos() {
   pedidos = await api('pedidos_publicos?select=*&estado=eq.aberto&order=created_at.desc&limit=300') || [];
   minhasOfertas = {};
-  try {
+  if (VEND) try {
     var o = await api('ofertas_pedido?select=*&vendedor_id=eq.' + eu) || [];
     o.forEach(function (x) { minhasOfertas[x.pedido_id] = x; });
   } catch (e) {}
@@ -377,7 +377,7 @@ function abrirPedido(id) {
   if (souAdmin) h += '<div class="adm"><b>👑 Dono da plataforma</b><button class="bt x" id="admApagar" style="margin-top:8px">🗑️ Apagar esta publicação</button></div>';
   if (meu && !SO_OFERTAS) h += '<a class="bt p" href="#meus" id="mVer">Ver as ofertas que recebeu</a>';
   else if (meu && SO_OFERTAS) h += '<p class="dica" style="margin-top:10px">Esta publicação foi feita com esta mesma conta, por isso não pode fazer oferta nela.</p>';
-  else if (!PAINEL_ADM) {
+  else if (VEND) {   /* (07/11/2026) ofertas só no domínio do fornecedor; em bbabilonia.com todos são clientes comuns */
     h += '<h2 style="margin-top:14px">' + (of ? 'A sua oferta (pode alterar)' : 'Fazer uma oferta') + '</h2>' +
       '<div class="g2"><div><label class="lb" for="oP">Preço por unidade *</label><input class="cp" id="oP" type="number" min="0" step="0.01" inputmode="decimal" value="' + esc(of ? of.preco : '') + '"></div>' +
       '<div><label class="lb" for="oM">Moeda</label><select class="cp" id="oM">' + moedas().map(function (c) { return '<option' + ((of ? of.moeda : 'USD') === c ? ' selected' : '') + '>' + c + '</option>'; }).join('') + '</select></div></div>' +
@@ -682,14 +682,14 @@ async function iniciar() {
   var t = await token(), quem = t && doToken(t);
   if (!t || !quem || !quem.id) { $('conta').classList.add('hide'); mostrar('entrar'); return; }
   if (eu && eu !== quem.id) limparFormulario();
-  eu = quem.id; euEmail = String(quem.email || '').toLowerCase(); souAdmin = euEmail === ADMIN;
+  eu = quem.id; euEmail = String(quem.email || '').toLowerCase(); souAdmin = PAINEL_ADM && euEmail === ADMIN;   /* poderes de dono só em administrator.bbabilonia.com */
   $('contaTxt').textContent = 'Conta: ' + euEmail + (souAdmin ? ' 👑' : '');
   $('conta').classList.remove('hide');
   if (VEND) { $('sub').textContent = 'Veja o que os clientes procuram e faça ofertas.'; $('lCriar').classList.add('hide'); }
   if (PAINEL_ADM) { $('sub').textContent = 'Todas as publicações dos clientes. Como dono, pode apagar qualquer uma.'; $('lCriar').classList.add('hide'); soArea = false; }
   preencherPaises();
   try { await api('rpc/bb_fechar_pedidos_antigos', 'POST', {}); } catch (e) {}
-  try { await Promise.all([carregarTodos(), PAINEL_ADM ? Promise.resolve() : carregarMinhasCats()]); desenharFiltroArea(); }
+  try { await Promise.all([carregarTodos(), VEND ? carregarMinhasCats() : Promise.resolve()]); desenharFiltroArea(); }
   catch (e) { $('lista').innerHTML = '<p class="vazio">' + esc(/relation|does not exist|42P01/i.test(e.message + ' ' + e.code) ? 'Falta correr o SQL dos pedidos no Supabase.' : e.message) + '</p>'; }
   var h = (location.hash || '').slice(1);
   mostrar(['todos', 'meus', 'publicar'].indexOf(h) > -1 ? h : 'todos');

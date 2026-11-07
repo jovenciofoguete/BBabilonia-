@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="pt"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>BBabilônia</title>
+<style>body{margin:0;font-family:system-ui,sans-serif;background:#fff;color:#475569;display:flex;align-items:center;justify-content:center;height:100vh}</style>
+</head><body>
+<p>A abrir…</p>
+<script src="/lados.js?v=1"></script>
+<script>
+/* ir-lado.html — página aberta no domínio errado: vai para o domínio certo (mesma página, mesmos dados do link).
+   Ex.: bbabilonia.com/painel-vendedor-v2.html → suppliers.bbabilonia.com/painel-vendedor-v2.html
+        suppliers.bbabilonia.com/carrinho.html → bbabilonia.com/carrinho.html */
+(function () {
+  var L = window.BBLado, aqui = L.ladoDoHost(), p = L.pagina(location.pathname), resto = location.search + location.hash, alvo = null;
+  if (aqui === 'vendedor') {
+    if (p === 'avisos') alvo = '/avisos-vendedor.html' + location.hash;
+    else if (p === 'produto-bbabilonia') {
+      var s = null; try { s = JSON.parse(localStorage.getItem('sb-dsfoqoeawvjafypycldz-auth-token') || 'null'); } catch (e) {}
+      if (s && s.access_token) alvo = '/produto-vendedor.html' + resto;     // o fornecedor vê o produto só para ver
+    }
+  }
+  if (!alvo) {
+    var lado = L.donoDaPagina(p) || 'cliente';
+    if (lado === aqui) lado = aqui === 'cliente' ? null : 'cliente';
+    alvo = lado ? 'https://' + L.dominio[lado] + '/' + p + '.html' + resto : '/';
+  }
+  try { if (window.top !== window && window.top.location.hostname === location.hostname) { window.top.location.replace(alvo); return; } } catch (e) {}
+  location.replace(alvo);
+})();
+</script>
+</body></html>

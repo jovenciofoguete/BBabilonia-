@@ -92,6 +92,7 @@ const esc = t => String(t == null ? "" : t).replace(/[&<>"']/g, c => ({"&":"&amp
 const semAc = t => String(t || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
 const dono = new URLSearchParams(location.search).get("f") || "";
 let produtos = [], categorias = [], cat = null, termo = "";
+const LADO_VEND = /^suppliers\./i.test(location.hostname);
 let modoVendedor = false;   // o dono a ver a própria loja: só ver, sem lado do cliente
 
 function sessao() {
@@ -219,7 +220,8 @@ function semLoja(txt) {
 async function iniciar() {
   if (!/^[0-9a-f-]{20,}$/i.test(dono)) return semLoja("O link desta loja não está completo.");
   $("grelha").innerHTML = '<div class="estado"><p>A carregar…</p></div>';
-  const s = sessao(), euSou = s && s.user && s.user.id === dono;
+  const s = sessao(), euSou = LADO_VEND && s && s.user && s.user.id === dono;   /* (07/11/2026) só no domínio do fornecedor é "a minha loja"; em bbabilonia.com é cliente comum */
+  if (LADO_VEND && !euSou) { location.replace("https://bbabilonia.com/loja.html" + location.search + location.hash); return; }
   let loja = null, previa = false;
   try { const r = await get("lojas_publicas?select=*&dono_id=eq." + dono + "&limit=1"); loja = r[0] || null; } catch (e) {}
   if (!loja && euSou) {        // o próprio fornecedor vê a sua loja mesmo antes de ser aprovada
@@ -255,7 +257,7 @@ iniciar();
 </script>
 <script>
 /* menu do cliente (Início, Chat, Carrinho, Meu Babilônia) só para clientes; o dono a ver a própria loja não o recebe */
-(function () { const s = sessao(); if (!(s && s.user && s.user.id === dono)) document.write('<script src="menu-babilonia.js"><\/script>'); else document.write('<script src="traducao.js"><\/script>'); })();
+(function () { const s = sessao(); if (!(/^suppliers\./i.test(location.hostname) && s && s.user && s.user.id === dono)) document.write('<script src="menu-babilonia.js"><\/script>'); else document.write('<script src="traducao.js"><\/script>'); })();
 </script>
 </body>
   </html>

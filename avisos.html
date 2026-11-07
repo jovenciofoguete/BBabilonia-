@@ -55,6 +55,7 @@ button{border:0;border-radius:12px;padding:13px 16px;font:inherit;font-weight:80
   </div>
  </div>
 </main>
+<script src="lados.js?v=1"></script>
 <script>
 var sb=supabase.createClient('https://dsfoqoeawvjafypycldz.supabase.co','sb_publishable_BN4NiVcDab9CqdTY_odgDA_uUOhjja0');
 var VAPID='BLyTwU0SftyBsBZ98vViwgQ_YkXDqh566s30LFc4llrVsW1VJB8K0ha_5ghHvlRCU9Qam_xfI6SE2ajipAXVWlM';
@@ -77,7 +78,9 @@ async function carregar(){
  if(!eu)return;
  var r=await sb.from('avisos').select('*').eq('user_id',eu.id).order('created_at',{ascending:false}).limit(100);
  if(r.error){$('lista').innerHTML='<div class="vazio">Não foi possível carregar os avisos.</div>';return}
- avisos=r.data||[];desenhar();
+ avisos=r.data||[];
+ try{if(window.BBLado)avisos=await BBLado.filtrar(avisos)}catch(e){}   /* (07/11/2026) só os avisos do lado do cliente */
+ desenhar();
 }
 function chave(b){var p='='.repeat((4-b.length%4)%4),s=atob((b+p).replace(/-/g,'+').replace(/_/g,'/'));return Uint8Array.from(s,function(c){return c.charCodeAt(0)})}
 function estadoPush(){
@@ -105,7 +108,7 @@ $('ativar').onclick=async function(){
  b.disabled=false;
 };
 $('todas').onclick=async function(){
- await sb.from('avisos').update({lido:true}).eq('user_id',eu.id).eq('lido',false);carregar();
+ var ids=avisos.filter(function(a){return!a.lido}).map(function(a){return a.id});if(ids.length)await sb.from('avisos').update({lido:true}).eq('user_id',eu.id).in('id',ids);carregar();
 };
 $('ent').onclick=async function(){
  var r=await sb.auth.signInWithPassword({email:$('em').value.trim(),password:$('pw').value});

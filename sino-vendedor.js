@@ -32,14 +32,21 @@ function criar(){
   btn.innerHTML=SVG+'<i style="display:none"></i>';
   d.body.appendChild(btn);
 }
+/* (07/11/2026) só conta os avisos do lado deste domínio (lados.js) */
+function carregaLado(){return new Promise(function(ok){if(window.BBLado)return ok();var x=d.querySelector('script[src*="lados.js"]');if(!x){x=d.createElement("script");x.src="lados.js?v=1";(d.head||d.documentElement).appendChild(x)}x.addEventListener("load",ok);x.addEventListener("error",ok);setTimeout(ok,4000)})}
+async function porLer(s){
+  var r=await fetch(URL_SB+"/rest/v1/avisos?select=id,link&lido=not.is.true&limit=500&user_id=eq."+encodeURIComponent(s.user&&s.user.id||""),{headers:{apikey:CHAVE,Authorization:"Bearer "+s.access_token}});
+  if(!r.ok)throw new Error("avisos");
+  var l=await r.json();await carregaLado();
+  if(window.BBLado)l=await window.BBLado.filtrar(l,s.access_token);
+  return l;
+}
 async function contar(){
   var s=await token();
   if(!s||!s.user){btn.style.display="none";return}
   btn.style.display="flex";
   try{
-    var r=await fetch(URL_SB+"/rest/v1/avisos?select=id&lido=not.is.true&user_id=eq."+encodeURIComponent(s.user.id),
-      {method:"HEAD",headers:{apikey:CHAVE,Authorization:"Bearer "+s.access_token,Prefer:"count=exact"}});
-    var n=Number(String(r.headers.get("content-range")||"").split("/")[1])||0,b=btn.querySelector("i");
+    var n=(await porLer(s)).length,b=btn.querySelector("i");
     b.textContent=n>99?"99+":n;b.style.display=n?"flex":"none";
   }catch(e){}
 }

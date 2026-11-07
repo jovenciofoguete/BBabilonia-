@@ -64,6 +64,7 @@ button{border:0;border-radius:999px;padding:9px 14px;font:inherit;font-weight:70
   </div>
  </div>
 </main>
+<script src="lados.js?v=1"></script>
 <script>
 (function(){
 var sb=supabase.createClient('https://dsfoqoeawvjafypycldz.supabase.co','sb_publishable_BN4NiVcDab9CqdTY_odgDA_uUOhjja0');
@@ -113,7 +114,9 @@ async function carregar(){
  if(!eu)return;
  var r=await sb.from('avisos').select('*').eq('user_id',eu.id).order('created_at',{ascending:false}).limit(100);
  if(r.error){$('lista').innerHTML='<div class="vazio">Não foi possível carregar os avisos.</div>';return}
- avisos=r.data||[];desenhar();
+ avisos=r.data||[];
+ try{if(window.BBLado)avisos=await BBLado.filtrar(avisos)}catch(e){}   /* (07/11/2026) só os avisos do lado do fornecedor */
+ desenhar();
 }
 function erroApagar(){var m=$('amsg');m.textContent='Não foi possível apagar. Tente de novo.';m.classList.remove('hide');setTimeout(function(){m.classList.add('hide')},4000)}
 /* apagar um aviso (só se o servidor confirmar que apagou) */
@@ -129,7 +132,7 @@ $('apagarTodas').onclick=async function(){
  var b=this;if(!eu||!avisos.length)return;
  if(!confTodas){b.classList.add('cf');b.textContent='Toque de novo para apagar';confTodas=setTimeout(function(){confTodas=null;b.classList.remove('cf');b.textContent='🗑 Apagar todas'},4000);return}
  clearTimeout(confTodas);confTodas=null;b.disabled=true;b.textContent='A apagar…';
- var r=await sb.from('avisos').delete().eq('user_id',eu.id).select('id');
+ var r=await sb.from('avisos').delete().eq('user_id',eu.id).in('id',avisos.map(function(a){return a.id})).select('id');
  b.disabled=false;b.classList.remove('cf');b.textContent='🗑 Apagar todas';
  if(r.error||!r.data||!r.data.length){erroApagar();return}
  carregar();
@@ -137,7 +140,7 @@ $('apagarTodas').onclick=async function(){
 /* ao abrir, os avisos ficam vistos (o número do sino desaparece), mas os pontos continuam visíveis nesta visita */
 async function marcarVistos(){
  if(!eu)return;
- try{await sb.from('avisos').update({lido:true}).eq('user_id',eu.id).eq('lido',false)}catch(e){}
+ try{var ids=avisos.filter(function(a){return!a.lido}).map(function(a){return a.id});if(ids.length)await sb.from('avisos').update({lido:true}).eq('user_id',eu.id).in('id',ids)}catch(e){}
 }
 function chave(b){var p='='.repeat((4-b.length%4)%4),s=atob((b+p).replace(/-/g,'+').replace(/_/g,'/'));return Uint8Array.from(s,function(c){return c.charCodeAt(0)})}
 function estadoPush(){
@@ -165,7 +168,7 @@ $('ativar').onclick=async function(){
  b.disabled=false;
 };
 $('todas').onclick=async function(){
- await sb.from('avisos').update({lido:true}).eq('user_id',eu.id).eq('lido',false);carregar();
+ var ids=avisos.filter(function(a){return!a.lido}).map(function(a){return a.id});if(ids.length)await sb.from('avisos').update({lido:true}).eq('user_id',eu.id).in('id',ids);carregar();
 };
 $('ent').onclick=async function(){
  var r=await sb.auth.signInWithPassword({email:$('em').value.trim(),password:$('pw').value});

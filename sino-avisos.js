@@ -53,6 +53,15 @@ function criar(){
   d.body.appendChild(btn);
 }
 function posicao(){btn.style.bottom=d.querySelector(".bb-nav")?"calc(98px + env(safe-area-inset-bottom,0px))":"calc(20px + env(safe-area-inset-bottom,0px))"}
+/* (07/11/2026) só conta os avisos do lado deste domínio (lados.js) */
+function carregaLado(){return new Promise(function(ok){if(window.BBLado)return ok();var x=d.querySelector('script[src*="lados.js"]');if(!x){x=d.createElement("script");x.src="lados.js?v=1";(d.head||d.documentElement).appendChild(x)}x.addEventListener("load",ok);x.addEventListener("error",ok);setTimeout(ok,4000)})}
+async function porLer(s){
+  var r=await fetch(URL_SB+"/rest/v1/avisos?select=id,link&lido=not.is.true&limit=500&user_id=eq."+encodeURIComponent(s.user&&s.user.id||""),{headers:{apikey:CHAVE,Authorization:"Bearer "+s.access_token}});
+  if(!r.ok)throw new Error("avisos");
+  var l=await r.json();await carregaLado();
+  if(window.BBLado)l=await window.BBLado.filtrar(l,s.access_token);
+  return l;
+}
 async function contar(){
   if(!btn)return;
   var s=await token();
@@ -60,16 +69,15 @@ async function contar(){
   else{if(!s){btn.style.display=sessao()?btn.style.display:"none";return}
   btn.style.display="flex";posicao();}
   try{
-    var r=await fetch(URL_SB+"/rest/v1/avisos?select=id&lido=not.is.true&user_id=eq."+encodeURIComponent(s.user&&s.user.id||""),
-      {method:"HEAD",headers:{apikey:CHAVE,Authorization:"Bearer "+s.access_token,Prefer:"count=exact"}});
-    var n=Number(String(r.headers.get("content-range")||"").split("/")[1])||0,b=btn.querySelector(noMenu?".n":"i");
+    var n=(await porLer(s)).length,b=btn.querySelector(noMenu?".n":"i");
     b.textContent=n>99?"99+":n;b.style.display=n?"flex":"none";
   }catch(e){}
 }
 async function marcarVistos(){
   var s=await token();if(!s||!s.user)return;
   try{
-    await fetch(URL_SB+"/rest/v1/avisos?user_id=eq."+encodeURIComponent(s.user.id)+"&lido=not.is.true",
+    var ids=(await porLer(s)).map(function(a){return a.id});if(!ids.length)return;
+    await fetch(URL_SB+"/rest/v1/avisos?user_id=eq."+encodeURIComponent(s.user.id)+"&id=in.("+ids.join(",")+")",
       {method:"PATCH",headers:{apikey:CHAVE,Authorization:"Bearer "+s.access_token,"Content-Type":"application/json",Prefer:"return=minimal"},body:JSON.stringify({lido:true})});
   }catch(e){}
   var b=btn&&btn.querySelector(noMenu?".n":"i");if(b)b.style.display="none";
