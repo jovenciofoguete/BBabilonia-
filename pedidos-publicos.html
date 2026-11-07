@@ -57,8 +57,12 @@ textarea.cp{min-height:96px;resize:vertical}
 .of{border-top:1px solid #eef2f7;padding:10px 0}.of:first-child{border-top:0}
 .of .pr{font-size:18px;font-weight:900;color:#047857}
 .vazio{text-align:center;color:#64748b;font-size:14px;padding:22px 8px}
-.modal{position:fixed;inset:0;background:#0008;z-index:50;display:none;align-items:flex-end;justify-content:center}.modal.on{display:flex}
-.modal .cx{width:100%;max-width:560px;border-radius:18px 18px 0 0;margin:0;max-height:92vh;overflow:auto}
+/* (07/11/2026) publicação aberta em página inteira (por cima do menu de baixo), não meia janela */
+.modal{position:fixed;inset:0;background:#f1f5f9;z-index:9400;display:none;justify-content:center}.modal.on{display:flex}
+.modal .cx{width:100%;max-width:560px;height:100%;border-radius:0;margin:0;max-height:none;overflow:auto;-webkit-overflow-scrolling:touch;box-shadow:none;padding:0 16px calc(28px + env(safe-area-inset-bottom,0px))}
+.mTopo{position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:10px;background:#fff;margin:0 -16px 12px;padding:10px 12px;border-bottom:1px solid #e2e8f0}
+.mTopo button{border:0;background:#e0f2fe;color:#0369a1;width:40px;height:40px;border-radius:50%;font-size:20px;font-weight:800;flex:none}
+.mTopo b{font-size:16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .hide{display:none!important}
 #filtroArea button{flex:none;border:2px solid #0ea5e9;border-radius:20px;padding:7px 14px;font-size:13.5px;font-weight:700;background:#fff;color:#0369a1}
 #filtroArea button.on{background:#0ea5e9;color:#fff}
@@ -292,7 +296,25 @@ $('voltar').onclick = function () {
   if ($('modal').classList.contains('on')) return fechar();
   if (history.length > 1) history.back(); else location.href = VEND ? 'painel-vendedor-v2.html' : PAINEL_ADM ? 'painel-admin.html' : 'conta.html';
 };
-function fechar() { $('modal').classList.remove('on'); $('modalCx').innerHTML = ''; }
+var popIgnorar = false;
+function fechar() {
+  $('modal').classList.remove('on'); $('modalCx').innerHTML = ''; document.body.style.overflow = '';
+  if (history.state && history.state.bbPag) { popIgnorar = true; history.back(); }
+}
+/* abre a janela como página inteira: barra com ← no topo e o botão "voltar" do telemóvel fecha-a */
+function abrirPagina() {
+  var cx = $('modalCx'), h2 = cx.querySelector('h2'), t = document.createElement('div');
+  t.className = 'mTopo'; t.innerHTML = '<button type="button" aria-label="Voltar">←</button><b></b>';
+  t.querySelector('b').textContent = h2 ? h2.textContent : '';
+  t.querySelector('button').onclick = fechar;
+  cx.insertBefore(t, cx.firstChild); cx.scrollTop = 0;
+  $('modal').classList.add('on'); document.body.style.overflow = 'hidden';
+  if (!(history.state && history.state.bbPag)) history.pushState({ bbPag: 1 }, '', location.href);
+}
+window.addEventListener('popstate', function () {
+  if (popIgnorar) { popIgnorar = false; return; }
+  if ($('modal').classList.contains('on')) { $('modal').classList.remove('on'); $('modalCx').innerHTML = ''; document.body.style.overflow = ''; }
+});
 $('modal').onclick = function (e) { if (e.target === $('modal')) fechar(); };
 
 /* ---------- entrar / trocar de conta ---------- */
@@ -387,10 +409,10 @@ function abrirPedido(id) {
       '<button class="bt p" id="oOk">' + (of ? 'Guardar a oferta' : 'Enviar oferta') + '</button>';
   }
   h += '<button class="bt" id="mFechar">Fechar</button><p class="msg" id="oMsg"></p>';
-  $('modalCx').innerHTML = h; $('modal').classList.add('on');
+  $('modalCx').innerHTML = h; abrirPagina();
   $('mFechar').onclick = fechar;
   if ($('admApagar')) $('admApagar').onclick = function () { apagarComoDono(p, this); };
-  if ($('mVer')) $('mVer').onclick = function (e) { e.preventDefault(); fechar(); mostrar('meus'); };
+  if ($('mVer')) $('mVer').onclick = function (e) { e.preventDefault(); fechar(); setTimeout(function () { mostrar('meus'); }, 150); };
   if ($('oOk')) $('oOk').onclick = async function () {
     var b = this, m = $('oMsg'); m.className = 'msg'; m.textContent = '';
     var preco = Number(String($('oP').value).replace(',', '.')), prazo = $('oZ').value === '' ? null : Math.floor(Number($('oZ').value)), txt = $('oT').value.trim();
@@ -637,7 +659,7 @@ async function carregarCategorias() {
 function subarvore(id) { var l = [String(id)]; for (var i = 0; i < l.length; i++) (filhos[l[i]] || []).forEach(function (f) { if (l.indexOf(f) < 0) l.push(f); }); return l; }
 $('fC').onclick = async function () {
   $('modalCx').innerHTML = '<h2>Escolha a categoria principal</h2><div class="pq" style="margin:6px 0 0"><span>🔍</span><input id="cPq" type="search" placeholder="Pesquisar: roupa, carros, eletrónicos…" autocomplete="off"></div><div class="catl" id="cL"><p class="vazio">A carregar…</p></div><button class="bt" id="cF">Fechar</button>';
-  $('modal').classList.add('on'); $('cF').onclick = fechar;
+  abrirPagina(); $('cF').onclick = fechar;
   try { await carregarCategorias(); } catch (e) {}
   function pinta() {
     var q = semAcento($('cPq').value.trim()), pal = q.split(/\s+/).filter(Boolean);
@@ -698,7 +720,7 @@ async function iniciar() {
   if (pid) {
     if (pedidos.some(function (x) { return String(x.id) === pid; })) abrirPedido(pid);
     else { $('lista').insertAdjacentHTML('afterbegin', '<p class="vazio" id="pFechado">Este pedido já foi fechado ou apagado pelo cliente.</p>'); }
-    history.replaceState({}, '', location.pathname + location.hash);
+    history.replaceState(history.state, '', location.pathname + location.hash);
   }
 }
 /* se a conta mudar noutra página, esta página acompanha */
