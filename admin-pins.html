@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="pt"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PIN BBabilônia • Admin</title>
+<style>
+*{box-sizing:border-box}body{margin:0 auto;max-width:560px;padding:16px;background:#eef2f7;font-family:system-ui,sans-serif;color:#0f172a}
+h1{font-size:21px;margin:6px 0 12px}h3{font-size:16px;margin:20px 0 8px}
+.bx{background:#fff;border-radius:14px;padding:14px;box-shadow:0 4px 14px #0f172a14;margin-bottom:12px}
+input{width:100%;padding:13px;border:2px solid #e2e8f0;border-radius:12px;font:inherit;font-size:16px}
+button{width:100%;margin-top:10px;padding:14px;border:0;border-radius:12px;font:inherit;font-weight:800;color:#fff;background:linear-gradient(90deg,#16a34a,#2563eb)}
+.l{background:#fff;color:#2563eb;border:2px solid #e2e8f0}
+.it{padding:9px 0;border-bottom:1px solid #eef2f7;font-size:14.5px}.it small{display:block;color:#64748b}
+#m{margin-top:10px;font-size:14.5px;min-height:1em}.er{color:#dc2626}.ok{color:#16a34a}
+p{color:#475569;font-size:14.5px;line-height:1.5;margin:4px 0}
+</style></head><body>
+<h1>🔢 PIN BBabilônia</h1>
+<div class="bx">
+ <p>Apagar o PIN de uma conta (esqueceu o PIN ou ficou bloqueada). Confirme primeiro que é mesmo a pessoa (ex.: vídeo ao vivo com código). Na próxima entrada ela cria um PIN novo.</p>
+ <input id="em" type="email" placeholder="Email da conta" autocomplete="off">
+ <button id="ap">Apagar PIN desta conta</button>
+ <div id="m"></div>
+</div>
+<h3>Contas bloqueadas agora</h3><div class="bx" id="bq">A carregar…</div>
+<h3>Avisos de segurança</h3><div class="bx" id="al">A carregar…</div>
+<button class="l" id="at">Atualizar</button>
+<script>
+(function(){
+var $=function(i){return document.getElementById(i)};
+function esc(t){return String(t==null?'':t).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function token(){
+ var l=[['sessionStorage','bb-atd'],['localStorage','sb-dsfoqoeawvjafypycldz-auth-token']];
+ for(var i=0;i<l.length;i++){try{var v=JSON.parse(window[l[i][0]].getItem(l[i][1])||'null');if(v&&v.currentSession)v=v.currentSession;if(v&&v.access_token)return v.access_token}catch(e){}}
+ return null;
+}
+async function api(acao,extra){
+ var t=token();if(!t)throw new Error('Entre primeiro no painel do administrador (impressão digital + PIN) e depois abra esta página.');
+ var r=await fetch('/api/pin-2fa',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+t},body:JSON.stringify(Object.assign({acao:acao},extra||{}))});
+ var j={};try{j=await r.json()}catch(e){}
+ if(!r.ok)throw new Error(j.erro||('Erro '+r.status));return j;
+}
+function data(s){try{return new Date(s).toLocaleString('pt-PT')}catch(e){return s}}
+async function carregar(){
+ try{
+  var j=await api('admin-lista');
+  $('bq').innerHTML=(j.bloqueados||[]).length?j.bloqueados.map(function(b){return '<div class="it"><b>'+esc(b.email)+'</b><small>'+(String(b.bloqueado_ate)>='9999'?'Bloqueada até desbloquear':'Até '+esc(data(b.bloqueado_ate)))+'</small></div>'}).join(''):'<p>Nenhuma conta bloqueada.</p>';
+  $('al').innerHTML=(j.alertas||[]).length?j.alertas.map(function(a){return '<div class="it">'+esc(a.texto)+'<small>'+esc(a.email)+' · '+esc(data(a.criado_em))+'</small></div>'}).join(''):'<p>Sem avisos.</p>';
+ }catch(e){$('bq').innerHTML=$('al').innerHTML='<p class="er">'+esc(e.message)+'</p>'}
+}
+$('ap').onclick=async function(){
+ var e=$('em').value.trim();var m=$('m');m.className='';
+ if(!e){m.className='er';m.textContent='Escreva o email da conta.';return}
+ if(!confirm('Apagar o PIN de '+e+'? A pessoa vai criar um novo na próxima entrada.'))return;
+ this.disabled=true;
+ try{await api('admin-apagar',{email:e});m.className='ok';m.textContent='✓ PIN apagado. A conta cria um PIN novo na próxima entrada.';$('em').value='';carregar()}
+ catch(x){m.className='er';m.textContent=x.message}
+ this.disabled=false;
+};
+$('at').onclick=carregar;
+carregar();
+})();
+</script>
+</body></html>
