@@ -1,0 +1,115 @@
+/* pais-fornecedor.js — (12/11/2026) projeto moçambicano: por baixo do preço, nos cartões da página inicial,
+   aparece a bandeira do país do fornecedor, a província, o distrito e o bairro da loja
+   (ex.: 🇲🇿 Manica · Gondola · Nhamadjessa) e, por baixo, a % de avaliações positivas (4 e 5 estrelas).
+   Loja antiga sem província/bairro: bandeira + nome do país, como antes.
+   Não altera nada do index.html nem do inicio-v2.js. Dados: função paises_fornecedores do Supabase. */
+(function () {
+  var SB = "https://dsfoqoeawvjafypycldz.supabase.co";
+  var KEY = "sb_publishable_BN4NiVcDab9CqdTY_odgDA_uUOhjja0";
+  var localDe = null;         /* dono (supplier_id) -> {pais, provincia, bairro} */
+  var donoDe = {};            /* id do produto -> supplier_id (quando a lista global não existe) */
+  var nomes = null;
+  try { nomes = new Intl.DisplayNames(["pt"], { type: "region" }); } catch (e) {}
+
+  var css = document.createElement("style");
+  css.textContent =
+    ".card .preco{display:flex;align-items:baseline;flex-wrap:wrap;column-gap:6px}" +
+    ".card .preco .pf{font-family:system-ui,sans-serif;font-weight:400;font-size:11px;color:var(--suave,#777);white-space:normal;line-height:1.3;max-width:100%;flex-basis:100%}" +
+    ".card .preco .pa{font-family:system-ui,sans-serif;font-weight:600;font-size:11px;color:#0f9d58;flex-basis:100%;line-height:1.3}" +
+    ".card .preco .pa.z{color:var(--suave,#777);font-weight:400}";
+  document.head.appendChild(css);
+
+  function bandeira(c) {
+    if (!/^[A-Z]{2}$/.test(c)) return "";
+    return String.fromCodePoint(127397 + c.charCodeAt(0), 127397 + c.charCodeAt(1));
+  }
+  function nomePais(c) {
+    try { return (nomes && nomes.of(c)) || c; } catch (e) { return c; }
+  }
+  function listaProdutos() {
+    try { if (typeof produtos !== "undefined" && Array.isArray(produtos)) return produtos; } catch (e) {}
+    return [];
+  }
+  function dono(id) {
+    var l = listaProdutos();
+    for (var i = 0; i < l.length; i++) if (String(l[i].id) === id) return l[i].supplier_id || null;
+    return donoDe[id] || null;
+  }
+  function texto(x) {
+    var c = String(x.pais || "").toUpperCase();
+    var f = bandeira(c);
+    var prov = String(x.provincia || "").trim(), bairro = String(x.bairro || "").trim(), dist = String(x.distrito || "").trim();
+    if (prov && dist && bairro) return { t: (f + " " + prov + " \u00b7 " + dist + " \u00b7 " + bairro).trim(), titulo: "Loja em " + bairro + ", " + dist + ", " + prov + " (" + nomePais(c) + ")" };
+    if (prov && bairro) return { t: (f + " " + prov + " \u00b7 " + bairro).trim(), titulo: "Loja em " + bairro + ", " + prov + " (" + nomePais(c) + ")" };
+    if (prov) return { t: (f + " " + prov).trim(), titulo: "Loja em " + prov + " (" + nomePais(c) + ")" };
+    if (c) return { t: (f + " " + nomePais(c)).trim(), titulo: "Fornecedor de " + nomePais(c) };
+    return null;
+  }
+
+  function aplicar() {
+    if (!localDe) return;
+    var cards = document.querySelectorAll("#grelha a.card");
+    var faltam = [];
+    cards.forEach(function (a) {
+      var pr = a.querySelector(".preco");
+      if (!pr || pr.querySelector(".pf")) return;
+      var m = /[?&]id=([^&]+)/.exec(a.getAttribute("href") || "");
+      if (!m) return;
+      var id = decodeURIComponent(m[1]);
+      var d = dono(id);
+      if (!d && !(id in donoDe)) { faltam.push(id); return; }
+      var x = d && localDe[String(d)];
+      if (!x) return;
+      var tx = texto(x);
+      if (!tx) return;
+      var s = document.createElement("span");
+      s.className = "pf";
+      s.textContent = tx.t;
+      s.title = tx.titulo;
+      pr.appendChild(s);
+      var n = Number(x.avaliacoes) || 0, b = Number(x.positivas) || 0;
+      var a2 = document.createElement("span");
+      a2.className = "pa" + (n ? "" : " z");
+      a2.textContent = n ? ("\ud83d\udc4d " + Math.round(b * 100 / n) + "% avalia\u00e7\u00f5es positivas (" + n + ")") : "\ud83d\udc4d Ainda sem avalia\u00e7\u00f5es";
+      pr.appendChild(a2);
+    });
+    if (faltam.length) buscarDonos(faltam);
+  }
+
+  var aBuscar = false;
+  function buscarDonos(ids) {
+    if (aBuscar) return; aBuscar = true;
+    fetch(SB + "/rest/v1/products?select=id,supplier_id&id=in.(" + ids.map(encodeURIComponent).join(",") + ")",
+      { headers: { apikey: KEY, Authorization: "Bearer " + KEY } })
+      .then(function (r) { return r.ok ? r.json() : []; })
+      .then(function (l) {
+        ids.forEach(function (i) { donoDe[i] = null; });
+        (l || []).forEach(function (p) { donoDe[String(p.id)] = p.supplier_id || null; });
+      })
+      .catch(function () { ids.forEach(function (i) { donoDe[i] = null; }); })
+      .then(function () { aBuscar = false; aplicar(); });
+  }
+
+  fetch(SB + "/rest/v1/rpc/paises_fornecedores", {
+    method: "POST",
+    headers: { apikey: KEY, Authorization: "Bearer " + KEY, "Content-Type": "application/json" },
+    body: "{}"
+  })
+    .then(function (r) { return r.ok ? r.json() : []; })
+    .then(function (l) {
+      localDe = {};
+      (l || []).forEach(function (x) { if (x.dono && (x.pais || x.provincia)) localDe[String(x.dono)] = x; });
+      aplicar();
+    })
+    .catch(function () {});
+
+  function observar() {
+    var g = document.getElementById("grelha");
+    if (!g) return setTimeout(observar, 300);
+    new MutationObserver(aplicar).observe(g, { childList: true, subtree: true });
+    aplicar();
+  }
+  observar();
+})();
+/* (06/11/2026) MOQ + "Negociável" nos cartões, no lugar das cores */
+(function () { if (document.querySelector('script[src*="moq-cartao.js"]')) return; var s = document.createElement("script"); s.src = "moq-cartao.js?v=1"; document.head.appendChild(s); })();

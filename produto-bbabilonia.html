@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Produto – BBabilônia</title>
+<script>
+/* (06/11/2026) no subdomínio do vendedor (suppliers.bbabilonia.com) a página de compra não abre:
+   o vendedor vê o produto só em modo de visualização (produto-vendedor.html);
+   quem não tem sessão (cliente com link antigo) vai para a loja https://bbabilonia.com. Na loja fica tudo igual. */
+(function(){
+  if(!/^suppliers\./i.test(location.hostname))return;
+  window.__bbVend=1;
+  var s=null;try{s=JSON.parse(localStorage.getItem("sb-dsfoqoeawvjafypycldz-auth-token")||"null")}catch(e){}
+  var ir=(s&&s.access_token)?"produto-vendedor.html"+location.search:"https://bbabilonia.com/produto-bbabilonia.html"+location.search;
+  try{if(window.top!==window&&window.top.location.hostname===location.hostname){window.top.location.replace(ir);return}}catch(e){}
+  location.replace(ir);
+})();
+</script>
+<style>
+  html,body{margin:0;height:100%;background:#0f1220}
+  iframe{border:0;width:100%;height:100vh;height:100dvh;display:block}
+</style>
+</head>
+<body>
+<iframe id="f" title="Produto"></iframe>
+<script>
+(function(){
+  if(window.__bbVend)return;
+  var f = document.getElementById("f");
+  var ultimoClique = 0;
+  f.addEventListener("load", function(){
+    try{
+      var w = f.contentWindow;
+      if(!w.document.getElementById("bb-pchat")){var sc=w.document.createElement("script");sc.id="bb-pchat";sc.src="produto-chat.js?v=1";w.document.body.appendChild(sc);}
+      if(!w.document.getElementById("bb-pfoto")){var sf=w.document.createElement("script");sf.id="bb-pfoto";sf.src="foto-ampliar.js?v=1";w.document.body.appendChild(sf);}
+      if(!w.document.getElementById("bb-paval")){var sa=w.document.createElement("script");sa.id="bb-paval";sa.src="avaliacoes-produto.js?v=1";w.document.body.appendChild(sa);}
+      if(!w.document.getElementById("bb-pmin")){var sm=w.document.createElement("script");sm.id="bb-pmin";sm.src="pedido-minimo.js?v=1";w.document.body.appendChild(sm);}
+      /* (12/11/2026) verificação física pelos agentes + loja (província, distrito, bairro) + % avaliações positivas */
+      if(!w.document.getElementById("bb-pconf")){var sv=w.document.createElement("script");sv.id="bb-pconf";sv.src="confirmacao-produto.js?v=1";w.document.body.appendChild(sv);}
+      w.document.addEventListener("click", function(){ ultimoClique = Date.now(); }, true);
+      var original = w.Storage.prototype.setItem;
+      w.Storage.prototype.setItem = function(chave, valor){
+        var antes = this.getItem(chave);
+        original.apply(this, arguments);
+        if(chave === "carrinho" && valor !== antes && Date.now() - ultimoClique < 3000){
+          setTimeout(function(){ location.href = "carrinho.html"; }, 600);
+        }
+      };
+    }catch(e){}
+  });
+  f.src = "produto-loja.html" + location.search;
+})();
+</script>
+</body>
+</html>
+<script src="indice-produto.js"></script>

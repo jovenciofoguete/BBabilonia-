@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="pt"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Criar loja • BBabilônia</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<style>
+:root{--bg:#111;--card:#1c1c1f;--line:#2c2c30;--tx:#f3f3f3;--mut:#9a9aa2;--ac:#ff4d6a;--ok:#2e9d62}
+*{box-sizing:border-box}
+body{margin:0 auto;background:var(--bg);color:var(--tx);font:16px system-ui,sans-serif;padding:16px 16px 70px;max-width:560px}
+h1{font-size:22px}h3{margin:24px 0 8px;font-size:16px}
+label{display:block;margin:12px 0 4px;color:var(--mut);font-size:14px}
+input,select,textarea{width:100%;padding:12px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--tx);font:inherit}
+button{padding:12px 16px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--tx);font:inherit}
+.p{background:var(--ac);border-color:var(--ac);color:#fff;width:100%;font-weight:600;margin-top:20px;height:50px}
+.box{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px;margin-top:8px;font-size:14px;color:var(--mut)}
+.ck{display:flex;gap:10px;align-items:center;margin:0;padding:8px 0;color:var(--tx);font-size:15px}
+.ck input{width:auto}
+.lista{max-height:220px;overflow:auto;border:1px solid var(--line);border-radius:10px;padding:4px 12px;margin-top:8px}
+.doc{margin-top:10px}.doc small{display:block;color:var(--mut);margin-top:4px}
+.doc.ok small{color:var(--ok)}
+.doc.er small{color:var(--ac)}
+#m{margin-top:12px;color:var(--ac)}.hide{display:none}
+.est{font-size:20px;font-weight:700;margin:6px 0}
+#pvCod{display:inline-block;color:#fff;background:#2c2c30;border-radius:8px;padding:4px 10px;font-size:24px;letter-spacing:3px;margin:6px 0;font-family:monospace}
+#pvV{width:100%;border-radius:10px;margin-top:8px;background:#000;display:none;max-height:60vh}
+#pvEst.ok{color:var(--ok)}
+#lMsg{margin-top:8px;color:var(--ac);font-size:14px}
+.telw{display:flex;gap:8px}.telw span{flex:none;display:flex;align-items:center;padding:0 12px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--tx)}
+</style></head><body>
+<h1>Criar a minha loja</h1>
+<div class="box">Para vender na BBabilônia a loja é verificada. Os documentos ficam privados: só você e a equipa da BBabilônia os veem.</div>
+
+<div id="login" class="hide">
+ <label>Email</label><input id="em" type="email" autocomplete="email">
+ <label>Palavra-passe (mínimo 6)</label><input id="pw" type="password" autocomplete="current-password">
+ <button class="p" id="ent">Entrar</button>
+ <button class="p" id="cri" style="background:none;border-color:var(--line)">Criar conta</button>
+</div>
+
+<div id="estado" class="hide">
+ <h3>A sua loja</h3>
+ <div class="box"><div id="en" style="color:var(--tx);font-size:17px"></div><div class="est" id="ee"></div><div id="em2"></div><div id="eLocal" style="margin-top:4px"></div></div>
+ <!-- lojas já criadas sem província/bairro: completam aqui -->
+ <div id="local" class="hide">
+  <h3>Localização da loja</h3>
+  <div class="box">Os clientes veem a província, o distrito e o bairro da loja ao lado do preço dos seus produtos. O endereço e o telemóvel ficam privados: só a administração e os agentes da BBabilônia os veem, para irem à loja confirmar os produtos. Preencha para continuar.</div>
+  <div id="lPaisBox" class="hide"><label>País da loja *</label><select id="lPais"></select></div>
+  <label>Província *</label><select id="lProv"></select>
+  <label>Distrito *</label><select id="lDist"></select>
+  <input id="lDistO" class="hide" maxlength="60" autocomplete="off" placeholder="Escreva o distrito" style="margin-top:8px">
+  <label>Bairro *</label><input id="lBairro" maxlength="40" autocomplete="off" placeholder="Escreva o bairro da loja">
+  <label>Endereço da loja * <small>(avenida/rua, número, ponto de referência · privado: só administração e agentes)</small></label><input id="lEnd" maxlength="150" autocomplete="off" placeholder="Ex.: Av. 25 de Setembro nº 120, ao lado do mercado">
+  <label>Telemóvel da loja * <small>(só a administração e os agentes da BBabilônia veem; os clientes não)</small></label><div class="telw"><span id="lInd">+258</span><input id="lTel" type="tel" inputmode="tel" maxlength="18" autocomplete="off" placeholder="84 123 4567"></div>
+  <div id="lMsg"></div>
+  <button class="p" id="lGuardar" type="button">Guardar localização</button>
+ </div>
+</div>
+<div id="sairBox" class="hide" style="margin-top:14px">
+ <div class="box">Sessão iniciada como <b id="quem" style="color:var(--tx)"></b></div>
+ <button id="sairConta" type="button" style="width:100%;margin-top:8px">Sair e entrar com outra conta</button>
+</div>
+
+<div id="form" class="hide">
+ <label>Tipo de vendedor</label>
+ <select id="tipo"><option value="empresa">Empresa</option><option value="individual">Pessoa individual</option></select>
+ <label>Nome da loja</label><input id="nome">
+ <label>País da loja</label><select id="pais"></select>
+ <label>Província *</label><select id="prov"></select>
+ <label>Distrito *</label><select id="dist"></select>
+ <input id="distO" class="hide" maxlength="60" autocomplete="off" placeholder="Escreva o distrito" style="margin-top:8px">
+ <label>Bairro *</label><input id="bairro" maxlength="40" autocomplete="off" placeholder="Escreva o bairro da loja">
+ <label>Endereço da loja * <small>(avenida/rua, número, ponto de referência · privado: só administração e agentes)</small></label><input id="end" maxlength="150" autocomplete="off" placeholder="Ex.: Av. 25 de Setembro nº 120, ao lado do mercado">
+ <label>Telemóvel da loja * <small>(só a administração e os agentes da BBabilônia veem; os clientes não)</small></label><div class="telw"><span id="ind">+258</span><input id="tel" type="tel" inputmode="tel" maxlength="18" autocomplete="off" placeholder="84 123 4567"></div>
+ <label>Descrição da loja</label><textarea id="desc" rows="3"></textarea>
+
+ <h3>Para onde envia</h3>
+ <label class="ck"><input type="checkbox" id="mundo"> Envia para todo o mundo</label>
+ <div id="pbox">
+  <input id="busca" placeholder="Pesquisar país…" style="margin-top:8px">
+  <div class="lista" id="pl"></div>
+ </div>
+
+ <h3>Meios de envio</h3>
+ <div class="lista" style="max-height:none" id="ml"></div>
+ <label>Outro meio de envio (opcional)</label><input id="outro">
+
+ <h3>Documentos (opcional)</h3>
+ <div class="box">Os documentos não são obrigatórios, mas ajudam a loja a ser aprovada mais depressa. Escolha a sua situação:</div>
+ <label class="ck"><input type="radio" name="dmodo" value="loja" checked> Tenho documentos da loja</label>
+ <label class="ck"><input type="radio" name="dmodo" value="sem"> Não tenho documentos da loja</label>
+ <div id="docs"></div>
+
+ <h3>Prova ao vivo *</h3>
+ <div class="box">1) Escreva este código num papel:<br><span id="pvCod"></span><br>2) Grave aqui um vídeo curto (5 a 15 segundos), ao vivo, a mostrar: o seu rosto e o papel com o código (e o BI na mão, se tiver).<br>O vídeo só pode ser gravado agora pela câmara (não dá para escolher da galeria). Fica privado: só a equipa da BBabilônia o vê.</div>
+ <video id="pvV" playsinline muted></video>
+ <div style="display:flex;gap:8px;margin-top:8px"><button id="pvGravar" type="button" style="flex:1">🎥 Abrir câmara</button><button id="pvVirar" type="button" class="hide">🔄 Virar</button></div>
+ <small id="pvEst" style="display:block;color:var(--mut);margin-top:6px">Ainda não gravado</small>
+
+ <button class="p" id="env">Enviar para análise</button>
+</div>
+<div id="m"></div>
+
+<script>
+const sb=supabase.createClient('https://dsfoqoeawvjafypycldz.supabase.co','sb_publishable_BN4NiVcDab9CqdTY_odgDA_uUOhjja0');
+const $=i=>document.getElementById(i);
+const msg=t=>$('m').textContent=t;
+let user=null,files={};
+const MAX_MB=20; // limite do bucket documentos-loja
+const CODES='AF AL DZ AD AO AG AR AM AU AT AZ BS BH BD BB BY BE BZ BJ BT BO BA BW BR BN BG BF BI CV KH CM CA CF TD CL CN CO KM CG CD CR CI HR CU CY CZ DK DJ DM DO EC EG SV GQ ER EE SZ ET FJ FI FR GA GM GE DE GH GR GD GT GN GW GY HT HN HU IS IN ID IR IQ IE IL IT JM JP JO KZ KE KI XK KW KG LA LV LB LS LR LY LI LT LU MG MW MY MV ML MT MH MR MU MX FM MD MC MN ME MA MZ MM NA NR NP NL NZ NI NE NG MK NO OM PK PW PS PA PG PY PE PH PL PT QA RO RU RW KN LC VC WS SM ST SA SN RS SC SL SG SK SI SB SO ZA KR SS ES LK SD SR SE CH SY TW TJ TZ TH TL TG TO TT TN TR TM TV UG UA AE GB US UY UZ VU VA VE VN YE ZM ZW'.split(' ');
+const nomes=new Intl.DisplayNames(['pt'],{type:'region'});
+const PAISES=CODES.map(c=>({c:c,n:nomes.of(c)})).sort((a,b)=>a.n.localeCompare(b.n,'pt'));
+/* (12/11/2026) projeto moçambicano: a loja só pode ser de Moçambique, da Tanzânia ou da África do Sul */
+const PAISES_LOJA=['MZ','TZ','ZA'];
+/* províncias (Moçambique, África do Sul) e regiões (Tanzânia): escolhidas sempre em lista, nunca escritas */
+const PROV={
+ MZ:['Cabo Delgado','Gaza','Inhambane','Manica','Maputo (Cidade)','Maputo (Província)','Nampula','Niassa','Sofala','Tete','Zambézia'],
+ TZ:['Arusha','Dar es Salaam','Dodoma','Geita','Iringa','Kagera','Katavi','Kigoma','Kilimanjaro','Lindi','Manyara','Mara','Mbeya','Morogoro','Mtwara','Mwanza','Njombe','Pemba Norte','Pemba Sul','Pwani','Rukwa','Ruvuma','Shinyanga','Simiyu','Singida','Songwe','Tabora','Tanga','Zanzibar Norte','Zanzibar Sul','Zanzibar Urbano Oeste'],
+ ZA:['Eastern Cape','Free State','Gauteng','KwaZulu-Natal','Limpopo','Mpumalanga','North West','Northern Cape','Western Cape']
+};
+/* distritos de cada província/região (com "Outro" para escrever à mão) */
+const DIST={
+ 'Cabo Delgado':'Ancuabe,Balama,Chiúre,Cidade de Pemba,Ibo,Macomia,Mecúfi,Meluco,Metuge,Mocímboa da Praia,Montepuez,Mueda,Muidumbe,Namuno,Nangade,Palma,Quissanga',
+ 'Gaza':'Bilene,Chibuto,Chicualacuala,Chigubo,Chókwè,Chongoene,Cidade de Xai-Xai,Guijá,Limpopo,Mabalane,Mandlakazi,Mapai,Massangena,Massingir',
+ 'Inhambane':'Cidade de Inhambane,Cidade da Maxixe,Funhalouro,Govuro,Homoíne,Inharrime,Inhassoro,Jangamo,Mabote,Massinga,Morrumbene,Panda,Vilankulo,Zavala',
+ 'Manica':'Bárue,Cidade de Chimoio,Gondola,Guro,Macate,Machaze,Macossa,Manica,Mossurize,Sussundenga,Tambara,Vanduzi',
+ 'Maputo (Cidade)':'KaMpfumo,Nlhamankulu,KaMaxakeni,KaMavota,KaMubukwana,KaTembe,KaNyaka',
+ 'Maputo (Província)':'Boane,Cidade da Matola,Magude,Manhiça,Marracuene,Matutuíne,Moamba,Namaacha',
+ 'Nampula':'Angoche,Cidade de Nacala,Cidade de Nampula,Eráti,Ilha de Moçambique,Lalaua,Larde,Liúpo,Malema,Meconta,Mecubúri,Memba,Mogincual,Mogovolas,Moma,Monapo,Mossuril,Muecate,Murrupula,Nacala-a-Velha,Nacarôa,Rapale,Ribáuè',
+ 'Niassa':'Chimbunila,Cidade de Lichinga,Cuamba,Lago,Majune,Mandimba,Marrupa,Maúa,Mavago,Mecanhelas,Mecula,Metarica,Muembe,N\'gauma,Nipepe,Sanga',
+ 'Sofala':'Búzi,Caia,Chemba,Cheringoma,Chibabava,Cidade da Beira,Dondo,Gorongosa,Machanga,Marínguè,Marromeu,Muanza,Nhamatanda',
+ 'Tete':'Angónia,Cahora-Bassa,Changara,Chifunde,Chiuta,Cidade de Tete,Dôa,Macanga,Magoé,Marara,Marávia,Moatize,Mutarara,Tsangano,Zumbo',
+ 'Zambézia':'Alto Molócuè,Chinde,Cidade de Quelimane,Derre,Gilé,Gurué,Ile,Inhassunge,Luabo,Lugela,Maganja da Costa,Milange,Mocuba,Mocubela,Molumbo,Mopeia,Morrumbala,Mulevala,Namacurra,Namarroi,Nicoadala,Pebane',
+ 'Arusha':'Arusha (Cidade),Arusha DC,Karatu,Longido,Meru,Monduli,Ngorongoro',
+ 'Dar es Salaam':'Ilala,Kigamboni,Kinondoni,Temeke,Ubungo',
+ 'Dodoma':'Bahi,Chamwino,Chemba,Dodoma (Cidade),Kondoa,Kongwa,Mpwapwa',
+ 'Geita':'Bukombe,Chato,Geita,Mbogwe,Nyang\'hwale',
+ 'Iringa':'Iringa (Cidade),Iringa DC,Kilolo,Mafinga,Mufindi',
+ 'Kagera':'Biharamulo,Bukoba,Karagwe,Kyerwa,Missenyi,Muleba,Ngara',
+ 'Katavi':'Mlele,Mpanda,Nsimbo,Tanganyika',
+ 'Kigoma':'Buhigwe,Kakonko,Kasulu,Kibondo,Kigoma,Uvinza',
+ 'Kilimanjaro':'Hai,Moshi,Mwanga,Rombo,Same,Siha',
+ 'Lindi':'Kilwa,Lindi,Liwale,Nachingwea,Ruangwa',
+ 'Manyara':'Babati,Hanang,Kiteto,Mbulu,Simanjiro',
+ 'Mara':'Bunda,Butiama,Musoma,Rorya,Serengeti,Tarime',
+ 'Mbeya':'Busokelo,Chunya,Kyela,Mbarali,Mbeya (Cidade),Mbeya DC,Rungwe',
+ 'Morogoro':'Gairo,Ifakara,Kilombero,Kilosa,Malinyi,Morogoro,Mvomero,Ulanga',
+ 'Mtwara':'Masasi,Mtwara,Nanyumbu,Newala,Tandahimba',
+ 'Mwanza':'Buchosa,Ilemela,Kwimba,Magu,Misungwi,Nyamagana,Sengerema,Ukerewe',
+ 'Njombe':'Ludewa,Makambako,Makete,Njombe,Wanging\'ombe',
+ 'Pemba Norte':'Micheweni,Wete',
+ 'Pemba Sul':'Chake Chake,Mkoani',
+ 'Pwani':'Bagamoyo,Chalinze,Kibaha,Kibiti,Kisarawe,Mafia,Mkuranga,Rufiji',
+ 'Rukwa':'Kalambo,Nkasi,Sumbawanga',
+ 'Ruvuma':'Madaba,Mbinga,Namtumbo,Nyasa,Songea,Tunduru',
+ 'Shinyanga':'Kahama,Kishapu,Msalala,Shinyanga,Ushetu',
+ 'Simiyu':'Bariadi,Busega,Itilima,Maswa,Meatu',
+ 'Singida':'Ikungi,Iramba,Itigi,Manyoni,Mkalama,Singida',
+ 'Songwe':'Ileje,Mbozi,Momba,Songwe,Tunduma',
+ 'Tabora':'Igunga,Kaliua,Nzega,Sikonge,Tabora (Cidade),Urambo,Uyui',
+ 'Tanga':'Bumbuli,Handeni,Kilindi,Korogwe,Lushoto,Mkinga,Muheza,Pangani,Tanga (Cidade)',
+ 'Zanzibar Norte':'Kaskazini A,Kaskazini B',
+ 'Zanzibar Sul':'Kati,Kusini',
+ 'Zanzibar Urbano Oeste':'Magharibi A,Magharibi B,Mjini',
+ 'Eastern Cape':'Alfred Nzo,Amathole,Buffalo City,Chris Hani,Joe Gqabi,Nelson Mandela Bay,OR Tambo,Sarah Baartman',
+ 'Free State':'Fezile Dabi,Lejweleputswa,Mangaung,Thabo Mofutsanyana,Xhariep',
+ 'Gauteng':'City of Johannesburg,City of Tshwane,Ekurhuleni,Sedibeng,West Rand',
+ 'KwaZulu-Natal':'Amajuba,eThekwini,Harry Gwala,iLembe,King Cetshwayo,Ugu,uMgungundlovu,uMkhanyakude,uMzinyathi,uThukela,Zululand',
+ 'Limpopo':'Capricorn,Mopani,Sekhukhune,Vhembe,Waterberg',
+ 'Mpumalanga':'Ehlanzeni,Gert Sibande,Nkangala',
+ 'North West':'Bojanala Platinum,Dr Kenneth Kaunda,Dr Ruth Segomotsi Mompati,Ngaka Modiri Molema',
+ 'Northern Cape':'Frances Baard,John Taolo Gaetsewe,Namakwa,Pixley ka Seme,ZF Mgcawu',
+ 'Western Cape':'Cape Winelands,Central Karoo,City of Cape Town,Garden Route,Overberg,West Coast'
+};
+const OUTRO='__outro';
+const INDICATIVO={MZ:'+258',TZ:'+255',ZA:'+27'};
+const MEIOS=['DHL','FedEx','Aramex','UPS','Correios / EMS','Transporte marítimo','Transporte aéreo','Entrega em mão (presencial)'];
+/* (12/11/2026) documentos opcionais: "Tenho documentos da loja" ou "Não tenho documentos da loja" */
+const DOCS={
+ loja:[['registo','Licença ou alvará',0],['id','Cópia do BI',0],['nuit','NUIT da empresa',0]],
+ sem:[['id','Cópia do BI',0],['nuit_pessoal','NUIT pessoal',0]]
+};
+const modoDocs=()=>{const r=document.querySelector('input[name="dmodo"]:checked');return r?r.value:'loja'};
+const ESTADOS={pendente:'Em análise',aprovada:'Aprovada ✓',rejeitada:'Rejeitada',suspensa:'Suspensa'};
+
+const escH=t=>String(t==null?'':t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+/* enche a lista de províncias conforme o país escolhido */
+function encherProv(sel,pais,atual){
+ const l=PROV[pais]||[];
+ sel.innerHTML='<option value="">'+(l.length?'— Escolha a província —':'— Escolha primeiro o país —')+'</option>'+l.map(p=>`<option value="${escH(p)}">${escH(p)}</option>`).join('');
+ if(atual&&l.indexOf(atual)>-1)sel.value=atual;
+}
+/* enche a lista de distritos conforme a província (último: "Outro (escrever)") */
+function encherDist(sel,outro,prov,atual){
+ const l=DIST[prov]?DIST[prov].split(','):[];
+ sel.innerHTML='<option value="">'+(prov?'— Escolha o distrito —':'— Escolha primeiro a província —')+'</option>'+l.map(d=>`<option value="${escH(d)}">${escH(d)}</option>`).join('')+(prov?'<option value="'+OUTRO+'">Outro (escrever)</option>':'');
+ outro.value='';outro.classList.add('hide');
+ if(atual){if(l.indexOf(atual)>-1)sel.value=atual;else{sel.value=OUTRO;outro.value=atual;outro.classList.remove('hide')}}
+}
+function ligarDist(sel,outro){sel.addEventListener('change',()=>{outro.classList.toggle('hide',sel.value!==OUTRO);if(sel.value===OUTRO)outro.focus()})}
+function valorDist(sel,outro){return sel.value===OUTRO?outro.value.trim():sel.value}
+/* distrito escrito à mão: só o nome */
+function erroDist(t){
+ t=String(t||'').trim();
+ if(t.length<2)return 'Escolha ou escreva o distrito da loja.';
+ if(t.length>60)return 'O distrito é comprido demais.';
+ if(/@|https?:|www\.|\.com|\.net|\.org|\d{5,}/i.test(t)||(t.match(/\d/g)||[]).length>4)return 'No distrito escreva só o nome (sem contactos, links ou números de telefone).';
+ return '';
+}
+function erroEnd(t){
+ t=String(t||'').trim();
+ if(t.length<3)return 'Escreva o endereço da loja (avenida/rua, número, ponto de referência).';
+ if(/@|https?:|www\.|\.com|\.net|\.org/i.test(t))return 'No endereço não ponha links nem emails.';
+ return '';
+}
+/* telemóvel: 9 algarismos depois do indicativo do país (+258, +255, +27) */
+function telCompleto(pais,t){
+ let d=String(t||'').replace(/\D/g,'');
+ const ind=(INDICATIVO[pais]||'').slice(1);
+ if(ind&&d.indexOf(ind)===0&&d.length===ind.length+9)d=d.slice(ind.length);
+ if(d.length===10&&d[0]==='0')d=d.slice(1);
+ return d.length===9&&d[0]!=='0'&&ind?'+'+ind+d:'';
+}
+/* bairro escrito à mão: só o nome do bairro (sem contactos, links ou números de telefone) */
+function erroBairro(t){
+ t=String(t||'').trim();
+ if(t.length<2)return 'Escreva o bairro da loja.';
+ if(t.length>40)return 'O bairro é comprido demais (máximo 40 letras).';
+ if(/@|https?:|www\.|\.com|\.net|\.org|\d{5,}/i.test(t)||(t.match(/\d/g)||[]).length>4)return 'No bairro escreva só o nome do bairro (sem contactos, links ou números de telefone).';
+ if(!/[A-Za-zÀ-ÿ]/.test(t))return 'Escreva o nome do bairro.';
+ return '';
+}
+
+function montar(){
+ $('pais').innerHTML='<option value="">— Escolha o país —</option>'+PAISES.filter(p=>PAISES_LOJA.indexOf(p.c)>-1).map(p=>`<option value="${p.c}">${p.n}</option>`).join('');
+ encherProv($('prov'),'');
+ encherDist($('dist'),$('distO'),'');
+ $('pl').innerHTML=PAISES.map(p=>`<label class="ck" data-n="${p.n.toLowerCase()}"><input type="checkbox" class="pe" value="${p.c}"> ${p.n}</label>`).join('');
+ $('ml').innerHTML=MEIOS.map(m=>`<label class="ck"><input type="checkbox" class="me" value="${m}"> ${m}</label>`).join('');
+ desenharDocs();
+}
+$('pais').addEventListener('change',()=>{encherProv($('prov'),$('pais').value);encherDist($('dist'),$('distO'),'');$('ind').textContent=INDICATIVO[$('pais').value]||'+258'});
+$('prov').addEventListener('change',()=>encherDist($('dist'),$('distO'),$('prov').value));
+ligarDist($('dist'),$('distO'));
+function desenharDocs(){
+ files={};
+ $('docs').innerHTML=DOCS[modoDocs()].map(d=>`<div class="doc" id="d_${d[0]}"><label style="margin:0;color:var(--tx)">${d[1]}${d[2]?' *':' (opcional)'}</label><input type="file" accept="image/*,application/pdf" onchange="pick('${d[0]}',this)"><small>Nenhum ficheiro</small></div>`).join('');
+}
+function mb(n){return (n/1048576).toFixed(1).replace('.',',')+' MB'}
+/* CORREÇÃO do "Failed to fetch": no Android o ficheiro escolhido deixa de poder ser lido passado algum tempo
+   (sobretudo depois de abrir a câmara para o vídeo). Agora o ficheiro é copiado para a memória logo ao escolher,
+   por isso no envio já não depende do telemóvel. */
+async function pick(k,el){
+ const d=$('d_'+k),s=d.querySelector('small'),f=el.files[0]||null;
+ files[k]=null;d.classList.remove('ok','er');
+ if(!f){s.textContent='Nenhum ficheiro';return}
+ if(f.size>MAX_MB*1048576){d.classList.add('er');s.textContent=f.name+' tem '+mb(f.size)+'. O máximo é '+MAX_MB+' MB. Escolha uma foto ou PDF mais pequeno.';el.value='';return}
+ s.textContent='A preparar '+f.name+'…';
+ try{
+  const buf=await f.arrayBuffer();
+  if(!buf.byteLength)throw new Error('vazio');
+  files[k]=new Blob([buf],{type:f.type||'application/octet-stream'});
+  files[k].nome=f.name;
+  d.classList.add('ok');s.textContent='✓ '+f.name+' ('+mb(buf.byteLength)+')';
+ }catch(e){
+  d.classList.add('er');el.value='';
+  s.textContent='Não foi possível ler este ficheiro. Guarde-o primeiro no telemóvel (não na nuvem/Drive) e escolha outra vez.';
+ }
+}
+document.querySelectorAll('input[name="dmodo"]').forEach(r=>r.onchange=desenharDocs);
+
+/* traduz o erro do servidor para dizer ONDE e PORQUÊ falhou */
+function explicar(e){
+ const t=String((e&&(e.message||e.error))||e||'');
+ if(/failed to fetch|network|load failed|networkerror/i.test(t))return 'sem ligação ao servidor (internet fraca ou cortada). Verifique a internet e toque outra vez em Enviar.';
+ if(/size|too large|payload|413/i.test(t))return 'o ficheiro é grande demais (máximo '+MAX_MB+' MB).';
+ if(/mime|content type|not supported|invalid_mime/i.test(t))return 'este tipo de ficheiro não é aceite.';
+ if(/jwt|token|expired|unauthor|401/i.test(t))return 'a sessão expirou. Toque em "Sair e entrar com outra conta" e entre de novo.';
+ if(/row-level|policy|permission|403/i.test(t))return 'sem permissão para guardar (regras do servidor).';
+ if(/duplicate|already exists|unique/i.test(t))return 'esta conta já tem uma loja registada.';
+ return t;
+}
+const espera=ms=>new Promise(r=>setTimeout(r,ms));
+/* envia com até 3 tentativas quando a internet falha (4G instável) */
+async function subir(caminho,blob,opts){
+ let ult=null;
+ for(let t=1;t<=3;t++){
+  try{
+   const {error}=await sb.storage.from('documentos-loja').upload(caminho,blob,opts||{});
+   if(!error)return;
+   ult=error;
+   if(!/failed to fetch|network|load failed|timeout|5\d\d/i.test(String(error.message||error)))break;
+  }catch(e){ult=e}
+  if(t<3)await espera(1500*t);
+ }
+ throw ult;
+}
+
+/* ---- prova ao vivo: vídeo gravado agora, com código aleatório (contra documentos feitos por IA ou montados) ---- */
+const PV_COD=(()=>{const a='ABCDEFGHJKLMNPQRSTUVWXYZ23456789',r=new Uint32Array(6);crypto.getRandomValues(r);return 'BB-'+Array.from(r,x=>a[x%a.length]).join('')})();
+let pvBlob=null,pvStream=null,pvFace='user',pvRec=null,pvT=null,pvSeg=0;
+$('pvCod').textContent=PV_COD;
+function pvEst(t,ok){$('pvEst').textContent=t;$('pvEst').className=ok?'ok':''}
+function pvFechar(){if(pvStream){pvStream.getTracks().forEach(t=>t.stop());pvStream=null}}
+async function pvAbrir(){
+ pvFechar();
+ pvStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:pvFace,width:{ideal:1280},height:{ideal:720}},audio:false});
+ const v=$('pvV');v.controls=false;v.removeAttribute('src');v.srcObject=pvStream;v.muted=true;v.style.display='block';await v.play().catch(()=>{});
+}
+$('pvGravar').onclick=async()=>{
+ if(pvRec&&pvRec.state==='recording'){pvRec.stop();return}
+ if(!pvStream){
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia||!window.MediaRecorder)return pvEst('Este navegador não grava vídeo. Use o Chrome ou o Safari atualizado.');
+  try{await pvAbrir()}catch(e){return pvEst('Não foi possível abrir a câmara: permita o acesso à câmara e toque outra vez.')}
+  $('pvGravar').textContent='⏺ Começar a gravar';$('pvVirar').classList.remove('hide');pvEst('Mostre o rosto e o papel com o código '+PV_COD+' (e o BI, se tiver).');return;
+ }
+ const tipos=['video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm','video/mp4'];
+ const mt=tipos.find(t=>MediaRecorder.isTypeSupported&&MediaRecorder.isTypeSupported(t))||'';
+ const ch=[];
+ try{pvRec=new MediaRecorder(pvStream,mt?{mimeType:mt,videoBitsPerSecond:1200000}:{})}catch(e){pvRec=new MediaRecorder(pvStream)}
+ pvRec.ondataavailable=e=>{if(e.data&&e.data.size)ch.push(e.data)};
+ pvRec.onstop=()=>{
+  clearInterval(pvT);
+  const tipo=String(pvRec.mimeType||mt||'video/webm').split(';')[0];
+  pvFechar();$('pvVirar').classList.add('hide');
+  if(pvSeg<5){pvBlob=null;$('pvV').style.display='none';$('pvGravar').textContent='🎥 Abrir câmara';return pvEst('O vídeo ficou curto demais ('+pvSeg+' s). Grave pelo menos 5 segundos.')}
+  pvBlob=new Blob(ch,{type:tipo});
+  const v=$('pvV');v.srcObject=null;v.src=URL.createObjectURL(pvBlob);v.controls=true;
+  $('pvGravar').textContent='🎥 Gravar outra vez';pvEst('Vídeo gravado ✓ ('+pvSeg+' s). Veja se aparece tudo; se não, grave outra vez.',true);
+ };
+ pvSeg=0;pvBlob=null;pvRec.start(500);
+ $('pvGravar').textContent='⏹ Parar';$('pvVirar').classList.add('hide');pvEst('A gravar… 0 s / 15 s');
+ pvT=setInterval(()=>{pvSeg++;pvEst('A gravar… '+pvSeg+' s / 15 s');if(pvSeg>=15&&pvRec.state==='recording')pvRec.stop()},1000);
+};
+$('pvVirar').onclick=async()=>{pvFace=pvFace==='user'?'environment':'user';try{await pvAbrir()}catch(e){pvEst('Não foi possível virar a câmara.')}};
+$('mundo').onchange=()=>$('pbox').classList.toggle('hide',$('mundo').checked);
+$('busca').oninput=()=>{const q=$('busca').value.trim().toLowerCase();
+ document.querySelectorAll('#pl .ck').forEach(l=>l.style.display=l.dataset.n.includes(q)?'':'none')};
+
+/* ---- localização (província + bairro) de uma loja que já existe ---- */
+let lojaPais='';
+function mostrarLocal(l){
+ lojaPais=PAISES_LOJA.indexOf(l.pais)>-1?l.pais:'';
+ $('lPaisBox').classList.toggle('hide',!!lojaPais);
+ $('lPais').innerHTML='<option value="">— Escolha o país —</option>'+PAISES.filter(p=>PAISES_LOJA.indexOf(p.c)>-1).map(p=>`<option value="${p.c}">${p.n}</option>`).join('');
+ encherProv($('lProv'),lojaPais,l.provincia||'');
+ encherDist($('lDist'),$('lDistO'),$('lProv').value,l.distrito||'');
+ $('lBairro').value=l.bairro||'';
+ $('lEnd').value=l.endereco||'';
+ $('lInd').textContent=INDICATIVO[lojaPais]||'+258';
+ const ind=(INDICATIVO[lojaPais]||'');$('lTel').value=l.telefone&&ind&&l.telefone.indexOf(ind)===0?l.telefone.slice(ind.length):'';
+ $('lMsg').textContent='';
+ $('local').classList.remove('hide');
+}
+$('lPais').addEventListener('change',()=>{encherProv($('lProv'),$('lPais').value);encherDist($('lDist'),$('lDistO'),'');$('lInd').textContent=INDICATIVO[$('lPais').value]||'+258'});
+$('lProv').addEventListener('change',()=>encherDist($('lDist'),$('lDistO'),$('lProv').value));
+ligarDist($('lDist'),$('lDistO'));
+$('lGuardar').onclick=async()=>{
+ const pais=lojaPais||$('lPais').value,prov=$('lProv').value,bairro=$('lBairro').value.trim();
+ const dist=valorDist($('lDist'),$('lDistO')),end=$('lEnd').value.trim(),tel=telCompleto(pais,$('lTel').value);
+ if(!pais)return $('lMsg').textContent='Escolha o país da loja.';
+ if(!prov)return $('lMsg').textContent='Escolha a província.';
+ const ed=erroDist(dist);if(ed)return $('lMsg').textContent=ed;
+ const eb=erroBairro(bairro);if(eb)return $('lMsg').textContent=eb;
+ const ee=erroEnd(end);if(ee)return $('lMsg').textContent=ee;
+ if(!tel)return $('lMsg').textContent='Escreva o telemóvel da loja (9 algarismos, sem o '+(INDICATIVO[pais]||'indicativo')+').';
+ $('lGuardar').disabled=true;$('lMsg').textContent='A guardar…';
+ const {error}=await sb.rpc('loja_definir_local',{p_pais:pais,p_provincia:prov,p_distrito:dist,p_bairro:bairro,p_endereco:end,p_telefone:tel});
+ $('lGuardar').disabled=false;
+ if(error){$('lMsg').textContent='Não foi possível guardar: '+explicar(error);return}
+ $('lMsg').textContent='';init();
+};
+
+async function init(){
+ const {data}=await sb.auth.getSession();user=data.session&&data.session.user;
+ $('login').classList.toggle('hide',!!user);
+ $('form').classList.add('hide');$('estado').classList.add('hide');$('local').classList.add('hide');
+ $('sairBox').classList.toggle('hide',!user);if(user)$('quem').textContent=user.email||'';
+ if(!user)return;
+ const {data:l,error}=await sb.from('lojas').select('nome,estado,motivo,pais,provincia,distrito,bairro').eq('dono_id',user.id).maybeSingle();
+ if(error){msg('Erro ao ler a sua loja: '+explicar(error));return}
+ /* endereço e telemóvel ficam numa tabela privada (só o dono da loja, a administração e os agentes) */
+ if(l){const {data:ct}=await sb.from('lojas_contacto').select('endereco,telefone').eq('dono_id',user.id).maybeSingle();l.endereco=ct&&ct.endereco||'';l.telefone=ct&&ct.telefone||''}
+ if(l){
+  $('estado').classList.remove('hide');
+  $('en').textContent=l.nome;$('ee').textContent=ESTADOS[l.estado]||l.estado;$('em2').textContent=l.motivo||'';
+  const temLocal=!!(l.provincia&&l.distrito&&l.bairro&&l.endereco&&l.telefone);
+  $('eLocal').textContent=temLocal?('📍 '+l.provincia+' · '+l.distrito+' · '+l.bairro):'';
+  msg('');
+  /* loja sem província/distrito/bairro/endereço/telemóvel: completa primeiro (não avança sozinha para o painel) */
+  if(!temLocal)mostrarLocal(l);
+  /* loja aprovada: entra sozinha no painel do vendedor (e fica o botão, caso não avance) */
+  if(l.estado==='aprovada'){
+   if(!$('irPainel')){const b=document.createElement('button');b.id='irPainel';b.className='p';b.type='button';b.textContent='Entrar no painel do vendedor →';
+    b.onclick=()=>{location.href='/painel-vendedor-v2.html'};$('estado').appendChild(b)}
+   if(temLocal){
+    $('em2').textContent='A abrir o painel do vendedor…';
+    setTimeout(()=>{location.href='/painel-vendedor-v2.html'},1500);
+   }
+  }
+  return;
+ }
+ $('form').classList.remove('hide');
+}
+$('ent').onclick=async()=>{const {error}=await sb.auth.signInWithPassword({email:$('em').value,password:$('pw').value});error?alert('Email ou palavra-passe errados.'):init()};
+$('cri').onclick=async()=>{const {error}=await sb.auth.signUp({email:$('em').value,password:$('pw').value});
+ if(error)return alert(error.message);alert('Conta criada. Toque em Entrar.');init()};
+
+$('env').onclick=async()=>{
+ const nome=$('nome').value.trim(),tipo=$('tipo').value;
+ if(!nome)return msg('Escreva o nome da loja.');
+ if(!$('pais').value)return msg('Escolha o país da loja.');
+ const prov=$('prov').value,bairro=$('bairro').value.trim();
+ if(!prov)return msg('Escolha a província da loja.');
+ const dist=valorDist($('dist'),$('distO'));
+ const ed=erroDist(dist);if(ed)return msg(ed);
+ const eb=erroBairro(bairro);if(eb)return msg(eb);
+ const end=$('end').value.trim();
+ const ee=erroEnd(end);if(ee)return msg(ee);
+ const tel=telCompleto($('pais').value,$('tel').value);
+ if(!tel)return msg('Escreva o telemóvel da loja (9 algarismos, sem o '+(INDICATIVO[$('pais').value]||'indicativo')+').');
+ const mundo=$('mundo').checked;
+ const pe=[...document.querySelectorAll('.pe:checked')].map(x=>x.value);
+ if(!mundo&&!pe.length)return msg('Escolha os países para onde envia, ou marque "Envia para todo o mundo".');
+ const meios=[...document.querySelectorAll('.me:checked')].map(x=>x.value);
+ const outro=$('outro').value.trim();if(outro)meios.push(outro);
+ if(!meios.length)return msg('Escolha pelo menos um meio de envio.');
+ const modo=modoDocs();
+ if(!pvBlob)return msg('Falta gravar o vídeo de prova ao vivo (com o código '+PV_COD+').');
+ if(pvBlob.size>MAX_MB*1048576)return msg('O vídeo ficou grande demais ('+mb(pvBlob.size)+'). Grave outra vez, mais curto.');
+ $('env').disabled=true;
+ let passo='';
+ try{
+  /* a sessão pode ter expirado enquanto preenchia: renova antes de enviar */
+  const {data:ss}=await sb.auth.getSession();
+  if(!ss.session){passo='Sessão';throw new Error('jwt expired')}
+  user=ss.session.user;
+  const subidos=[];let i=0;const tot=DOCS[modo].filter(d=>files[d[0]]).length;
+  for(const d of DOCS[modo]){
+   const f=files[d[0]];if(!f)continue;
+   passo='Documento "'+d[1]+'"';
+   msg('A enviar documentos ('+(++i)+' de '+tot+')…');
+   const p=user.id+'/'+Date.now()+'-'+d[0]+'-'+Math.random().toString(36).slice(2)+'-'+String(f.nome||'doc').replace(/[^\w.]/g,'_');
+   await subir(p,f,{contentType:f.type||'application/octet-stream'});
+   subidos.push({tipo:d[0],ficheiro:p});
+  }
+  passo='Vídeo de prova';
+  msg('A enviar o vídeo de prova…');
+  const ext=/mp4/.test(pvBlob.type)?'mp4':'webm';
+  const pv=user.id+'/'+Date.now()+'-prova-'+PV_COD+'.'+ext;
+  await subir(pv,pvBlob,{contentType:pvBlob.type||('video/'+ext)});
+  subidos.push({tipo:'prova',ficheiro:pv});
+  passo='Criar a loja';
+  msg('A criar a loja…');
+  const {data,error}=await sb.from('lojas').insert({dono_id:user.id,nome:nome,tipo:tipo,pais:$('pais').value,provincia:prov,distrito:dist,bairro:bairro,descricao:$('desc').value.trim(),envia_mundo:mundo,paises_entrega:mundo?[]:pe,meios_envio:meios}).select('id').single();
+  if(error)throw error;
+  passo='Guardar o endereço e o telemóvel da loja';
+  const {error:eC}=await sb.rpc('loja_guardar_contacto',{p_endereco:end,p_telefone:tel});
+  if(eC)throw eC;
+  passo='Ligar os documentos à loja';
+  const {error:e2}=await sb.from('loja_documentos').insert(subidos.map(s=>({loja_id:data.id,tipo:s.tipo,ficheiro:s.ficheiro})));
+  if(e2)throw e2;
+  init();
+ }catch(e){msg('Falhou em: '+passo+' — '+explicar(e));$('env').disabled=false}
+};
+$('sairConta').onclick=async()=>{await sb.auth.signOut();user=null;msg('');init()};
+montar();init();
+</script></body></html>
+<script src="pesquisa-pais-loja.js"></script>
+<script src="loja-continentes.js"></script>
+<script src="fornecedor-idioma.js?v=1"></script>
