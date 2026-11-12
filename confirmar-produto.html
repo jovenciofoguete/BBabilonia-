@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Busca e verificação de produtos · BBabilônia</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<style>
+:root{--fundo:#eef2f7;--papel:#fff;--texto:#0f172a;--suave:#64748b;--linha:#e2e8f0;--az:#2563eb}
+*{box-sizing:border-box;margin:0}
+body{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--fundo);color:var(--texto);line-height:1.45;color-scheme:light}
+.bar{position:sticky;top:0;z-index:5;background:linear-gradient(135deg,#065f46,#059669 55%,#2563eb);color:#fff;box-shadow:0 4px 14px #0003;padding:12px 14px;display:flex;align-items:center;gap:8px}
+.bar h1{font-size:17px;flex:1}.bar a,.bar button{color:#fff;background:#ffffff2e;border:0;border-radius:999px;padding:7px 12px;font:inherit;font-size:13px;font-weight:700;text-decoration:none}
+main{max-width:720px;margin:0 auto;padding:14px 12px 60px}
+.box{background:var(--papel);border-radius:16px;padding:14px;box-shadow:0 4px 14px #0001;margin-bottom:12px}
+h2{font-size:17px;margin-bottom:6px}h3{font-size:15px;margin:12px 0 6px}
+p.s,.s{color:var(--suave);font-size:13.5px}
+input,textarea,select{width:100%;padding:12px;border:2px solid var(--linha);border-radius:12px;font:inherit;font-size:16px;background:#f8fafc;color:var(--texto);margin:5px 0}
+input:focus,textarea:focus{outline:none;border-color:var(--az)}
+.bt{display:block;width:100%;margin-top:10px;padding:14px;border:0;border-radius:14px;font:inherit;font-size:15.5px;font-weight:800;color:#fff;background:linear-gradient(90deg,#2563eb,#1d4ed8)}
+.bt.l{background:transparent;color:var(--az);border:2px solid var(--linha)}.bt:disabled{opacity:.5}
+.err{color:#dc2626;font-size:14px;margin-top:8px;white-space:pre-line}.okm{color:#059669;font-size:14px;margin-top:8px}
+.res{display:flex;gap:10px;align-items:center;padding:10px 0;border-top:1px solid var(--linha);cursor:pointer}
+.res:first-child{border-top:0}
+.res img,.res .sf{width:60px;height:60px;border-radius:10px;object-fit:cover;background:#f1f5f9;flex:none;display:grid;place-items:center;font-size:11px;color:#94a3b8}
+.res b{display:block;font-size:14.5px}.res .m{font-size:12.5px;color:var(--suave)}
+.tg{display:inline-block;font-size:11.5px;font-weight:800;border-radius:999px;padding:2px 8px;margin-top:3px}
+.tg.ok{background:#d1fae5;color:#065f46}.tg.no{background:#fee2e2;color:#991b1b}.tg.nd{background:#e2e8f0;color:#475569}
+.prod{display:flex;gap:12px}.prod img,.prod .sf{width:96px;height:96px;border-radius:12px;object-fit:cover;flex:none;background:#f1f5f9;display:grid;place-items:center;font-size:11px;color:#94a3b8}
+.prod b{font-size:16px;display:block}
+.loja{margin-top:10px;padding:10px;border-radius:12px;background:#f1f5f9;font-size:14px}
+.loja a{display:inline-block;margin-top:6px;padding:8px 12px;border-radius:10px;background:#2563eb;color:#fff;text-decoration:none;font-weight:700}
+.esc{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px}
+.esc label{display:block;border:2px solid var(--linha);border-radius:14px;padding:12px;text-align:center;font-weight:800;font-size:14.5px}
+.esc input{display:none}
+.esc label.ok.on{border-color:#059669;background:#ecfdf5;color:#065f46}
+.esc label.no.on{border-color:#dc2626;background:#fef2f2;color:#991b1b}
+.prev{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.prev img{width:76px;height:76px;object-fit:cover;border-radius:10px}
+.prev video{width:100%;max-height:240px;border-radius:10px;background:#000}
+.hist{border-top:1px solid var(--linha);padding:10px 0}
+.hist .md{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}.hist .md img{width:70px;height:70px;object-fit:cover;border-radius:8px}
+.hist .md video{width:100%;max-height:220px;border-radius:8px;background:#000}
+.hide{display:none}
+</style>
+</head>
+<body>
+<div class="bar"><h1>🛡️ Busca e verificação de produtos</h1><a id="voltaAdm" class="hide" href="/">← Painel</a><a id="meusD" class="hide" href="meus-dados.html?de=verif">🪪 Os meus dados</a><button id="sairB" class="hide" type="button">Sair</button></div>
+<main>
+ <div id="vLogin" class="box hide">
+  <h2>Entrar (agentes de busca e verificação)</h2>
+  <p class="s">Use o email que o administrador registou. Por segurança, ao fechar a página ou ficar 15 minutos sem mexer, sai sozinho.</p>
+  <input id="em" type="email" placeholder="Email" autocomplete="username">
+  <input id="pw" type="password" placeholder="Palavra-passe" autocomplete="current-password">
+  <button class="bt" id="ent" type="button">Entrar</button>
+  <button class="bt l" id="cri" type="button">Primeira vez? Criar conta</button>
+  <div class="err" id="mL"></div>
+ </div>
+ <div id="vSem" class="box hide">
+  <h2 id="semT">Sem acesso</h2><p class="s" id="semP">Este email não está na lista de agentes de busca e verificação. Fale com o administrador.</p>
+  <a class="bt hide" id="semDados" href="meus-dados.html?de=verif" style="text-align:center;text-decoration:none">🪪 Os meus dados</a>
+  <button class="bt l" id="sair2" type="button">Sair</button>
+ </div>
+
+ <div id="vBusca" class="hide">
+  <div class="esc" style="margin:0 0 12px"><label class="ok on" id="tP" style="cursor:pointer">📦 Produtos</label><label class="ok" id="tL" style="cursor:pointer">🏪 Lojas (endereço e telemóvel)</label></div>
+  <div class="box hide" id="bLojas">
+   <h2>Lojas</h2>
+   <p class="s">Endereço e telemóvel das lojas: só a administração e os agentes veem.</p>
+   <input id="ql" type="search" placeholder="🔍 Nome da loja, província, distrito ou bairro" autocomplete="off">
+   <div id="listaL"></div>
+  </div>
+  <div class="box" id="bProd">
+   <h2>1. Escolha o produto</h2>
+   <p class="s">Pesquise pelo nome do produto ou cole o link do produto.</p>
+   <input id="q" type="search" placeholder="🔍 Nome do produto ou link" autocomplete="off">
+   <div id="lista"></div>
+  </div>
+ </div>
+
+ <div id="vProd" class="hide">
+  <button class="bt l" id="voltar" type="button" style="margin:0 0 12px">← Escolher outro produto</button>
+  <div class="box">
+   <div class="prod" id="pInfo"></div>
+   <div class="loja" id="pLoja">A carregar a loja…</div>
+  </div>
+  <div class="box">
+   <h2>2. Resultado da verificação</h2>
+   <div class="esc">
+    <label class="ok" id="lOk"><input type="radio" name="r" value="confirmado">✅ Produto real, exato e sem defeito</label>
+    <label class="no" id="lNo"><input type="radio" name="r" value="recusado">❌ Recusar (não é real ou tem defeito)</label>
+   </div>
+   <h3 id="motT">Observação (opcional)</h3>
+   <textarea id="mot" rows="3" maxlength="600" placeholder="Escreva aqui"></textarea>
+   <h3>3. Fotos da verificação</h3>
+   <input id="fF" type="file" accept="image/*" multiple>
+   <div class="prev" id="pvF"></div>
+   <h3>4. Vídeos da verificação</h3>
+   <input id="fV" type="file" accept="video/*" multiple>
+   <div class="prev" id="pvV"></div>
+   <p class="s" style="margin-top:6px">As fotos e os vídeos ficam visíveis para todos: clientes, fornecedor e administração. Máximo 50 MB por ficheiro.</p>
+   <button class="bt" id="env" type="button">Guardar verificação</button>
+   <div class="err" id="mE"></div>
+  </div>
+  <div class="box">
+   <h2>Verificações anteriores</h2>
+   <div id="hist" class="s">A carregar…</div>
+  </div>
+ </div>
+</main>
+<script>
+/* sessão própria da verificação: só neste separador, separada do atendimento e da loja.
+   No painel do administrador (administrator.bbabilonia.com) usa a sessão do administrador. */
+var NO_ADMIN=/^(admin|administrator)\./i.test(location.hostname);
+var sb=supabase.createClient('https://dsfoqoeawvjafypycldz.supabase.co','sb_publishable_BN4NiVcDab9CqdTY_odgDA_uUOhjja0',
+ NO_ADMIN?{}:{auth:{storage:window.sessionStorage,storageKey:'bb-verif',persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}});
+if(NO_ADMIN)document.getElementById('voltaAdm').classList.remove('hide');
+/* 15 minutos sem mexer: sai sozinho */
+(function(){if(NO_ADMIN)return;var t=null;function sairJa(){sb.auth.signOut().then(function(){location.href=location.pathname+'?saiu=1'},function(){location.href=location.pathname+'?saiu=1'})}
+ function mexeu(){clearTimeout(t);t=setTimeout(function(){try{if(sessionStorage.getItem('bb-verif'))sairJa()}catch(e){}},15*60*1000)}
+ ['click','keydown','touchstart','scroll','input'].forEach(function(e){document.addEventListener(e,mexeu,{passive:true,capture:true})});mexeu()})();
+function $(i){return document.getElementById(i)}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function arr(x){if(typeof x==='string'){try{x=JSON.parse(x)}catch(e){x=[]}}return Array.isArray(x)?x:[]}
+function foto(p){if(p.image_url)return p.image_url;var a=arr(p.images)[0];return typeof a==='string'?a:(a&&(a.url||a.src||a.foto))||''}
+function bandeira(c){c=String(c||'').toUpperCase();return/^[A-Z]{2}$/.test(c)?String.fromCodePoint(127397+c.charCodeAt(0),127397+c.charCodeAt(1)):''}
+function dataH(t){try{return new Date(t).toLocaleString('pt-PT',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})}catch(e){return''}}
+function telB(t){var m=/^\+(258|255|27)(\d{2})(\d{3})(\d{4})$/.exec(String(t||''));return m?'+'+m[1]+' '+m[2]+' '+m[3]+' '+m[4]:String(t||'')}
+var VISTAS=['vLogin','vSem','vBusca','vProd'];
+function vista(v){VISTAS.forEach(function(x){$(x).classList.toggle('hide',x!==v)});$('sairB').classList.toggle('hide',v==='vLogin')}
+var EU={},P=null,fotos=[],videos=[],MAXB=50*1048576;
+
+async function iniciar(){
+ var s=(await sb.auth.getSession()).data.session;
+ if(!s){vista('vLogin');if(/saiu=1/.test(location.search))$('mL').textContent='Saiu por segurança (15 minutos sem mexer). Entre de novo.';return}
+ var r=await sb.rpc('minha_verificacao');EU=r.data||{};
+ if(r.error){$('semT').textContent='Falta o SQL';$('semP').textContent='Falta correr o SQL novo no Supabase ('+r.error.message+').';vista('vSem');return}
+ if(!NO_ADMIN&&!EU.dono){
+  var vv=(await sb.rpc('minha_validade')).data||{};
+  if(vv.estado==='bloqueado'){$('semT').textContent='⛔ Conta bloqueada';$('semP').textContent='A sua conta foi bloqueada porque o bilhete de identidade expirou. Atualize os seus dados para reativar.';$('semDados').classList.remove('hide');vista('vSem');return}
+  if(!EU.agente){vista('vSem');return}
+  if(vv.estado==='sem_dados'){$('semT').textContent='🪪 Complete os seus dados';$('semP').textContent='Antes de começar, registe os seus dados: foto de meio corpo, endereço de morada, NUIT pessoal e bilhete de identidade.';$('semDados').classList.remove('hide');vista('vSem');return}
+  $('meusD').classList.remove('hide');
+  var sc=document.createElement('script');sc.src='aviso-validade.js?v=1&de=verif';document.head.appendChild(sc);
+ }
+ if(!EU.agente){vista('vSem');return}
+ var id=new URLSearchParams(location.search).get('id');
+ if(id)abrir(id);else{vista('vBusca');pesquisar()}
+}
+$('ent').onclick=async function(){
+ $('mL').textContent='';var e=$('em').value.trim().toLowerCase(),p=$('pw').value;
+ if(!e||!p)return $('mL').textContent='Escreva o email e a palavra-passe.';
+ this.disabled=true;var r=await sb.auth.signInWithPassword({email:e,password:p});this.disabled=false;
+ if(r.error)return $('mL').textContent=/confirm/i.test(r.error.message)?'Confirme primeiro o email (abra a mensagem que recebeu) e depois entre.':'Email ou palavra-passe errados.';
+ iniciar();
+};
+$('cri').onclick=async function(){
+ $('mL').style.color='';$('mL').textContent='';var e=$('em').value.trim().toLowerCase(),p=$('pw').value;
+ if(!e||p.length<6)return $('mL').textContent='Escreva o seu email e uma palavra-passe com pelo menos 6 letras ou números.';
+ this.disabled=true;var r=await sb.auth.signUp({email:e,password:p});this.disabled=false;
+ if(r.error)return $('mL').textContent=r.error.message;
+ if(!r.data.session){$('mL').style.color='#059669';$('mL').textContent='Conta criada. Abra o email que recebeu para confirmar e depois toque em Entrar.';return}
+ iniciar();
+};
+async function sair(){if(NO_ADMIN){location.href='/';return}await sb.auth.signOut();location.href=location.pathname}
+$('sairB').onclick=sair;$('sair2').onclick=sair;
+
+/* ---- pesquisa ---- */
+var tq=null;
+$('q').oninput=function(){clearTimeout(tq);tq=setTimeout(pesquisar,350)};
+async function pesquisar(){
+ var q=$('q').value.trim(),m=/[?&]id=([^&\s]+)/.exec(q);
+ if(m){abrir(decodeURIComponent(m[1]));return}
+ $('lista').innerHTML='<p class="s" style="padding:8px 0">A procurar…</p>';
+ var r=sb.from('products').select('id,name,price,currency,image_url,images,supplier_id').order('created_at',{ascending:false}).limit(30);
+ if(q)r=r.ilike('name','%'+q.replace(/[%,()]/g,' ')+'%');
+ var d=await r;
+ if(d.error){$('lista').innerHTML='<p class="err">Erro: '+esc(d.error.message)+'</p>';return}
+ var l=d.data||[];
+ if(!l.length){$('lista').innerHTML='<p class="s" style="padding:8px 0">Nenhum produto encontrado.</p>';return}
+ var c=await sb.from('confirmacoes_produto').select('product_id,resultado,created_at').in('product_id',l.map(function(p){return String(p.id)})).order('created_at',{ascending:false});
+ var ult={};(c.data||[]).forEach(function(x){if(!ult[x.product_id])ult[x.product_id]=x});
+ $('lista').innerHTML=l.map(function(p){
+  var u=ult[String(p.id)],f=foto(p);
+  var tg=!u?'<span class="tg nd">⏳ Por verificar</span>':u.resultado==='confirmado'?'<span class="tg ok">✅ Confirmado</span>':'<span class="tg no">❌ Recusado</span>';
+  return'<div class="res" data-id="'+esc(p.id)+'">'+(f?'<img loading="lazy" src="'+esc(f)+'" alt="">':'<div class="sf">Sem foto</div>')+'<div><b>'+esc(p.name||'Produto')+'</b><div class="m">'+Number(p.price||0).toLocaleString('pt-PT')+' '+esc(p.currency||'MZN')+'</div>'+tg+'</div></div>';
+ }).join('');
+ $('lista').querySelectorAll('.res').forEach(function(el){el.onclick=function(){abrir(el.getAttribute('data-id'))}});
+}
+
+/* ---- lojas (endereço e telemóvel) ---- */
+$('tP').onclick=function(){$('tP').classList.add('on');$('tL').classList.remove('on');$('bProd').classList.remove('hide');$('bLojas').classList.add('hide')};
+$('tL').onclick=function(){$('tL').classList.add('on');$('tP').classList.remove('on');$('bLojas').classList.remove('hide');$('bProd').classList.add('hide');lojas()};
+var tl=null;$('ql').oninput=function(){clearTimeout(tl);tl=setTimeout(lojas,350)};
+async function lojas(){
+ $('listaL').innerHTML='<p class="s" style="padding:8px 0">A carregar…</p>';
+ var r=await sb.rpc('lojas_com_contacto',{p_q:$('ql').value.trim()});
+ if(r.error){$('listaL').innerHTML='<p class="err">'+esc(r.error.message)+'</p>';return}
+ var l=r.data||[];
+ if(!l.length){$('listaL').innerHTML='<p class="s" style="padding:8px 0">Nenhuma loja encontrada.</p>';return}
+ $('listaL').innerHTML=l.map(function(x){
+  var lugar=[x.provincia,x.distrito,x.bairro].filter(Boolean).join(' · ');
+  return'<div class="loja" style="margin-top:8px"><b>🏪 '+esc(x.nome||'Loja')+'</b> <span class="s">('+esc(x.estado||'')+')</span><div>'+bandeira(x.pais)+' '+esc(lugar||'Sem localização')+'</div>'+(x.endereco?'<div>🏠 '+esc(x.endereco)+'</div>':'<div class="s">Sem endereço registado.</div>')+(x.telefone?'<a href="tel:'+esc(x.telefone)+'">📞 '+esc(telB(x.telefone))+'</a>':'<div class="s">Sem telemóvel registado.</div>')+'</div>';
+ }).join('');
+}
+
+/* ---- produto escolhido ---- */
+$('voltar').onclick=function(){history.replaceState({},'',location.pathname);vista('vBusca');pesquisar()};
+async function abrir(id){
+ vista('vProd');limpar();$('pInfo').innerHTML='A carregar…';$('pLoja').textContent='A carregar a loja…';$('hist').textContent='A carregar…';
+ history.replaceState({},'','?id='+encodeURIComponent(id));
+ var r=await sb.from('products').select('id,name,price,currency,image_url,images,supplier_id').eq('id',id).maybeSingle();
+ if(r.error||!r.data){$('pInfo').innerHTML='<p class="err">Produto não encontrado.</p>';$('pLoja').textContent='';P=null;return}
+ P=r.data;var f=foto(P);
+ $('pInfo').innerHTML=(f?'<img src="'+esc(f)+'" alt="">':'<div class="sf">Sem foto</div>')+'<div><b>'+esc(P.name||'Produto')+'</b><div class="s">'+Number(P.price||0).toLocaleString('pt-PT')+' '+esc(P.currency||'MZN')+'</div><a class="s" href="https://bbabilonia.com/produto-bbabilonia.html?id='+encodeURIComponent(P.id)+'" target="_blank" rel="noopener">Ver na loja ›</a></div>';
+ var lj=await sb.rpc('lojas_contacto_produtos',{p_produtos:[String(P.id)]});
+ var x=(lj.data||[])[0];
+ if(!x){$('pLoja').textContent='Loja sem endereço registado.'}
+ else{
+  var lugar=[x.provincia,x.distrito,x.bairro].filter(Boolean).join(' · ');
+  $('pLoja').innerHTML='<b>🏪 '+esc(x.nome||'Loja')+'</b><div>'+bandeira(x.pais)+' '+esc(lugar||'—')+'</div>'+(x.endereco?'<div>🏠 '+esc(x.endereco)+'</div>':'')+(x.telefone?'<a href="tel:'+esc(x.telefone)+'">📞 '+esc(telB(x.telefone))+'</a>':'<div class="s">Sem telemóvel registado.</div>');
+ }
+ historico();
+}
+async function historico(){
+ if(!P)return;
+ var r=await sb.from('confirmacoes_produto').select('*').eq('product_id',String(P.id)).order('created_at',{ascending:false});
+ var l=r.data||[];
+ if(!l.length){$('hist').innerHTML='Ainda nenhuma verificação deste produto.';return}
+ $('hist').innerHTML=l.map(function(c){
+  var ok=c.resultado==='confirmado',fs=arr(c.fotos),vs=arr(c.videos);
+  return'<div class="hist"><span class="tg '+(ok?'ok':'no')+'">'+(ok?'✅ Confirmado':'❌ Recusado')+'</span> <span class="s">'+esc(dataH(c.created_at))+' · '+esc(c.agente_nome||c.agente_email)+'</span>'+
+   (c.motivo?'<div style="margin-top:4px;color:var(--texto);font-size:14px">'+(ok?'':'<b>Motivo:</b> ')+esc(c.motivo)+'</div>':'')+
+   (fs.length?'<div class="md">'+fs.map(function(u){return'<a href="'+esc(u)+'" target="_blank" rel="noopener"><img loading="lazy" src="'+esc(u)+'" alt=""></a>'}).join('')+'</div>':'')+
+   (vs.length?'<div class="md">'+vs.map(function(u){return'<video controls playsinline preload="metadata" src="'+esc(u)+'"></video>'}).join('')+'</div>':'')+'</div>';
+ }).join('');
+}
+
+/* ---- formulário ---- */
+function resultado(){var r=document.querySelector('input[name=r]:checked');return r?r.value:''}
+document.querySelectorAll('input[name=r]').forEach(function(r){r.onchange=function(){
+ var v=resultado();$('lOk').classList.toggle('on',v==='confirmado');$('lNo').classList.toggle('on',v==='recusado');
+ $('motT').textContent=v==='recusado'?'Motivo da recusa *':'Observação (opcional)';
+ $('mot').placeholder=v==='recusado'?'Ex.: o produto não existe na loja / tem defeito na costura / cor diferente da foto':'Escreva aqui';
+ if(v==='recusado')$('mot').focus();
+}});
+function limpar(){
+ document.querySelectorAll('input[name=r]').forEach(function(r){r.checked=false});
+ $('lOk').classList.remove('on');$('lNo').classList.remove('on');$('motT').textContent='Observação (opcional)';
+ $('mot').value='';$('fF').value='';$('fV').value='';fotos.length=0;videos.length=0;$('pvF').innerHTML='';$('pvV').innerHTML='';$('mE').textContent='';$('mE').className='err';
+}
+function escolher(inp,lista,box,tipo){
+ inp.onchange=function(){
+  [].slice.call(inp.files||[]).forEach(function(f){
+   if(f.size>MAXB){$('mE').className='err';$('mE').textContent=f.name+' tem mais de 50 MB. Grave mais curto ou com menos qualidade.';return}
+   lista.push(f);
+  });
+  inp.value='';
+  box.innerHTML=lista.map(function(f){var u=URL.createObjectURL(f);return tipo==='v'?'<video controls playsinline src="'+u+'"></video>':'<img src="'+u+'" alt="">'}).join('')+(lista.length?'<button type="button" class="bt l" style="margin-top:4px;padding:8px">Limpar '+(tipo==='v'?'vídeos':'fotos')+' ('+lista.length+')</button>':'');
+  var b=box.querySelector('button');if(b)b.onclick=function(){lista.length=0;box.innerHTML=''};
+ };
+}
+escolher($('fF'),fotos,$('pvF'),'f');escolher($('fV'),videos,$('pvV'),'v');
+
+async function subir(f,pasta){
+ var ext=(String(f.name||'').split('.').pop()||'').toLowerCase().replace(/[^a-z0-9]/g,'')||(String(f.type).split('/')[1]||'bin');
+ var cam=pasta+'/'+Date.now()+'-'+Math.random().toString(36).slice(2,8)+'.'+ext,ult=null;
+ for(var t=1;t<=3;t++){
+  var r=await sb.storage.from('confirmacoes').upload(cam,f,{contentType:f.type||undefined,upsert:false});
+  if(!r.error)return sb.storage.from('confirmacoes').getPublicUrl(cam).data.publicUrl;
+  ult=r.error;if(!/fetch|network|timeout|5\d\d/i.test(String(ult.message||ult)))break;
+  await new Promise(function(ok){setTimeout(ok,1500*t)});
+ }
+ throw ult;
+}
+$('env').onclick=async function(){
+ var b=this,m=$('mE');m.className='err';m.textContent='';
+ if(!P)return;
+ var v=resultado(),mot=$('mot').value.trim();
+ if(!v)return m.textContent='Escolha o resultado: confirmar ou recusar.';
+ if(v==='recusado'&&mot.length<5)return m.textContent='Escreva o motivo da recusa.';
+ if(!fotos.length&&!videos.length)return m.textContent='Junte pelo menos uma foto ou um vídeo da verificação.';
+ b.disabled=true;
+ var fu=[],vu=[],n=0,tot=fotos.length+videos.length,pasta=String(P.id).replace(/[^\w-]/g,'');
+ try{
+  for(var i=0;i<fotos.length;i++){m.className='s';m.textContent='A enviar '+(++n)+' de '+tot+'…';fu.push(await subir(fotos[i],pasta))}
+  for(var j=0;j<videos.length;j++){m.className='s';m.textContent='A enviar '+(++n)+' de '+tot+'… (vídeos demoram mais)';vu.push(await subir(videos[j],pasta))}
+  m.textContent='A guardar…';
+  var r=await sb.from('confirmacoes_produto').insert({product_id:String(P.id),resultado:v,motivo:mot||null,fotos:fu,videos:vu,agente_nome:EU.nome||null});
+  if(r.error)throw r.error;
+  limpar();m.className='okm';m.textContent=v==='confirmado'?'✅ Verificação guardada: produto confirmado. Já aparece na página do produto.':'❌ Recusa guardada com o motivo. Já aparece na página do produto.';
+  historico();
+ }catch(e){
+  var t=String(e&&e.message||e);
+  m.className='err';m.textContent='Não foi possível guardar: '+(/row-level|policy|403/i.test(t)?'este email não tem permissão de agente.':/size|large|413/i.test(t)?'ficheiro grande demais (máximo 50 MB).':/fetch|network/i.test(t)?'sem internet. Tente outra vez.':t);
+ }
+ b.disabled=false;
+};
+iniciar();
+</script>
+</body>
+</html>

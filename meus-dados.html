@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Os meus dados · Agentes BBabilônia</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<style>
+:root{--fundo:#eef2f7;--papel:#fff;--texto:#0f172a;--suave:#64748b;--linha:#e2e8f0;--az:#2563eb}
+*{box-sizing:border-box;margin:0}
+body{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--fundo);color:var(--texto);line-height:1.45;color-scheme:light}
+.bar{position:sticky;top:0;z-index:5;background:linear-gradient(135deg,#1e3a8a,#2563eb);color:#fff;padding:12px 14px;display:flex;align-items:center;gap:8px;box-shadow:0 4px 14px #0003}
+.bar.v{background:linear-gradient(135deg,#065f46,#059669 55%,#2563eb)}
+.bar h1{font-size:17px;flex:1}.bar a{color:#fff;background:#ffffff2e;border-radius:999px;padding:7px 12px;font-size:13px;font-weight:700;text-decoration:none}
+main{max-width:620px;margin:0 auto;padding:14px 12px 60px}
+.box{background:var(--papel);border-radius:16px;padding:14px;box-shadow:0 4px 14px #0001;margin-bottom:12px}
+h2{font-size:17px;margin-bottom:6px}.s{color:var(--suave);font-size:13.5px}
+label{display:block;font-size:13.5px;font-weight:700;color:#334155;margin:12px 0 4px}
+input{width:100%;padding:12px;border:2px solid var(--linha);border-radius:12px;font:inherit;font-size:16px;background:#f8fafc;color:var(--texto)}
+input:focus{outline:none;border-color:var(--az)}
+.bt{display:block;width:100%;margin-top:14px;padding:14px;border:0;border-radius:14px;font:inherit;font-size:15.5px;font-weight:800;color:#fff;background:linear-gradient(90deg,#2563eb,#1d4ed8)}
+.bt.l{background:transparent;color:var(--az);border:2px solid var(--linha)}.bt:disabled{opacity:.5}
+.err{color:#dc2626;font-size:14px;margin-top:8px;white-space:pre-line}.ok{color:#059669;font-size:14px;margin-top:8px}
+.ft{display:block;width:130px;height:170px;object-fit:cover;border-radius:12px;margin-top:8px;background:#e2e8f0}
+.ft.bi{width:220px;height:140px}
+.aviso{padding:12px;border-radius:12px;font-size:14px;font-weight:700;margin-bottom:10px}
+.aviso.am{background:#fef3c7;color:#92400e}.aviso.vm{background:#fee2e2;color:#991b1b}.aviso.vd{background:#d1fae5;color:#065f46}
+.hide{display:none}
+</style>
+</head>
+<body>
+<div class="bar" id="bar"><h1>🪪 Os meus dados</h1><a id="volta" href="atendimento.html">← Voltar</a></div>
+<main>
+ <div id="vLogin" class="box hide">
+  <h2>Entrar</h2><p class="s">Use o email que o administrador registou.</p>
+  <input id="em" type="email" placeholder="Email" autocomplete="username" style="margin-top:8px">
+  <input id="pw" type="password" placeholder="Palavra-passe" autocomplete="current-password" style="margin-top:8px">
+  <button class="bt" id="ent" type="button">Entrar</button><div class="err" id="mL"></div>
+ </div>
+ <div id="vForm" class="hide">
+  <div id="estado"></div>
+  <div class="box">
+   <h2 id="tit">Os meus dados de agente</h2>
+   <p class="s">Obrigatório para trabalhar na BBabilônia. Só o administrador vê estes dados. A validade do bilhete de identidade é acompanhada: avisamos 30 dias antes de expirar e, se não for atualizado, a conta é bloqueada 7 dias depois de expirar.</p>
+   <label>Foto de meio corpo * <small>(clara, de frente, com a cara visível)</small></label>
+   <input id="fFoto" type="file" accept="image/*" capture="user"><img id="vFoto" class="ft hide" alt="">
+   <label>Nome completo (como no BI) *</label><input id="nome" maxlength="80" autocomplete="name">
+   <label>Endereço de morada *</label><input id="morada" maxlength="150" placeholder="Bairro, rua/avenida, número, cidade">
+   <label>NUIT pessoal * <small>(9 algarismos)</small></label><input id="nuit" inputmode="numeric" maxlength="11">
+   <label>Número do bilhete de identidade *</label><input id="bi" maxlength="24" placeholder="Ex.: 110100123456A">
+   <label>Validade do BI *</label><input id="val" type="date">
+   <label>Foto do bilhete de identidade * <small>(frente, legível)</small></label>
+   <input id="fBi" type="file" accept="image/*"><img id="vBi" class="ft bi hide" alt="">
+   <button class="bt" id="gravar" type="button">Guardar os meus dados</button>
+   <div class="err" id="m"></div>
+  </div>
+ </div>
+</main>
+<script>
+var Q=new URLSearchParams(location.search),DE=Q.get('de')==='verif'?'verif':'atd';
+var PAPEL=DE==='verif'?'verificacao':'atendimento',CHAVE=DE==='verif'?'bb-verif':'bb-atd';
+var sb=supabase.createClient('https://dsfoqoeawvjafypycldz.supabase.co','sb_publishable_BN4NiVcDab9CqdTY_odgDA_uUOhjja0',
+ {auth:{storage:window.sessionStorage,storageKey:CHAVE,persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}});
+function $(i){return document.getElementById(i)}
+if(DE==='verif'){$('bar').classList.add('v');$('volta').href='confirmar-produto.html';$('tit').textContent='Os meus dados · Busca e verificação'}
+else $('tit').textContent='Os meus dados · Atendimento';
+var U=null,F={foto:null,bi:null},ATUAL=null;
+function hex(b){return Array.from(new Uint8Array(b)).map(function(x){return x.toString(16).padStart(2,'0')}).join('')}
+async function sha(blob){return hex(await crypto.subtle.digest('SHA-256',await blob.arrayBuffer()))}
+function ler(inp,k,img){inp.onchange=async function(){var f=this.files[0];F[k]=null;if(!f)return;
+ if(f.size>20*1048576){this.value='';$('m').textContent='A foto tem mais de 20 MB.';return}
+ var b=await f.arrayBuffer();F[k]=new Blob([b],{type:f.type||'image/jpeg'});img.src=URL.createObjectURL(F[k]);img.classList.remove('hide')}}
+ler($('fFoto'),'foto',$('vFoto'));ler($('fBi'),'bi',$('vBi'));
+function aviso(v){
+ if(!v||v.estado==='sem_dados')return'<div class="aviso am">Ainda não registou os seus dados. Preencha tudo em baixo.</div>';
+ if(v.estado==='ok')return'<div class="aviso vd">✅ Dados completos. BI válido até '+new Date(v.bi_validade).toLocaleDateString('pt-PT')+'.</div>';
+ if(v.estado==='aviso')return'<div class="aviso am">⚠️ O seu BI expira em '+v.dias+' dia(s). Atualize em baixo (nova foto do BI e nova validade).</div>';
+ if(v.estado==='expirado')return'<div class="aviso vm">⛔ O seu BI expirou. Atualize em baixo: a conta será bloqueada dentro de '+Math.max(0,7+v.dias)+' dia(s).</div>';
+ return'<div class="aviso vm">⛔ A sua conta está bloqueada porque o BI expirou. Atualize em baixo para reativar.</div>';
+}
+async function assinada(caminho){
+ if(!caminho)return'';var i=caminho.indexOf('/');var r=await sb.storage.from(caminho.slice(0,i)).createSignedUrl(caminho.slice(i+1),600);
+ return r.data&&r.data.signedUrl||'';
+}
+async function iniciar(){
+ var s=(await sb.auth.getSession()).data.session;
+ if(!s){$('vLogin').classList.remove('hide');$('vForm').classList.add('hide');return}
+ U=s.user;$('vLogin').classList.add('hide');$('vForm').classList.remove('hide');
+ var v=await sb.rpc('minha_validade');$('estado').innerHTML=aviso(v.data);
+ var r=await sb.from('identidades').select('*').eq('user_id',U.id).maybeSingle();ATUAL=r.data||null;
+ if(ATUAL){
+  $('nome').value=ATUAL.nome||'';$('morada').value=ATUAL.morada||'';$('nuit').value=ATUAL.nuit||'';$('bi').value=ATUAL.bi_numero||'';$('val').value=ATUAL.bi_validade||'';
+  var a=await assinada(ATUAL.foto);if(a){$('vFoto').src=a;$('vFoto').classList.remove('hide')}
+  var b=await assinada(ATUAL.bi_foto);if(b){$('vBi').src=b;$('vBi').classList.remove('hide')}
+ }
+}
+$('ent').onclick=async function(){var r=await sb.auth.signInWithPassword({email:$('em').value.trim(),password:$('pw').value});if(r.error){$('mL').textContent='Email ou palavra-passe errados.';return}iniciar()};
+async function subir(k){
+ var b=F[k],ext=((b.type||'').split('/')[1]||'jpg').replace(/[^a-z0-9]/g,'');
+ var cam=U.id+'/'+k+'-'+Date.now()+'-'+Math.random().toString(36).slice(2,8)+'.'+ext;
+ var r=await sb.storage.from('identidades').upload(cam,b,{contentType:b.type||'image/jpeg'});
+ if(r.error)throw r.error;return'identidades/'+cam;
+}
+$('gravar').onclick=async function(){
+ var m=$('m');m.className='err';m.textContent='';
+ var x={nome:$('nome').value.trim(),morada:$('morada').value.trim(),nuit:$('nuit').value.replace(/\D/g,''),bi:$('bi').value.trim(),val:$('val').value};
+ if(!F.foto&&!(ATUAL&&ATUAL.foto))return m.textContent='Falta a foto de meio corpo.';
+ if(x.nome.length<3)return m.textContent='Escreva o nome completo (como no BI).';
+ if(x.morada.length<5)return m.textContent='Escreva o endereço de morada.';
+ if(x.nuit.length!==9)return m.textContent='O NUIT pessoal tem 9 algarismos.';
+ var bn=x.bi.replace(/[^0-9A-Za-z]/g,'');if(bn.length<6||bn.length>20)return m.textContent='Escreva o número do bilhete de identidade.';
+ if(!x.val)return m.textContent='Escolha a data de validade do BI.';
+ if(new Date(x.val+'T23:59:59')<=new Date())return m.textContent='O BI está expirado. Use um bilhete de identidade válido.';
+ if(!F.bi&&!(ATUAL&&ATUAL.bi_foto))return m.textContent='Falta a foto do bilhete de identidade.';
+ if(ATUAL&&x.val!==ATUAL.bi_validade&&!F.bi)return m.textContent='Mudou a validade: envie também a foto do BI novo.';
+ this.disabled=true;
+ try{
+  m.className='s';m.textContent='A verificar…';
+  var shas=[];if(F.foto)shas.push(await sha(F.foto));if(F.bi)shas.push(await sha(F.bi));
+  var bz=await sb.rpc('documentos_banidos',{p_shas:shas,p_bi:x.bi,p_nuit:x.nuit});if(bz.error)throw bz.error;
+  if(bz.data)throw new Error('Estes documentos pertencem a uma conta bloqueada permanentemente na BBabilônia.');
+  m.textContent='A enviar as fotos…';
+  var pf=F.foto?await subir('foto'):ATUAL.foto,pb=F.bi?await subir('bi'):ATUAL.bi_foto;
+  m.textContent='A guardar…';
+  var r=await sb.rpc('identidade_guardar',{p_papel:PAPEL,p_nome:x.nome,p_morada:x.morada,p_nuit:x.nuit,p_bi_numero:x.bi,p_bi_validade:x.val,p_foto:pf,p_bi_foto:pb});
+  if(r.error)throw r.error;
+  F={foto:null,bi:null};m.className='ok';m.textContent='✅ Dados guardados.';iniciar();
+ }catch(e){m.className='err';m.textContent='Não foi possível guardar: '+String(e&&e.message||e)}
+ this.disabled=false;
+};
+iniciar();
+</script>
+</body>
+</html>

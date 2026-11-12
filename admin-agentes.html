@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="pt"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Agentes · Painel do administrador - BBabilônia</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#eef2f7;color:#0f172a}
+.top{background:linear-gradient(135deg,#0f172a 0%,#1e3a8a 55%,#2563eb 100%);color:#fff;padding:18px 18px 50px;border-radius:0 0 28px 28px}
+.top a{color:#fff;text-decoration:none;font-weight:800;font-size:14px;background:#ffffff26;border-radius:999px;padding:7px 13px;display:inline-block}
+.top h1{margin:12px 0 4px;font-size:22px}.top p{margin:0;font-size:13.5px;color:#dbeafe}
+.wrap{padding:0 14px 40px;margin-top:-32px;max-width:760px;margin-left:auto;margin-right:auto}
+.tabs{display:flex;gap:6px;background:#fff;border-radius:16px;padding:6px;box-shadow:0 6px 18px #0f172a1a;margin-bottom:14px}
+.tabs button{flex:1;border:0;border-radius:12px;padding:12px 6px;font-size:14px;font-weight:800;background:none;color:#475569}
+.tabs button.on{background:linear-gradient(135deg,#1e3a8a,#2563eb);color:#fff}
+.tabs button.on.v{background:linear-gradient(135deg,#047857,#10b981)}
+.box{background:#fff;border-radius:16px;padding:14px;box-shadow:0 4px 14px #0f172a12;margin-bottom:12px}
+.box h2{font-size:16px;margin:0 0 4px}.box p.s{font-size:13px;color:#64748b;margin:0 0 6px;line-height:1.4}
+label{display:block;font-size:13px;font-weight:700;color:#334155;margin:10px 0 4px}
+input,select{width:100%;padding:11px;border:2px solid #e2e8f0;border-radius:12px;font-size:15px;font-family:inherit;background:#fff;color:#0f172a}
+input:focus,select:focus{outline:none;border-color:#2563eb}
+.bt{border:0;border-radius:12px;padding:11px 14px;font-size:14px;font-weight:800;color:#fff;background:#2563eb}
+.bt.v{background:#10b981}.bt.r{background:#dc2626}.bt.l{background:#e2e8f0;color:#0f172a}.bt:disabled{opacity:.5}
+.full{width:100%;margin-top:12px;padding:13px}
+.ag{display:flex;gap:10px;padding:12px 0;border-top:1px solid #e2e8f0}.ag:first-child{border-top:0}
+.av{width:40px;height:40px;border-radius:50%;background:#dbeafe;color:#1e40af;display:flex;align-items:center;justify-content:center;font-weight:900;flex:none}
+.av.v{background:#d1fae5;color:#065f46}
+img.av{object-fit:cover;width:52px;height:68px;border-radius:10px}
+.dd{background:#f8fafc;border-radius:10px;padding:8px 10px;margin-top:8px;font-size:13px;line-height:1.5}
+.dd img{width:200px;max-width:100%;border-radius:8px;margin-top:6px;display:block}
+.ag .c{flex:1;min-width:0}.ag b{font-size:15px}.ag small{display:block;color:#64748b;word-break:break-all;font-size:12.5px}
+.est{display:inline-block;font-size:12px;font-weight:800;padding:3px 9px;border-radius:20px;background:#dbeafe;color:#1e40af;margin:5px 4px 0 0}
+.est.ok{background:#d1fae5;color:#065f46}.est.off{background:#fee2e2;color:#991b1b}.est.s{background:#ede9fe;color:#5b21b6}
+.acs{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}.acs .bt{padding:8px 11px;font-size:13px}
+.msg{font-size:13.5px;margin-top:8px;color:#059669;white-space:pre-line}.msg.e{color:#dc2626}
+.vz{text-align:center;color:#64748b;padding:20px 10px}
+.hide{display:none!important}
+</style></head><body>
+<div class="top"><a href="/">← Painel do administrador</a><h1>👥 Agentes</h1><p>Duas equipas separadas: cada uma só vê o seu trabalho. O mesmo email não pode estar nas duas.</p></div>
+<div class="wrap">
+ <div id="login" class="box hide">
+  <b>Entrar como administrador</b>
+  <label>Email</label><input id="em" type="email" autocomplete="username">
+  <label>Palavra-passe</label><input id="pw" type="password" autocomplete="current-password">
+  <button class="bt full" id="ent">Entrar</button><div class="msg e" id="lmsg"></div>
+ </div>
+ <div id="sem" class="box hide"><b>Sem acesso</b><p class="s">Esta página é só para o administrador da BBabilônia.</p></div>
+
+ <div id="app" class="hide">
+  <div class="tabs"><button id="tA" class="on">🎧 Atendimento</button><button id="tV" class="v">🛡️ Busca e verificação</button></div>
+
+  <div id="pA">
+   <div class="box">
+    <h2 id="aTit">➕ Adicionar agente de atendimento</h2>
+    <p class="s">Trabalham só no Atendimento (casos, disputas, conversas). Não entram na busca e verificação de produtos.</p>
+    <label>Email do agente</label><input id="aE" type="email" placeholder="nome@exemplo.com" autocomplete="off">
+    <label>Nome</label><input id="aN" placeholder="Nome que aparece na equipa" autocomplete="off">
+    <label>Nível</label><select id="aL"><option value="agente">Agente</option><option value="superior">Superior (chefe de equipa)</option></select>
+    <button class="bt full" id="aG">Guardar agente de atendimento</button><div class="msg" id="aM"></div>
+   </div>
+   <div class="box"><h2>Equipa de atendimento</h2><div id="aLista"><div class="vz">A carregar…</div></div></div>
+  </div>
+
+  <div id="pV" class="hide">
+   <div class="box">
+    <h2 id="vTit">➕ Adicionar agente de busca e verificação</h2>
+    <p class="s">Vão às lojas confirmar os produtos (fotos e vídeos) e veem o endereço e o telemóvel das lojas. Não entram no Atendimento.</p>
+    <label>Email do agente</label><input id="vE" type="email" placeholder="nome@exemplo.com" autocomplete="off">
+    <label>Nome</label><input id="vN" placeholder="Nome que aparece nas verificações" autocomplete="off">
+    <button class="bt v full" id="vG">Guardar agente de verificação</button><div class="msg" id="vM"></div>
+   </div>
+   <div class="box"><h2>Equipa de busca e verificação</h2><div id="vLista"><div class="vz">A carregar…</div></div></div>
+  </div>
+ </div>
+</div>
+<script>
+var ADMIN='jovenciofoguete1904@gmail.com';
+var LINK_A='https://service.bbabilonia.com/atendimento.html';
+var LINK_V='https://service.bbabilonia.com/confirmar-produto.html';
+var sb=supabase.createClient('https://dsfoqoeawvjafypycldz.supabase.co','sb_publishable_BN4NiVcDab9CqdTY_odgDA_uUOhjja0');
+function $(i){return document.getElementById(i)}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function msg(id,t,erro){var m=$(id);m.className='msg'+(erro?' e':'');m.textContent=t||''}
+function erroTxt(e){var t=String(e&&e.message||e);return/function|find|exist|relation/i.test(t)&&!/agente/i.test(t)?'Falta correr o SQL novo no Supabase.':t}
+var L=[],ID={},ABERTO={};
+function mostra(id){['login','sem','app'].forEach(function(x){$(x).classList.toggle('hide',x!==id)})}
+async function iniciar(){
+ var s=(await sb.auth.getSession()).data.session;
+ if(!s){mostra('login');return}
+ if(String(s.user.email||'').toLowerCase()!==ADMIN){mostra('sem');return}
+ mostra('app');carregar();
+}
+$('ent').onclick=async function(){var r=await sb.auth.signInWithPassword({email:$('em').value.trim(),password:$('pw').value});if(r.error){$('lmsg').textContent='Email ou palavra-passe errados.';return}iniciar()};
+function aba(v){$('tA').classList.toggle('on',!v);$('tV').classList.toggle('on',v);$('pA').classList.toggle('hide',v);$('pV').classList.toggle('hide',!v)}
+$('tA').onclick=function(){aba(false)};$('tV').onclick=function(){aba(true)};
+if(/[?&]f=verif/.test(location.search))aba(true);
+
+function convite(a){
+ if(a.tipo==='verificacao')return'Olá '+a.nome+'! Foi adicionado à equipa de BUSCA E VERIFICAÇÃO de produtos da BBabilônia.\n\n1) Abra: '+LINK_V+'\n2) Na primeira vez toque em "Primeira vez? Criar conta" com o email '+a.email+'\n3) Depois entre com esse email e a sua palavra-passe.';
+ return'Olá '+a.nome+'! Foi adicionado'+(a.nivel==='superior'?' como superior':'')+' à equipa de ATENDIMENTO da BBabilônia.\n\n1) Abra: '+LINK_A+'\n2) Na primeira vez toque em "Primeira vez? Criar conta" com o email '+a.email+'\n3) Entre nas próximas 48 horas: a primeira entrada é aprovada sozinha.';
+}
+function validade(d){
+ if(!d)return'<span class="est off">🪪 Sem dados (foto e BI)</span>';
+ var dias=Math.floor((new Date(d.bi_validade+'T23:59:59')-new Date())/864e5);
+ if(d.bloqueado_validade)return'<span class="est off">⛔ Bloqueado: BI expirado</span>';
+ if(dias<0)return'<span class="est off">⛔ BI expirado há '+(-dias)+' dia(s)</span>';
+ if(dias<=30)return'<span class="est s">⚠️ BI expira em '+dias+' dia(s)</span>';
+ return'<span class="est ok">🪪 BI válido até '+new Date(d.bi_validade).toLocaleDateString('pt-PT')+'</span>';
+}
+function linha(a,i){
+ var v=a.tipo==='verificacao',d=ID[a.email+'|'+a.tipo],ab=ABERTO[a.email+'|'+a.tipo];
+ return'<div class="ag">'+(d&&d.foto?'<img class="av" data-ft="'+esc(d.foto)+'" alt="">':'<div class="av'+(v?' v':'')+'">'+esc((a.nome||'?')[0].toUpperCase())+'</div>')+'<div class="c"><b>'+esc(a.nome)+'</b><small>'+esc(a.email)+'</small>'+validade(d)+
+  (d&&ab?'<div class="dd"><b>'+esc(d.nome)+'</b><br>🏠 '+esc(d.morada||'—')+'<br>NUIT: '+esc(d.nuit||'—')+' · BI: '+esc(d.bi_numero)+'<br>Validade do BI: '+new Date(d.bi_validade).toLocaleDateString('pt-PT')+(d.bi_foto?'<img data-ft="'+esc(d.bi_foto)+'" alt="Bilhete de identidade">':'')+'</div>':'')+
+  (v?'<span class="est ok">🛡️ Verificação</span>':'<span class="est '+(a.nivel==='superior'?'s':'')+'">'+(a.nivel==='superior'?'⭐ Superior':'🎧 Agente')+'</span>')+
+  '<span class="est '+(a.ativo?'ok':'off')+'">'+(a.ativo?'Ativo':'Desativado')+'</span>'+
+  '<div class="acs"><button class="bt v" data-cv="'+i+'">📤 Convite</button><button class="bt l" data-cp="'+i+'">🔗 Copiar</button><button class="bt l" data-ed="'+i+'">✏️ Editar</button>'+(d?'<button class="bt l" data-dd="'+i+'">🪪 '+(ab?'Fechar dados':'Ver dados')+'</button>':'')+''+
+  '<button class="bt l" data-at="'+i+'">'+(a.ativo?'⛔ Desativar':'✅ Ativar')+'</button><button class="bt r" data-rm="'+i+'">🗑️ Remover</button></div></div></div>';
+}
+function desenhar(){
+ var at=[],ve=[];L.forEach(function(a,i){(a.tipo==='verificacao'?ve:at).push(linha(a,i))});
+ $('aLista').innerHTML=at.join('')||'<div class="vz">Ainda não há agentes de atendimento.</div>';
+ $('vLista').innerHTML=ve.join('')||'<div class="vz">Ainda não há agentes de busca e verificação.</div>';
+ document.querySelectorAll('img[data-ft]').forEach(async function(im){
+  var c=im.getAttribute('data-ft'),k=c.indexOf('/');if(k<0)return;
+  var r=await sb.storage.from(c.slice(0,k)).createSignedUrl(c.slice(k+1),600);if(r.data)im.src=r.data.signedUrl;
+ });
+}
+async function carregar(){
+ var r=await sb.rpc('admin_agentes_lista');
+ if(r.error){$('aLista').innerHTML=$('vLista').innerHTML='<div class="msg e">'+esc(erroTxt(r.error))+'</div>';return}
+ L=r.data||[];ID={};
+ var di=await sb.rpc('admin_identidades_agentes');
+ (di.data||[]).forEach(function(x){ID[x.email+'|'+x.papel]=x});
+ desenhar();
+}
+async function guardarA(a,ativo){
+ return sb.rpc('agente_guardar',{p_email:a.email,p_nome:a.nome,p_idiomas:a.idiomas||'',p_max:a.max_casos||10,p_ativo:ativo,p_nivel:a.nivel||'agente',p_superior:a.nivel==='superior'?null:(a.superior_email||null)});
+}
+$('aG').onclick=async function(){
+ var e=$('aE').value.trim().toLowerCase(),n=$('aN').value.trim();msg('aM','');
+ if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e))return msg('aM','Escreva um email válido.',1);
+ if(n.length<2)return msg('aM','Escreva o nome.',1);
+ if(L.some(function(a){return a.tipo==='verificacao'&&a.email===e&&a.ativo}))return msg('aM','Este email já é agente de BUSCA E VERIFICAÇÃO. Remova-o de lá primeiro.',1);
+ var ex=L.filter(function(a){return a.tipo==='atendimento'&&a.email===e})[0]||{};
+ this.disabled=true;
+ var r=await guardarA({email:e,nome:n,idiomas:ex.idiomas,max_casos:ex.max_casos,nivel:$('aL').value,superior_email:ex.superior_email},ex.email?ex.ativo:true);
+ this.disabled=false;
+ if(r.error)return msg('aM',erroTxt(r.error),1);
+ msg('aM','Guardado ✓ Agora toque em 📤 Convite para lhe enviar o link.');$('aE').value='';$('aN').value='';$('aL').value='agente';$('aTit').textContent='➕ Adicionar agente de atendimento';carregar();
+};
+$('vG').onclick=async function(){
+ var e=$('vE').value.trim().toLowerCase(),n=$('vN').value.trim();msg('vM','');
+ if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e))return msg('vM','Escreva um email válido.',1);
+ if(n.length<2)return msg('vM','Escreva o nome.',1);
+ var ex=L.filter(function(a){return a.tipo==='verificacao'&&a.email===e})[0];
+ this.disabled=true;var r=await sb.rpc('admin_verif_guardar',{p_email:e,p_nome:n,p_ativo:ex?ex.ativo:true});this.disabled=false;
+ if(r.error)return msg('vM',erroTxt(r.error),1);
+ msg('vM','Guardado ✓ Agora toque em 📤 Convite para lhe enviar o link.');$('vE').value='';$('vN').value='';$('vTit').textContent='➕ Adicionar agente de busca e verificação';carregar();
+};
+document.addEventListener('click',async function(ev){
+ var b=ev.target.closest&&ev.target.closest('[data-cv],[data-cp],[data-ed],[data-at],[data-rm],[data-dd]');if(!b)return;
+ var k=['cv','cp','ed','at','rm','dd'].filter(function(x){return b.hasAttribute('data-'+x)})[0],a=L[+b.getAttribute('data-'+k)];if(!a)return;
+ var v=a.tipo==='verificacao',mId=v?'vM':'aM';
+ if(k==='dd'){var kk=a.email+'|'+a.tipo;ABERTO[kk]=!ABERTO[kk];desenhar();return}
+ if(k==='cv'){var t=convite(a);if(navigator.share)navigator.share({title:'BBabilônia',text:t}).catch(function(){});else location.href='https://wa.me/?text='+encodeURIComponent(t);return}
+ if(k==='cp'){var t2=convite(a);(navigator.clipboard?navigator.clipboard.writeText(t2):Promise.reject()).then(function(){b.textContent='Copiado ✓'}).catch(function(){prompt('Copie:',t2)});return}
+ if(k==='ed'){if(v){$('vE').value=a.email;$('vN').value=a.nome;$('vTit').textContent='✏️ Editar '+a.nome}else{$('aE').value=a.email;$('aN').value=a.nome;$('aL').value=a.nivel==='superior'?'superior':'agente';$('aTit').textContent='✏️ Editar '+a.nome}window.scrollTo(0,0);return}
+ if(k==='at'){
+  if(!confirm(a.ativo?'Desativar '+a.nome+'? Perde o acesso já.':'Ativar '+a.nome+'?'))return;
+  b.disabled=true;var r=v?await sb.rpc('admin_verif_guardar',{p_email:a.email,p_nome:a.nome,p_ativo:!a.ativo}):await guardarA(a,!a.ativo);
+  if(r.error){b.disabled=false;msg(mId,erroTxt(r.error),1);return}carregar();return;
+ }
+ if(k==='rm'){
+  if(!confirm('Remover '+a.nome+' ('+a.email+') da equipa de '+(v?'busca e verificação':'atendimento')+'?'+(v?'':'\nOs casos abertos dele voltam à fila.')))return;
+  b.disabled=true;var r2=v?await sb.rpc('admin_verif_remover',{p_email:a.email}):await sb.rpc('admin_atend_remover',{p_email:a.email});
+  if(r2.error){b.disabled=false;msg(mId,erroTxt(r2.error),1);return}
+  msg(mId,r2.data==='desativado'?a.nome+' ficou desativado (tem histórico de casos ligado ao email).':a.nome+' foi removido ✓');carregar();
+ }
+});
+iniciar();
+</script>
+</body></html>
