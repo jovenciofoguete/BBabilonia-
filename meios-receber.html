@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Meios para receber · B-Babilônia</title>
+<meta name="color-scheme" content="light">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0}
+body{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:#f1effb;color:#1b1740;line-height:1.4}
+.top{background:linear-gradient(135deg,#065f46 0%,#059669 55%,#0ea5e9 100%);color:#fff;padding:22px 16px 58px;border-radius:0 0 28px 28px}
+.top .lg{font-size:13px;letter-spacing:2px;color:#fcd34d;font-weight:bold}
+.top h1{margin:8px 0 4px;font-size:23px}.top p{font-size:14px;color:#d1fae5}
+main{padding:0 14px 40px;margin:-40px auto 0;max-width:620px}
+.voltar{display:inline-block;background:#fff;color:#065f46;font-weight:800;border-radius:999px;padding:8px 14px;margin-bottom:12px;box-shadow:0 4px 12px #0002;font-size:14px;text-decoration:none}
+.cx{background:#fff;border-radius:16px;padding:16px;box-shadow:0 4px 14px #0001;margin-bottom:12px}
+.cx h2{font-size:16px;margin-bottom:8px}
+label{display:block;font-size:13px;color:#6b7280;margin-top:10px;font-weight:700}
+input,select{width:100%;border:1.5px solid #ddd;border-radius:10px;padding:11px;font-size:16px;margin-top:4px;background:#fff;color:#1b1740}
+.dica{font-size:12.5px;color:#6b7280;margin-top:4px}
+.bt{border:0;border-radius:12px;padding:13px;font-weight:800;font-size:15px;width:100%;margin-top:14px;background:#059669;color:#fff}
+.bt:disabled{opacity:.55}
+.tps{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px}
+.tps label{margin:0;border:2px solid #e5e7eb;border-radius:12px;padding:11px;text-align:center;color:#1b1740;font-size:14.5px}
+.tps input{display:none}.tps label.on{border-color:#059669;background:#ecfdf5;color:#065f46}
+.mr{display:flex;gap:10px;align-items:center;padding:11px 0;border-top:1px solid #eee}.mr:first-child{border-top:0}
+.mr .t{flex:1;min-width:0}.mr b{display:block;font-size:15px}.mr small{color:#6b7280;font-size:13px;word-break:break-all}
+.mr button{border:0;border-radius:10px;padding:8px 10px;font-size:13px;font-weight:700;background:#fee2e2;color:#b91c1c}
+.mr button.p{background:#ecfdf5;color:#065f46}
+.bdg{display:inline-block;font-size:12px;font-weight:800;border-radius:999px;padding:2px 8px;background:#d1fae5;color:#065f46;margin-left:6px}
+.msg{font-size:14px;margin-top:10px;color:#b91c1c;white-space:pre-line}.msg.ok{color:#047857}
+.aviso{border-left:6px solid #f59e0b;background:#fffbeb;border-radius:12px;padding:12px;font-size:14px}
+.hide{display:none!important}
+</style>
+</head>
+<body>
+<div class="top"><div class="lg">BBABILÔNIA</div><h1>💰 Meios para receber</h1><p>Onde a BBabilônia lhe envia o dinheiro das vendas (M-Pesa, e-Mola, banco…), depois de o atendimento confirmar os produtos.</p></div>
+<main>
+ <a class="voltar" href="painel-vendedor-v2.html#inicio">← Voltar ao painel</a>
+ <section id="vEntrar" class="cx hide">
+  <h2>Entrar</h2>
+  <label>Email</label><input id="em" type="email" autocomplete="email">
+  <label>Palavra-passe</label><input id="pw" type="password" autocomplete="current-password">
+  <button class="bt" id="ent" type="button">Entrar</button><p class="msg" id="eMsg"></p>
+ </section>
+ <section id="vSemLoja" class="cx hide"><h2>Ainda não tem loja</h2><p>Crie primeiro a sua loja. <a href="loja-criar.html">Criar loja</a></p></section>
+ <section id="vApp" class="hide">
+  <div class="cx" id="estado"></div>
+  <div class="cx"><h2>Os meus meios para receber</h2><div id="lista">A carregar…</div></div>
+  <div class="cx">
+   <h2>➕ Acrescentar meio para receber</h2>
+   <div class="dica" id="paisTxt"></div>
+   <div class="tps" id="tipos"></div>
+   <div id="fMovel">
+    <label id="lNum">Número</label><input id="num" type="tel" inputmode="tel" maxlength="18" placeholder="">
+    <div class="dica" id="dNum"></div>
+   </div>
+   <div id="fBanco" class="hide">
+    <label>Nome do banco</label><input id="banco" maxlength="60" placeholder="Ex.: BCI, Millennium bim, CRDB, FNB">
+    <div id="cConta"><label id="lConta">Número de conta</label><input id="conta" inputmode="numeric" maxlength="24"></div>
+    <div id="cCod"><label id="lCod">NIB</label><input id="cod" inputmode="numeric" maxlength="25"><div class="dica" id="dCod"></div></div>
+   </div>
+   <label>Nome do titular *</label><input id="tit" maxlength="80" placeholder="Nome como está registado no M-Pesa ou no banco">
+   <div class="dica">Tem de ser o titular da loja (o mesmo nome do bilhete de identidade ou da empresa). Pagamentos para outras pessoas não são feitos.</div>
+   <button class="bt" id="guardar" type="button">Guardar</button><p class="msg" id="fMsg"></p>
+  </div>
+ </section>
+</main>
+<script>
+var sb=supabase.createClient('https://dsfoqoeawvjafypycldz.supabase.co','sb_publishable_BN4NiVcDab9CqdTY_odgDA_uUOhjja0');
+function $(i){return document.getElementById(i)}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+var TIPOS={
+ MZ:[['mpesa','📱 M-Pesa','84 ou 85 + 7 algarismos'],['emola','📱 e-Mola','86 ou 87 + 7 algarismos'],['mkesh','📱 mKesh','82 ou 83 + 7 algarismos'],['banco','🏦 Conta bancária','']],
+ TZ:[['mpesa','📱 M-Pesa','Vodacom'],['mixx','📱 Mixx by Yas','ex-Tigo Pesa'],['airtel','📱 Airtel Money',''],['halopesa','📱 HaloPesa',''],['banco','🏦 Conta bancária','']],
+ ZA:[['banco','🏦 Conta bancária',''],['payshap','📱 PayShap','número de telemóvel']]
+};
+var NOME_PAIS={MZ:'Moçambique 🇲🇿',TZ:'Tanzânia 🇹🇿',ZA:'África do Sul 🇿🇦'},IND={MZ:'+258',TZ:'+255',ZA:'+27'};
+var NOME_TIPO={mpesa:'M-Pesa',emola:'e-Mola',mkesh:'mKesh',mixx:'Mixx by Yas',airtel:'Airtel Money',halopesa:'HaloPesa',payshap:'PayShap',banco:'Conta bancária'};
+var U=null,PAIS='MZ',TIPO='mpesa',L=[];
+async function iniciar(){
+ var s=(await sb.auth.getSession()).data.session;
+ if(!s){vista('vEntrar');return}
+ U=s.user;
+ var l=await sb.from('lojas').select('pais,nome').eq('dono_id',U.id).maybeSingle();
+ if(!l.data){vista('vSemLoja');return}
+ PAIS=['MZ','TZ','ZA'].indexOf(l.data.pais)>-1?l.data.pais:'MZ';
+ vista('vApp');desenharTipos();carregar();
+}
+function vista(v){['vEntrar','vSemLoja','vApp'].forEach(function(x){$(x).classList.toggle('hide',x!==v)})}
+$('ent').onclick=async function(){var r=await sb.auth.signInWithPassword({email:$('em').value.trim(),password:$('pw').value});if(r.error){$('eMsg').textContent='Email ou palavra-passe errados.';return}iniciar()};
+function desenharTipos(){
+ $('paisTxt').textContent='Meios disponíveis em '+NOME_PAIS[PAIS]+(PAIS==='ZA'?' (na África do Sul não existe M-Pesa).':'.');
+ var t=TIPOS[PAIS];if(!t.some(function(x){return x[0]===TIPO}))TIPO=t[0][0];
+ $('tipos').innerHTML=t.map(function(x){return'<label class="'+(x[0]===TIPO?'on':'')+'"><input type="radio" name="tp" value="'+x[0]+'"'+(x[0]===TIPO?' checked':'')+'>'+x[1]+(x[2]?'<br><small style="font-weight:400;color:#6b7280">'+x[2]+'</small>':'')+'</label>'}).join('');
+ document.querySelectorAll('input[name=tp]').forEach(function(r){r.onchange=function(){TIPO=r.value;desenharTipos()}});
+ var banco=TIPO==='banco';$('fMovel').classList.toggle('hide',banco);$('fBanco').classList.toggle('hide',!banco);
+ $('lNum').textContent='Número '+NOME_TIPO[TIPO]+' ('+IND[PAIS]+')';
+ $('num').placeholder=PAIS==='MZ'?(TIPO==='emola'?'86 123 4567':TIPO==='mkesh'?'82 123 4567':'84 123 4567'):PAIS==='TZ'?'0712 345 678':'072 123 4567';
+ $('dNum').textContent='Escreva o número sem o indicativo '+IND[PAIS]+'.';
+ $('cConta').classList.toggle('hide',PAIS==='MZ');
+ $('cCod').classList.toggle('hide',PAIS==='TZ');
+ $('lCod').textContent=PAIS==='MZ'?'NIB (21 algarismos)':'Código da agência (branch code, 6 algarismos)';
+ $('dCod').textContent=PAIS==='MZ'?'O NIB está no extrato ou na app do banco.':'';
+}
+function descr(m){
+ if(m.tipo==='banco')return esc(m.banco)+' · '+(m.conta?'Conta '+esc(m.conta):'')+(m.codigo?(m.pais==='MZ'?' NIB ':' · Agência ')+esc(m.codigo):'');
+ return esc(m.numero);
+}
+async function carregar(){
+ var r=await sb.from('meios_recebimento').select('*').eq('dono',U.id).order('criado_em');
+ if(r.error){$('lista').innerHTML='<p class="msg">'+esc(/relation|exist/i.test(r.error.message)?'Falta correr o SQL novo no Supabase.':r.error.message)+'</p>';return}
+ L=r.data||[];
+ $('estado').innerHTML=L.length?'<b>✅ Pronto para receber.</b> Já pode criar links de pagamento no chat.':'<div class="aviso">⚠️ Ainda não registou nenhum meio para receber. <b>Sem isto não pode criar links de pagamento</b> no chat.</div>';
+ $('lista').innerHTML=L.length?L.map(function(m){return'<div class="mr"><div class="t"><b>'+esc(NOME_TIPO[m.tipo]||m.tipo)+(m.principal?'<span class="bdg">Principal</span>':'')+'</b><small>'+descr(m)+' · '+esc(m.titular)+'</small></div>'+
+  (m.principal?'':'<button class="p" data-p="'+esc(m.id)+'">Principal</button>')+'<button data-x="'+esc(m.id)+'">Apagar</button></div>'}).join(''):'<p style="color:#6b7280">Nenhum ainda.</p>';
+}
+$('lista').addEventListener('click',async function(e){
+ var p=e.target.closest('[data-p]'),x=e.target.closest('[data-x]');
+ if(p){p.disabled=true;await sb.from('meios_recebimento').update({principal:false}).eq('dono',U.id);var r=await sb.from('meios_recebimento').update({principal:true}).eq('id',p.getAttribute('data-p'));if(r.error)alert(r.error.message);carregar();return}
+ if(x){if(!confirm('Apagar este meio para receber?'))return;x.disabled=true;var r2=await sb.from('meios_recebimento').delete().eq('id',x.getAttribute('data-x'));if(r2.error)alert(r2.error.message);carregar()}
+});
+$('guardar').onclick=async function(){
+ var m=$('fMsg');m.className='msg';m.textContent='';
+ var reg={pais:PAIS,tipo:TIPO,titular:$('tit').value.trim(),principal:!L.length};
+ if(reg.titular.length<3)return m.textContent='Escreva o nome do titular.';
+ if(TIPO==='banco'){reg.banco=$('banco').value.trim();reg.conta=$('conta').value.trim()||null;reg.codigo=$('cod').value.trim()||null}
+ else{reg.numero=$('num').value.trim();if(reg.numero.replace(/\D/g,'').length<9)return m.textContent='Escreva o número completo.'}
+ this.disabled=true;var r=await sb.from('meios_recebimento').insert(reg);this.disabled=false;
+ if(r.error)return m.textContent=r.error.message;
+ m.className='msg ok';m.textContent='✅ Guardado.';['num','banco','conta','cod','tit'].forEach(function(i){$(i).value=''});carregar();
+};
+iniciar();
+</script>
+<script src="fornecedor-idioma.js?v=1"></script>
+</body>
+</html>
