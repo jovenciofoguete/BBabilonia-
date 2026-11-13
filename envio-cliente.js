@@ -166,8 +166,8 @@
     if ($("bb-envio") || String(window.aberto) !== String(p.id)) return;
     if (PED && String(PED.id) !== String(p.id)) aberto = false;
     PED = p; EST = e;
-    if (e.entregue || (!c && !e.recolhido && !e.mensagens)) return;
-    var h = "<h3>🚚 Envio da encomenda</h3>" + estadoHtml(e) +
+    if (!e.mensagens && (e.entregue || (!c && !e.recolhido) || (c && c.estado === "enviado"))) return;
+    var h = "<h3>🚚 Envio da encomenda</h3>" + (e.entregue || (c && c.estado === "enviado") ? "" : estadoHtml(e)) +
       (e.novas ? '<span class="nv" id="bb-env-nv">📩 Tem ' + e.novas + (e.novas === 1 ? " mensagem nova" : " mensagens novas") + " sobre o envio</span>" : "") +
       '<button class="bt' + (e.novas ? "" : " l") + '" type="button" id="bb-env-abrir">💬 ' + (aberto ? "Fechar o chat" : "Abrir o chat do envio") + "</button>" +
       '<div class="ch" id="bb-env-ch"' + (aberto ? "" : ' style="display:none"') + '><div class="ms" id="bb-env-ms"><div class="sis">A carregar…</div></div>' +

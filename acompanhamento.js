@@ -80,20 +80,20 @@
       h += '<label class="ac-up">📷 Foto da entrega ao cliente<input type="file" accept="image/*" multiple></label><div class="ac-pv ac-md"></div>' +
         '<button class="ac-bt v" data-acx="entregar">🚚 Entreguei ao cliente</button>';
     if (recolhido && !entregue) h += envioHtml(env, def, modo);
-    if (recolhido && !entregue && h.indexOf('data-acx="') > -1) h += '<div class="ac-m"></div>';
+    h += chatBloco(env, def, recolhido && !entregue && (!env || env.estado === "aguarda_pagamento"));
+    if ((p.cliente_recebeu || p.cliente_confirmou_em) && p.avaliado_fotos && !p.disputa) h += '<button class="ac-bt r" data-acx="apagar">🗑️ Apagar da minha lista</button>';
+    else if (entregue || enviado) h += '<div class="ac-pg" style="margin-top:10px">🗑️ Pode apagar este pedido da sua lista depois de o cliente confirmar que recebeu e avaliar com fotos.</div>';
+    if (!(modo === "atendimento" && entregue && !fim) && h.indexOf('data-acx="') > -1) h += '<div class="ac-m"></div>';
     if (modo === "atendimento" && entregue && !fim)
       h += '<button class="ac-bt v" data-acx="confirmar">✅ Confirmar entrega</button><div class="ac-m"></div>';
     return h + "</div>";
   }
 
-  function envioHtml(env, def, modo) {
+  /* 💬 chat com o cliente: em todos os pedidos; os dados de pagamento só depois de recolher e antes de entregar */
+  function chatBloco(env, def, podeDados) {
     def = def || {};
-    var h = '<div class="ac-env"><h5>🚚 Envio pela transportadora</h5>';
-    var podeDados = !env || env.estado === "aguarda_pagamento";
-    if (!env) h += '<div class="ac-pg">Depois de a transportadora dizer o preço, abra o chat e toque em "Enviar dados de pagamento do transporte".</div>';
-    else if (env.estado === "aguarda_pagamento") h += '<div class="ac-pg">⏳ Dados de pagamento enviados no chat: <b>' + din(env.total, env.moeda) + "</b> (" + esc(env.transportadora || "") + ")." +
-      (env.recusa_motivo ? "<br>⚠️ Pagamento recusado: " + esc(env.recusa_motivo) : "<br>À espera que o cliente pague e carregue as provas.") + "</div>";
-    h += '<button class="ac-bt" data-acx="chat">💬 Chat com o cliente</button>' +
+    var h = "";
+    h += '<button class="ac-bt" style="background:#0ea5e9" data-acx="chat">💬 Chat com o cliente</button>' +
       '<div class="ac-ch" data-chat style="display:none"><div class="ac-ms"><div class="ac-sis">A carregar…</div></div>' +
       (podeDados ? (!def.nome_recetor ? '<div class="ac-pg">⚠️ O dono ainda não escreveu os dados de pagamento do transporte.</div>' :
         '<button class="ac-bt v" data-acx="dados">📨 Enviar dados de pagamento do transporte</button>' +
@@ -103,6 +103,15 @@
         '<div class="ac-lb">Os números de pagamento e o nome do recetor vão sozinhos na mensagem.</div>' +
         '<button class="ac-bt v" data-acx="cotar">📨 Enviar ao cliente</button></div>') : "") +
       '<div class="ac-es"><input data-chatin placeholder="Escreva ao cliente" maxlength="1000"><button type="button" data-acx="chatenv">Enviar</button></div></div>';
+    return h;
+  }
+  function envioHtml(env, def, modo) {
+    def = def || {};
+    var h = '<div class="ac-env"><h5>🚚 Envio pela transportadora</h5>';
+    var podeDados = !env || env.estado === "aguarda_pagamento";
+    if (!env) h += '<div class="ac-pg">Depois de a transportadora dizer o preço, abra o chat e toque em "Enviar dados de pagamento do transporte".</div>';
+    else if (env.estado === "aguarda_pagamento") h += '<div class="ac-pg">⏳ Dados de pagamento enviados no chat: <b>' + din(env.total, env.moeda) + "</b> (" + esc(env.transportadora || "") + ")." +
+      (env.recusa_motivo ? "<br>⚠️ Pagamento recusado: " + esc(env.recusa_motivo) : "<br>À espera que o cliente pague e carregue as provas.") + "</div>";
     if (podeDados) return h + "</div>";
     if (env.estado === "pago_cliente") {
       h += '<div class="ac-pg">💰 O cliente carregou as provas da transferência (' + (env.cliente_meio === "emola" ? "e-Mola" : "M-Pesa") + ") de <b>" + din(env.total, env.moeda) + "</b> · " + esc(dt(env.cliente_pagou_em)) + "</div>" +
@@ -187,6 +196,14 @@
           var ch = c.querySelector("[data-chat]"), abre = ch.style.display === "none";
           ch.style.display = abre ? "" : "none"; b.textContent = abre ? "💬 Fechar o chat" : "💬 Chat com o cliente";
           if (abre) carregarChat(sb, ch, p.order_id);
+          return;
+        }
+        if (acx === "apagar") {
+          if (!confirm("Apagar o pedido " + String(p.order_id).slice(0, 8).toUpperCase() + " da sua lista? O pedido continua guardado na plataforma.")) return;
+          b.disabled = true;
+          var qa = await sb.rpc("acomp_apagar", { p_order: p.order_id });
+          if (qa.error) { b.disabled = false; m.textContent = qa.error.message; return; }
+          c.remove();
           return;
         }
         if (acx === "dados") { var df = c.querySelector("[data-df]"); df.style.display = df.style.display === "none" ? "" : "none"; return; }
