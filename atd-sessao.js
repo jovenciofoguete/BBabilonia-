@@ -76,7 +76,12 @@ window.ATD_AUTH={auth:{storage:window.sessionStorage,storageKey:'bb-atd',persist
    var w=document.createElement('div');w.className='bb-tit';h1.parentNode.insertBefore(w,h1);w.appendChild(b);w.appendChild(h1);
   }
   if(voltarPosto)return;voltarPosto=true;
-  try{history.pushState({bbArea:1},'',location.href)}catch(e){}
+  /* O Chrome do telemóvel ignora no botão Voltar os passos criados antes de a pessoa tocar na página.
+     Por isso o passo "voltar ao início" é criado no primeiro toque (e já antes, para quem toca logo em Voltar). */
+  var posto=false,toque=function(){if(posto)return;posto=true;try{history.pushState({bbArea:2},'',location.href)}catch(e){}
+   ['pointerdown','touchstart','keydown','click'].forEach(function(n){document.removeEventListener(n,toque,true)})};
+  ['pointerdown','touchstart','keydown','click'].forEach(function(n){document.addEventListener(n,toque,true)});
+  if(!(history.state&&history.state.bbArea))try{history.pushState({bbArea:1},'',location.href)}catch(e){}
   window.addEventListener('popstate',function(){location.replace(URL_INICIO)});
  }
  function opcao(liga,cls,href,titulo,sub){
