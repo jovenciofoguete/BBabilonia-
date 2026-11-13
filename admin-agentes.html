@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Agentes · BBabilônia</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<style>
+:root{--fundo:#eef2f7;--papel:#fff;--texto:#0f172a;--suave:#64748b;--linha:#e2e8f0;--az:#2563eb}
+*{box-sizing:border-box;margin:0}
+body{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--fundo);color:var(--texto);line-height:1.45;color-scheme:light}
+.bar{position:sticky;top:0;z-index:5;background:linear-gradient(135deg,#1e3a8a,#2563eb);color:#fff;padding:12px 14px;display:flex;align-items:center;gap:8px;box-shadow:0 4px 14px #0003}
+.bar h1{font-size:17px;flex:1}.bar a{color:#fff;background:#ffffff2e;border-radius:999px;padding:7px 12px;font-size:13px;font-weight:700;text-decoration:none}
+main{max-width:760px;margin:0 auto;padding:14px 12px 60px}
+.tabs{display:flex;gap:6px;margin-bottom:12px}.tabs button{flex:1;border:0;border-radius:12px;padding:12px 8px;font:inherit;font-weight:800;background:#fff;color:#475569}
+.tabs button.on{background:var(--az);color:#fff}
+.box{background:var(--papel);border-radius:16px;padding:14px;box-shadow:0 4px 14px #0001;margin-bottom:12px}
+.box h2{font-size:15px;margin-bottom:6px}
+.dica{font-size:13px;color:var(--suave)}
+input{width:100%;padding:12px;border:2px solid var(--linha);border-radius:12px;font:inherit;font-size:16px;margin-top:8px}
+.bt{border:0;border-radius:12px;padding:12px;font:inherit;font-size:15px;font-weight:800;color:#fff;background:var(--az);width:100%;margin-top:10px}
+.bt:disabled{opacity:.5}
+.ag{display:flex;gap:10px;align-items:flex-start;padding:11px 0;border-top:1px solid var(--linha)}.ag:first-child{border-top:0}
+.ag .t{flex:1;min-width:0}.ag b{display:block;font-size:15px;word-break:break-all}.ag small{display:block;color:var(--suave);font-size:13px}
+.ag .bs{display:flex;flex-direction:column;gap:6px;flex:none}
+.ag button{border:0;border-radius:10px;padding:8px 10px;font:inherit;font-size:13px;font-weight:700;background:#fee2e2;color:#b91c1c}
+.ag button.v{background:#dbeafe;color:#1e40af}
+.est{display:inline-block;font-size:12px;font-weight:800;padding:3px 9px;border-radius:20px;margin-top:4px;background:#fef3c7;color:#92400e}
+.est.ok{background:#d1fae5;color:#065f46}.est.no{background:#fee2e2;color:#991b1b}
+.msg{font-size:14px;margin-top:8px;color:#dc2626;white-space:pre-line}.msg.ok{color:#059669}
+.vz{text-align:center;color:var(--suave);padding:24px 10px}
+.hide{display:none}
+.ent{border:3px solid #f59e0b}.ent.vz2{border-color:transparent}
+.pd{padding:11px 0;border-top:1px solid var(--linha)}.pd:first-of-type{border-top:0}
+.pd b{display:block;font-size:15px;word-break:break-all}.pd small{display:block;color:var(--suave);font-size:13px}
+.pd .bs2{display:flex;gap:8px;margin-top:8px}.pd .bs2 button{flex:1;border:0;border-radius:12px;padding:12px;font:inherit;font-size:14.5px;font-weight:800;color:#fff}
+.ap{background:#10b981}.rc{background:#ef4444}.dl{background:#fee2e2!important;color:#b91c1c!important}
+.tabs i{font-style:normal;background:#ef4444;color:#fff;border-radius:999px;padding:0 7px;font-size:12px;margin-left:4px}
+.sub{font-size:14px;margin:12px 0 2px;color:#334155}
+</style>
+</head>
+<body>
+<div class="bar"><h1>👥 Agentes</h1><a href="/">← Painel</a></div>
+<main>
+ <section id="vEntrar" class="box hide">
+  <h2>Entrar (dono da plataforma)</h2>
+  <input id="em" type="email" placeholder="Email" autocomplete="username">
+  <input id="pw" type="password" placeholder="Palavra-passe" autocomplete="current-password">
+  <button class="bt" id="ent">Entrar</button><p class="msg" id="eMsg"></p>
+ </section>
+ <section id="vApp" class="hide">
+  <div class="tabs"><button id="tA" class="on">🎧 Atendimento</button><button id="tV">🛡️ Busca e verificação</button></div>
+  <div class="box">
+   <h2 id="tit">Adicionar agente de atendimento</h2>
+   <p class="dica" id="exp"></p>
+   <input id="novo" type="email" placeholder="Email do agente" autocomplete="off">
+   <button class="bt" id="add">➕ Adicionar</button><p class="msg" id="aMsg"></p>
+  </div>
+  <div class="box ent vz2" id="entBox"><div class="vz">A carregar entradas…</div></div>
+  <div class="box"><div id="lista"><div class="vz">A carregar…</div></div></div>
+ </section>
+</main>
+<script>
+var sb=supabase.createClient('https://dsfoqoeawvjafypycldz.supabase.co','sb_publishable_BN4NiVcDab9CqdTY_odgDA_uUOhjja0');
+function $(i){return document.getElementById(i)}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function dt(d){try{return d?new Date(d).toLocaleDateString('pt-PT'):'—'}catch(e){return'—'}}
+var EQ='atendimento',L=[],ENT=[],entErro='';
+var TXT={
+ atendimento:['Adicionar agente de atendimento','Atendem os clientes e fornecedores e confirmam se os produtos verificados são iguais ao pedido. Entram em service.bbabilonia.com. Não têm acesso ao lado da busca e verificação.'],
+ verificacao:['Adicionar agente de busca e verificação','Vão às lojas confirmar os produtos com fotos e vídeos e recolhem os produtos. Entram em service.bbabilonia.com/confirmar-produto.html. Não têm acesso ao lado do atendimento.']
+};
+function vista(v){['vEntrar','vApp'].forEach(function(x){$(x).classList.toggle('hide',x!==v)})}
+function aba(e){EQ=e;$('tA').classList.toggle('on',e==='atendimento');$('tV').classList.toggle('on',e==='verificacao');$('tit').textContent=TXT[e][0];$('exp').textContent=TXT[e][1];$('aMsg').textContent='';pintar();pintarEnt()}
+$('tA').onclick=function(){aba('atendimento')};$('tV').onclick=function(){aba('verificacao')};
+async function iniciar(){
+ var s=(await sb.auth.getSession()).data.session;
+ if(!s){vista('vEntrar');return}
+ vista('vApp');aba(EQ);carregar();carregarEnt();
+}
+$('ent').onclick=async function(){var r=await sb.auth.signInWithPassword({email:$('em').value.trim(),password:$('pw').value});if(r.error){$('eMsg').textContent='Email ou palavra-passe errados.';return}iniciar()};
+async function carregar(){
+ var r=await sb.rpc('admin_agentes_lista');
+ if(r.error){$('lista').innerHTML='<p class="msg">'+esc(/function|exist/i.test(r.error.message)?'Falta correr o SQL novo no Supabase.':r.error.message)+'</p>';return}
+ L=r.data||[];pintar();
+}
+function pintar(){
+ var l=L.filter(function(a){return a.equipa===EQ});
+ titulos();
+ if(!l.length){$('lista').innerHTML='<div class="vz">Ainda não há agentes nesta equipa.</div>';return}
+ var hoje=new Date();hoje.setHours(0,0,0,0);
+ $('lista').innerHTML=l.map(function(a){
+  var bi='';
+  if(a.bi_validade){var v=new Date(a.bi_validade),dias=Math.round((v-hoje)/864e5);bi=dias<0?'<span class="est no">BI expirado a '+dt(a.bi_validade)+'</span>':dias<=30?'<span class="est">BI expira a '+dt(a.bi_validade)+'</span>':'<span class="est ok">BI válido até '+dt(a.bi_validade)+'</span>'}
+  var dados=a.nome?'<small>'+esc(a.nome)+' · 📞 '+esc(a.telefone||'—')+'</small><small>📍 '+esc(a.morada||'—')+'</small><small>NUIT '+esc(a.nuit||'—')+' · BI '+esc(a.bi_numero||'—')+'</small>':'<small>Ainda não preencheu os dados (pedidos quando entrar).</small>';
+  return'<div class="ag"><div class="t"><b>'+esc(a.email)+'</b>'+dados+bi+'</div><div class="bs">'+
+   (a.foto_url?'<button class="v" data-f="'+esc(a.foto_url)+'">📷 Foto</button>':'')+(a.bi_url?'<button class="v" data-f="'+esc(a.bi_url)+'">🪪 BI</button>':'')+
+   '<button data-x="'+esc(a.id)+'">Remover</button></div></div>';
+ }).join('');
+}
+function eqDe(x){return x.equipa==='verificacao'?'verificacao':'atendimento'}
+function titulos(){
+ var pa=ENT.filter(function(x){return x.estado==='pendente'&&eqDe(x)==='atendimento'}).length,pv=ENT.filter(function(x){return x.estado==='pendente'&&eqDe(x)==='verificacao'}).length;
+ $('tA').innerHTML='🎧 Atendimento ('+L.filter(function(a){return a.equipa==='atendimento'}).length+')'+(pa?'<i>'+pa+'</i>':'');
+ $('tV').innerHTML='🛡️ Busca e verificação ('+L.filter(function(a){return a.equipa==='verificacao'}).length+')'+(pv?'<i>'+pv+'</i>':'');
+}
+function dh(d){try{return new Date(d).toLocaleString('pt-PT',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}catch(e){return''}}
+async function carregarEnt(){
+ var r=await sb.rpc('admin_entradas_lista');
+ entErro=r.error?(/function|exist|find/i.test(r.error.message)?'Falta correr o SQL novo no Supabase.':r.error.message):'';
+ ENT=r.error?[]:(r.data||[]);titulos();pintarEnt();
+}
+function nomeAg(e){var a=L.filter(function(z){return String(z.email).toLowerCase()===String(e).toLowerCase()})[0];return a&&a.nome?a.nome:''}
+function pintarEnt(){
+ var box=$('entBox');if(!box)return;
+ if(entErro){box.className='box ent vz2';box.innerHTML='<p class="msg">🔐 Entradas: '+esc(entErro)+'</p>';return}
+ var l=ENT.filter(function(x){return eqDe(x)===EQ}),pd=l.filter(function(x){return x.estado==='pendente'}),ap=l.filter(function(x){return x.estado==='aprovada'});
+ var card=function(x,ok){var n=nomeAg(x.email);return'<div class="pd"><b>'+esc(n||x.email)+'</b>'+(n?'<small>'+esc(x.email)+'</small>':'')+
+  '<small>📱 '+esc(x.aparelho||'Aparelho')+' · '+(ok?'aprovado até '+esc(dt(x.confiavel_ate)):'pedido '+esc(dh(x.pedido_em)))+'</small><div class="bs2">'+
+  (ok?'<button class="dl" data-es="'+esc(x.session_id)+'" data-ok="0">⛔ Desligar este aparelho</button>':'<button class="ap" data-es="'+esc(x.session_id)+'" data-ok="1">✅ Aprovar</button><button class="rc" data-es="'+esc(x.session_id)+'" data-ok="0">❌ Recusar</button>')+
+  '</div><p class="msg"></p></div>'};
+ box.className='box ent'+(pd.length?'':' vz2');
+ box.innerHTML='<h2>🔐 À espera de aprovação'+(pd.length?' ('+pd.length+')':'')+'</h2>'+
+  (pd.length?'<p class="dica">Aprove só se conhece a pessoa e o aparelho. Um navegador ou aparelho diferente pede aprovação outra vez.</p>'+pd.map(function(x){return card(x,false)}).join(''):'<p class="dica">Nenhum agente desta equipa à espera. 👍</p>')+
+  (ap.length?'<p class="sub"><b>📱 Aparelhos aprovados ('+ap.length+')</b></p>'+ap.map(function(x){return card(x,true)}).join(''):'');
+}
+$('entBox').addEventListener('click',async function(ev){
+ var b=ev.target.closest('[data-es]');if(!b)return;
+ var ok=b.getAttribute('data-ok')==='1',it=b.closest('.pd'),m=it.querySelector('.msg');
+ if(!ok&&!confirm(b.classList.contains('dl')?'Desligar este aparelho?\nO agente deixa de ter acesso e terá de pedir aprovação outra vez.':'Recusar esta entrada?'))return;
+ it.querySelectorAll('button').forEach(function(z){z.disabled=true});m.className='msg';m.textContent='';
+ var r=await sb.rpc('admin_entrada_decidir',{p_sessao:b.getAttribute('data-es'),p_aprovar:ok});
+ if(r.error){it.querySelectorAll('button').forEach(function(z){z.disabled=false});m.textContent=/function|exist|find/i.test(r.error.message)?'Falta correr o SQL novo no Supabase.':r.error.message;return}
+ m.className='msg ok';m.textContent=ok?'✅ Aprovado — o painel do agente abre sozinho.':'Feito ✓';setTimeout(carregarEnt,1200);
+});
+setInterval(function(){if(!document.hidden&&!$('vApp').classList.contains('hide'))carregarEnt()},15000);
+$('add').onclick=async function(){
+ var m=$('aMsg'),e=$('novo').value.trim().toLowerCase();m.className='msg';m.textContent='';
+ if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e)){m.textContent='Escreva um email válido.';return}
+ this.disabled=true;var r=await sb.rpc('admin_agente_adicionar',{p_email:e,p_equipa:EQ});this.disabled=false;
+ if(r.error){m.textContent=/function|exist/i.test(r.error.message)&&!/equipa/i.test(r.error.message)?'Falta correr o SQL novo no Supabase.':r.error.message;return}
+ m.className='msg ok';m.textContent='✅ '+e+' adicionado. A pessoa cria conta (ou entra) com este email.';$('novo').value='';carregar();
+};
+$('lista').addEventListener('click',async function(ev){
+ var f=ev.target.closest('[data-f]'),x=ev.target.closest('[data-x]');
+ if(f){var u=f.getAttribute('data-f');if(/^https?:/i.test(u)){window.open(u,'_blank');return}
+  var r=await sb.storage.from('documentos-validade').createSignedUrl(u,600);if(r.error){alert(r.error.message);return}window.open(r.data.signedUrl,'_blank');return}
+ if(x){var a=L.filter(function(z){return String(z.id)===x.getAttribute('data-x')})[0]||{};
+  if(!confirm('Remover '+a.email+' desta equipa?\nDeixa de ter acesso imediatamente.'))return;
+  x.disabled=true;var r2=await sb.rpc('admin_agente_remover',{p_id:a.id});if(r2.error){alert(r2.error.message);x.disabled=false;return}carregar()}
+});
+iniciar();
+</script>
+</body>
+</html>
