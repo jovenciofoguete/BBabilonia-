@@ -85,6 +85,14 @@ module.exports = async function handler(req, res) {
     if (typeof b === 'string') { try { b = JSON.parse(b); } catch (e) { b = {}; } }
     b = b || {};
 
+    /* 13/11/2026: trancar o painel do dono ao sair dele (voltar, fechar, outro site, 15 min parado):
+       esta sessão deixa de estar verificada e volta a pedir a impressão digital e o PIN */
+    if (b.acao === 'trancar') {
+      await db('sessoes_2fa?session_id=eq.' + encodeURIComponent(sid), { method: 'DELETE' });
+      await db('sessoes_chave?session_id=eq.' + encodeURIComponent(sid), { method: 'DELETE' });
+      return resp(200, { ok: true });
+    }
+
     const [pinRow] = (await db('pins_2fa?user_id=eq.' + uid + '&select=*')) || [];
     const [ver] = (await db('sessoes_2fa?session_id=eq.' + encodeURIComponent(sid) + '&com_pin=eq.true&select=session_id')) || [];
     const [ch] = (await db('sessoes_chave?session_id=eq.' + encodeURIComponent(sid) + '&user_id=eq.' + uid + '&select=chave_em')) || [];
