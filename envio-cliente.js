@@ -5,7 +5,9 @@
    - o agente manda no chat os dados de pagamento do transporte; o cliente vê-os no chat, com o texto
      "Pagar o valor de transporte e taxas através destes dados e carregar provas após pagamento.";
    - "Carregar provas de pagamento": foto do comprovativo e, por baixo, o texto da transferência.
-   O produto paga-se dentro da plataforma; só o transporte é transferido fora. */
+   O produto paga-se dentro da plataforma; só o transporte é transferido fora.
+   (13/11/2026) Correção: no modo escuro do telemóvel o texto do chat ficava branco sobre fundo branco (invisível);
+   agora o chat e as caixas brancas têm sempre texto escuro. */
 (function () {
   if (window.__bbEnvioCli || !window.sb) return; window.__bbEnvioCli = 1;
   var sb = window.sb, d = document;
@@ -41,7 +43,10 @@
     "#bb-envio .meios input{display:none}#bb-envio .meios label.on{border-color:#16a34a;background:#f0fdf4;color:#065f46}" +
     "#bb-envio .up{display:block;text-align:center;border:2px dashed #16a34a;border-radius:12px;padding:14px 6px;font-weight:800;font-size:15px;color:#065f46;background:#f0fdf4;margin-top:8px}" +
     "#bb-envio .up input{display:none}#bb-envio textarea{width:100%;box-sizing:border-box;min-height:86px;margin-top:8px;padding:10px;border:2px solid #e2e8f0;border-radius:12px;font:inherit;font-size:14.5px}" +
-    "#bb-envio .m{color:#e11d48;font-size:14px;margin-top:8px;white-space:pre-line}#bb-envio .pq{font-size:13px;color:#64748b;margin-top:6px}";
+    "#bb-envio .m{color:#e11d48;font-size:14px;margin-top:8px;white-space:pre-line}#bb-envio .pq{font-size:13px;color:#64748b;margin-top:6px}" +
+    /* modo escuro: o chat e as caixas brancas ficam sempre com texto escuro (antes o texto ficava branco e não se via) */
+    "#bb-envio .ch,#bb-envio .dp,#bb-envio .pv,#bb-envio .nr,#bb-envio .b.ou{color:#0f172a}" +
+    "#bb-envio .es input,#bb-envio textarea{background:#fff;color:#0f172a}#bb-envio .es input::placeholder,#bb-envio textarea::placeholder{color:#94a3b8}";
   d.head.appendChild(css);
 
   var aCarregar = null, EST = null, PED = null, aberto = false, relogio = null;
