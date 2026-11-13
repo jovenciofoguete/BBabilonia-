@@ -57,6 +57,17 @@ input{width:100%;padding:12px;border:2px solid var(--linha);border-radius:12px;f
    <input id="novo" type="email" placeholder="Email do agente" autocomplete="off">
    <button class="bt" id="add">➕ Adicionar</button><p class="msg" id="aMsg"></p>
   </div>
+  <div class="box" id="envBox">
+   <h2>💳 Número de pagamento do envio (fora da plataforma)</h2>
+   <p class="dica">Escreva uma vez: fica sempre visível para os agentes de busca e de atendimento e para o cliente quando for pagar o transporte da encomenda. Só o dono pode mudar ou eliminar. O produto continua a ser pago dentro da plataforma.</p>
+   <input id="envMp" inputmode="tel" placeholder="Número M-Pesa (ex.: 84 123 4567)">
+   <input id="envEm" inputmode="tel" placeholder="Número e-Mola (ex.: 86 123 4567)">
+   <input id="envNo" placeholder="Nome do recetor (como aparece na transferência)">
+   <p class="dica" style="margin-top:8px">Taxa de serviço habitual (o agente pode mudar em cada cotação):</p>
+   <input id="envTx" type="number" inputmode="decimal" min="0" step="any" placeholder="Ex.: 50">
+   <button class="bt" id="envGu">💾 Guardar</button>
+   <button class="bt" id="envAp" style="background:#ef4444">🗑️ Eliminar estes dados</button><p class="msg" id="envMsg"></p>
+  </div>
   <div class="box ent vz2" id="entBox"><div class="vz">A carregar entradas…</div></div>
   <div class="box"><div id="lista"><div class="vz">A carregar…</div></div></div>
  </section>
@@ -77,8 +88,27 @@ $('tA').onclick=function(){aba('atendimento')};$('tV').onclick=function(){aba('v
 async function iniciar(){
  var s=(await sb.auth.getSession()).data.session;
  if(!s){vista('vEntrar');return}
- vista('vApp');aba(EQ);carregar();carregarEnt();
+ vista('vApp');aba(EQ);carregar();carregarEnt();carregarEnvio();
 }
+async function carregarEnvio(){
+ var r=await sb.rpc('envio_definicoes_ver');
+ if(r.error){$('envMsg').className='msg';$('envMsg').textContent=/function|exist/i.test(r.error.message)?'Falta correr o SQL novo no Supabase.':r.error.message;return}
+ var d=r.data||{};$('envMp').value=d.mpesa_numero||'';$('envEm').value=d.emola_numero||'';$('envNo').value=d.nome_recetor||'';$('envTx').value=d.taxa_servico!=null?d.taxa_servico:'';
+ if(!d.nome_recetor){$('envMsg').className='msg';$('envMsg').textContent='⚠️ Ainda não escreveu os dados: os agentes não conseguem mandar cotações de envio.'}
+}
+$('envAp').onclick=async function(){
+ if(!confirm('Eliminar o número de pagamento do envio? Os agentes deixam de conseguir mandar cotações até escrever outro.'))return;
+ var b=this,m=$('envMsg');b.disabled=true;var r=await sb.rpc('admin_envio_definicoes_apagar');b.disabled=false;
+ if(r.error){m.className='msg';m.textContent=r.error.message;return}
+ await carregarEnvio();
+};
+$('envGu').onclick=async function(){
+ var b=this,m=$('envMsg');m.className='msg';m.textContent='';b.disabled=true;
+ var r=await sb.rpc('admin_envio_definicoes',{p_mpesa:$('envMp').value,p_emola:$('envEm').value,p_nome:$('envNo').value,p_taxa:Number(String($('envTx').value||'0').replace(',','.'))});
+ b.disabled=false;
+ if(r.error){m.textContent=r.error.message;return}
+ m.className='msg ok';m.textContent='✅ Guardado. As próximas cotações já usam estes dados.';carregarEnvio().then(function(){m.className='msg ok';m.textContent='✅ Guardado. As próximas cotações já usam estes dados.'});
+};
 $('ent').onclick=async function(){var r=await sb.auth.signInWithPassword({email:$('em').value.trim(),password:$('pw').value});if(r.error){$('eMsg').textContent='Email ou palavra-passe errados.';return}iniciar()};
 async function carregar(){
  var r=await sb.rpc('admin_agentes_lista');

@@ -3,7 +3,12 @@
    - Busca e verificação (confirmar-produto.html): vê os pedidos que verificou; depois de recolher,
      tira a foto da entrega e toca em "🚚 Entreguei ao cliente".
    - Atendimento e dono (atd-verificacoes.html): veem todos e tocam em "✅ Confirmar entrega".
-   Em cada pedido: quem verificou, quem confirmou no atendimento, recolha, entrega e confirmação. */
+   Em cada pedido: quem verificou, quem confirmou no atendimento, recolha, entrega e confirmação.
+   13/11/2026 — Envio pela transportadora (quando o cliente não é entregue em mão):
+   - o agente manda a cotação (transportadora, valor do envio, taxa de serviço); o número M-Pesa/e-Mola e o nome
+     do recetor vêm sozinhos (escritos pelo dono em 👥 Agentes);
+   - o cliente transfere fora da plataforma e carrega as provas (foto + texto); o atendimento confirma;
+   - o agente de busca marca "📦 Enviado" com a foto do talão e o nº de rastreamento. */
 (function () {
   if (window.Acomp) return;
   function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
@@ -26,6 +31,10 @@
     ".ac-md{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}.ac-md img{width:74px;height:74px;object-fit:cover;border-radius:10px}.ac-md video{width:100%;max-height:240px;border-radius:10px;background:#000}" +
     ".ac-up{display:block;text-align:center;border:2px dashed #10b981;border-radius:12px;padding:12px 6px;font-weight:800;font-size:14px;color:#065f46;background:#f0fdf4;margin-top:10px}.ac-up input{display:none}" +
     ".ac-bt{display:block;width:100%;border:0;border-radius:12px;padding:13px;font:inherit;font-size:15px;font-weight:800;color:#fff;margin-top:10px;background:#2563eb}.ac-bt.v{background:#10b981}.ac-bt:disabled{opacity:.45}" +
+    ".ac-env{margin-top:10px;border:2px solid #bfdbfe;border-radius:14px;padding:12px;background:#f8fbff}.ac-env h5{margin:0 0 6px;font-size:15px}" +
+    ".ac-env input{width:100%;box-sizing:border-box;margin-top:6px;padding:11px;border:2px solid #e2e8f0;border-radius:10px;font:inherit;font-size:15px}" +
+    ".ac-env .ac-lb{font-size:12.5px;color:#475569;margin-top:8px;font-weight:700}.ac-env .ac-pg{font-size:13.5px;background:#eef2ff;border-radius:10px;padding:8px 10px;margin-top:8px;line-height:1.5}" +
+    ".ac-env .ac-dois{display:flex;gap:8px}.ac-env .ac-dois .ac-bt{flex:1}.ac-bt.r{background:#ef4444}.ac-env .ac-tx{font-size:13.5px;background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:8px;margin-top:6px;white-space:pre-line}" +
     ".ac-m{font-size:14px;margin-top:8px;color:#dc2626;white-space:pre-line}.ac-m.ok{color:#059669}.ac-vz{text-align:center;color:#64748b;padding:30px 10px}";
   document.head.appendChild(css);
 
@@ -41,9 +50,10 @@
       (quando ? "<small>" + esc(dt(quando)) + "</small>" : "") + (quem ? "<small>" + quem + "</small>" : "") + (extra || "") + "</li>";
   }
 
-  function caixa(p, i, modo) {
+  function caixa(p, i, modo, env, def) {
     var fim = p.entrega_confirmada_em || p.cliente_confirmou_em, entregue = !!p.entregue_em, recolhido = p.estado === "recolhido";
-    var est = fim ? ["✅ Entrega confirmada", "v"] : entregue ? ["🚚 Entregue · à espera de confirmação", "z"] : recolhido ? ["📦 Recolhido · a caminho do cliente", "a"] : ["✅ Confirmado · por recolher na loja", "a"];
+    var enviado = !!(env && env.estado === "enviado");
+    var est = fim ? ["✅ Entrega confirmada", "v"] : enviado ? ["📦 Enviado pela transportadora", "z"] : env ? ["🚚 Envio pela transportadora · " + ({ aguarda_pagamento: "à espera do pagamento", pago_cliente: "provas para confirmar", pago_confirmado: "pago · por enviar" })[env.estado], "a"] : fim ? ["✅ Entrega confirmada", "v"] : entregue ? ["🚚 Entregue · à espera de confirmação", "z"] : recolhido ? ["📦 Recolhido · a caminho do cliente", "a"] : ["✅ Confirmado · por recolher na loja", "a"];
     var h = '<div class="ac-c" data-ac="' + i + '"><div class="l1"><span>Pedido ' + esc(String(p.order_id).slice(0, 8).toUpperCase()) + " · " + din(p.total, p.moeda) + "</span><span>" + esc(dt(p.criado)) + "</span></div>" +
       '<span class="ac-est ' + est[1] + '">' + est[0] + "</span>" +
       '<div class="ac-cx">🧾 ' + itens(p.itens) + "</div>" +
@@ -55,14 +65,56 @@
       passo(!!p.decidido_em, false, "🎧 Confirmado pelo atendimento (iguais ao pedido)", p.decidido_em, pessoa(p.atendente_nome, p.atendente_email, p.atendente_telefone) + (p.motivo_atendimento ? "<br>Nota: " + esc(p.motivo_atendimento) : "")) +
       passo(!!p.libertado, false, "💰 Valor libertado ao fornecedor", "", p.erro_libertar ? "Não libertado: " + esc(p.erro_libertar) : "") +
       passo(recolhido, !recolhido, "📦 Recolhido na loja", p.recolhido_em, recolhido ? pessoa(p.agente_nome, p.agente_email, p.agente_telefone) : "") +
-      passo(entregue, recolhido && !entregue, "🚚 Entregue ao cliente", p.entregue_em, entregue ? pessoa(p.entregue_nome, p.entregue_por, p.entregue_telefone) : "", midia(p.entrega_fotos)) +
-      passo(!!fim, entregue && !fim, "✅ Entrega confirmada", fim, p.entrega_confirmada_em ? pessoa(p.confirmou_nome, p.entrega_confirmada_por, "") : p.cliente_confirmou_em ? "Pelo cliente" : "") +
+      (env ? passo(enviado, !enviado, "📦 Enviado pela transportadora" + (env.transportadora ? " (" + esc(env.transportadora) + ")" : ""), env.enviado_em, enviado ? (env.rastreio ? "Nº de rastreamento: <b>" + esc(env.rastreio) + "</b>" : "") : "", enviado ? midia(env.fotos) : "") :
+      passo(entregue, recolhido && !entregue, "🚚 Entregue ao cliente", p.entregue_em, entregue ? pessoa(p.entregue_nome, p.entregue_por, p.entregue_telefone) : "", midia(p.entrega_fotos))) +
+      passo(!!fim, (entregue || enviado) && !fim, "✅ Entrega confirmada", fim, p.entrega_confirmada_em ? pessoa(p.confirmou_nome, p.entrega_confirmada_por, "") : p.cliente_confirmou_em ? "Pelo cliente" : "") +
       "</ul>";
-    if (modo === "verificacao" && recolhido && !entregue)
+    if (modo === "verificacao" && recolhido && !entregue && !env)
       h += '<label class="ac-up">📷 Foto da entrega ao cliente<input type="file" accept="image/*" multiple></label><div class="ac-pv ac-md"></div>' +
-        '<button class="ac-bt v" data-acx="entregar">🚚 Entreguei ao cliente</button><div class="ac-m"></div>';
+        '<button class="ac-bt v" data-acx="entregar">🚚 Entreguei ao cliente</button>';
+    if (recolhido && !entregue) h += envioHtml(env, def, modo);
+    if (recolhido && !entregue && h.indexOf('data-acx="') > -1) h += '<div class="ac-m"></div>';
     if (modo === "atendimento" && entregue && !fim)
       h += '<button class="ac-bt v" data-acx="confirmar">✅ Confirmar entrega</button><div class="ac-m"></div>';
+    return h + "</div>";
+  }
+
+  /* número de pagamento do envio, sempre visível para as equipas (só o dono o escreve) */
+  function numeroEnvio(def) {
+    def = def || {};
+    if (!def.nome_recetor) return '<div class="ac-c"><div class="ac-pg" style="background:#fff7ed">💳 O dono ainda não escreveu o número de pagamento do envio. Sem ele não é possível mandar cotações.</div></div>';
+    return '<div class="ac-c"><b>💳 Número para o cliente pagar o envio</b><div class="ac-cx">' +
+      (def.mpesa_numero ? "M-Pesa: <b>" + esc(def.mpesa_numero) + "</b><br>" : "") + (def.emola_numero ? "e-Mola: <b>" + esc(def.emola_numero) + "</b><br>" : "") +
+      "Nome do recetor: <b>" + esc(def.nome_recetor) + "</b></div><small style=\"color:#64748b\">Só o dono da plataforma pode mudar estes dados.</small></div>";
+  }
+  function envioHtml(env, def, modo) {
+    def = def || {};
+    var pg = (def.mpesa_numero ? "M-Pesa <b>" + esc(def.mpesa_numero) + "</b>" : "") + (def.mpesa_numero && def.emola_numero ? " · " : "") +
+      (def.emola_numero ? "e-Mola <b>" + esc(def.emola_numero) + "</b>" : "");
+    var h = '<div class="ac-env"><h5>🚚 Envio pela transportadora</h5>';
+    if (!env || env.estado === "aguarda_pagamento") {
+      if (env) h += '<div class="ac-pg">⏳ Cotação enviada ao cliente: ' + din(env.valor_envio, env.moeda) + " + taxa " + din(env.taxa_servico, env.moeda) +
+        " = <b>" + din(env.total, env.moeda) + "</b> (" + esc(env.transportadora || "") + ")." + (env.recusa_motivo ? "<br>⚠️ Pagamento recusado: " + esc(env.recusa_motivo) : "<br>À espera que o cliente pague e carregue as provas.") + "</div>";
+      if (!pg || !def.nome_recetor) return h + '<div class="ac-pg">⚠️ O dono ainda não escreveu os números de pagamento do envio. Peça ao dono para os escrever em 👥 Agentes.</div></div>';
+      h += (env ? '<div class="ac-lb" style="margin-top:12px">Corrigir a cotação</div>' : '<div class="ac-lb">Depois de a transportadora dizer o preço, mande a cotação ao cliente:</div>') +
+        '<input data-env="transp" placeholder="Transportadora (ex.: Nhamaz, Etrago…)" value="' + esc(env ? env.transportadora : "") + '">' +
+        '<input data-env="valor" type="number" inputmode="decimal" min="0" step="any" placeholder="Valor do envio cobrado pela transportadora" value="' + esc(env ? env.valor_envio : "") + '">' +
+        '<div class="ac-lb">Taxa de serviço</div><input data-env="taxa" type="number" inputmode="decimal" min="0" step="any" value="' + esc(env ? env.taxa_servico : (def.taxa_servico || 0)) + '">' +
+        '<div class="ac-pg">💳 O cliente paga para: ' + pg + "<br>Nome do recetor: <b>" + esc(def.nome_recetor) + "</b><br><small>Escrito pelo dono da plataforma.</small></div>" +
+        '<button class="ac-bt" data-acx="cotar">📨 ' + (env ? "Mandar a cotação corrigida" : "Mandar a cotação ao cliente") + "</button>";
+    } else if (env.estado === "pago_cliente") {
+      h += '<div class="ac-pg">💰 O cliente carregou as provas da transferência (' + (env.cliente_meio === "emola" ? "e-Mola" : "M-Pesa") + ") de <b>" + din(env.total, env.moeda) + "</b> · " + esc(dt(env.cliente_pagou_em)) + "</div>" +
+        '<div class="ac-md" data-provas="' + esc(JSON.stringify(arr(env.cliente_fotos))) + '"></div>' +
+        (env.cliente_ref ? '<div class="ac-tx">' + esc(env.cliente_ref) + "</div>" : "");
+      if (modo === "atendimento") h += '<div class="ac-dois"><button class="ac-bt v" data-acx="pagok">✅ O dinheiro entrou</button><button class="ac-bt r" data-acx="pagno">❌ Não entrou</button></div>';
+      else h += '<div class="ac-pg">⏳ À espera que o atendimento confirme o pagamento.</div>';
+    } else if (env.estado === "pago_confirmado") {
+      h += '<div class="ac-pg">✅ Pagamento do envio confirmado (' + din(env.total, env.moeda) + "). " + (modo === "verificacao" ? "Entregue a mercadoria na transportadora:" : "À espera que o agente de busca envie.") + "</div>";
+      if (modo === "verificacao")
+        h += '<input data-env="rastreio" placeholder="Nº de rastreamento / guia da transportadora">' +
+          '<label class="ac-up">📷 Foto do talão da transportadora ou do pacote<input type="file" accept="image/*" multiple></label><div class="ac-pv ac-md"></div>' +
+          '<button class="ac-bt v" data-acx="enviado">📦 Enviado</button>';
+    } else return "";
     return h + "</div>";
   }
 
@@ -78,9 +130,20 @@
     el.innerHTML = '<div class="ac-vz">A carregar…</div>';
     var r = await sb.rpc("verificacoes_acompanhamento");
     if (r.error) { el.innerHTML = '<div class="ac-c ac-vz">' + esc(/function|exist|find/i.test(r.error.message) ? "Falta correr o SQL novo no Supabase." : r.error.message) + "</div>"; return; }
-    var L = r.data || [], FOT = {};
-    el.innerHTML = L.length ? L.map(function (p, i) { return caixa(p, i, modo); }).join("") :
-      '<div class="ac-c ac-vz">' + (modo === "verificacao" ? "Ainda não há pedidos seus para acompanhar." : "Não há pedidos em acompanhamento.") + "</div>";
+    var L = r.data || [], FOT = {}, ENV = {}, DEF = {};
+    try { var e2 = await sb.rpc("envio_definicoes_ver"); if (!e2.error && e2.data) DEF = e2.data; } catch (e) {}
+    if (L.length) {
+      try { var e1 = await sb.rpc("envio_equipa_lista", { p_orders: L.map(function (p) { return p.order_id; }) }); if (!e1.error && e1.data) ENV = e1.data; } catch (e) {}
+    }
+    el.innerHTML = numeroEnvio(DEF) + (L.length ? L.map(function (p, i) { return caixa(p, i, modo, ENV[String(p.order_id)], DEF); }).join("") :
+      '<div class="ac-c ac-vz">' + (modo === "verificacao" ? "Ainda não há pedidos seus para acompanhar." : "Não há pedidos em acompanhamento.") + "</div>");
+    el.querySelectorAll("[data-provas]").forEach(async function (bx) {
+      var l = []; try { l = JSON.parse(bx.getAttribute("data-provas")) || []; } catch (e) {}
+      for (var k = 0; k < l.length; k++) {
+        try { var u = await sb.storage.from("provas-envio").createSignedUrl(l[k], 3600);
+          if (u.data && u.data.signedUrl) bx.insertAdjacentHTML("beforeend", '<a href="' + esc(u.data.signedUrl) + '" target="_blank" rel="noopener"><img src="' + esc(u.data.signedUrl) + '" alt="Comprovativo"></a>'); } catch (e) {}
+      }
+    });
     el.querySelectorAll("[data-ac]").forEach(function (c) {
       var i = +c.getAttribute("data-ac"), p = L[i], m = c.querySelector(".ac-m");
       c.addEventListener("change", function (e) {
@@ -91,7 +154,44 @@
       c.addEventListener("click", async function (e) {
         var b = e.target.closest("[data-acx]"); if (!b) return; e.stopPropagation();
         m.className = "ac-m"; m.textContent = "";
-        if (b.getAttribute("data-acx") === "entregar") {
+        var acx = b.getAttribute("data-acx"), ok = function (t) { m.className = "ac-m ok"; m.textContent = t; setTimeout(function () { carregar(sb, el, modo); }, 1500); };
+        var campo = function (n) { var x = c.querySelector('[data-env="' + n + '"]'); return x ? x.value.trim() : ""; };
+        if (acx === "cotar") {
+          var tr = campo("transp"), vl = Number(campo("valor").replace(",", ".")), tx = Number((campo("taxa") || "0").replace(",", "."));
+          if (!tr) { m.textContent = "Escreva o nome da transportadora."; return; }
+          if (!(vl > 0)) { m.textContent = "Escreva o valor do envio cobrado pela transportadora."; return; }
+          if (!(tx >= 0)) { m.textContent = "A taxa de serviço não pode ser negativa."; return; }
+          if (!confirm("Mandar ao cliente: envio " + din(vl, p.moeda) + " + taxa " + din(tx, p.moeda) + " = " + din(vl + tx, p.moeda) + "?")) return;
+          b.disabled = true;
+          var q1 = await sb.rpc("envio_cotar", { p_order: p.order_id, p_transportadora: tr, p_valor: vl, p_taxa: tx });
+          if (q1.error) { b.disabled = false; m.textContent = q1.error.message; return; }
+          ok("📨 Cotação enviada. O cliente foi avisado.");
+          return;
+        }
+        if (acx === "pagok" || acx === "pagno") {
+          var mot = null;
+          if (acx === "pagno") { mot = prompt("Motivo (o cliente vai ver):", "O dinheiro não entrou na conta."); if (!mot) return; }
+          else if (!confirm("Confirma que o dinheiro do envio entrou na conta?")) return;
+          b.disabled = true;
+          var q2 = await sb.rpc("envio_confirmar_pagamento", { p_order: p.order_id, p_ok: acx === "pagok", p_motivo: mot });
+          if (q2.error) { b.disabled = false; m.textContent = q2.error.message; return; }
+          ok(acx === "pagok" ? "✅ Pagamento confirmado. O agente de busca já pode enviar." : "O cliente foi avisado para carregar as provas de novo.");
+          return;
+        }
+        if (acx === "enviado") {
+          if (!(FOT[i] || []).length) { m.textContent = "Tire pelo menos uma foto do talão da transportadora ou do pacote."; return; }
+          if (!confirm("Confirmar que entregou o pedido " + String(p.order_id).slice(0, 8).toUpperCase() + " na transportadora?")) return;
+          b.disabled = true; b.textContent = "A enviar fotos…";
+          try {
+            var us = [];
+            for (var z = 0; z < FOT[i].length; z++) us.push(await enviarFoto(sb, p.order_id, FOT[i][z]));
+            var q3 = await sb.rpc("envio_marcar_enviado", { p_order: p.order_id, p_rastreio: campo("rastreio"), p_fotos: us });
+            if (q3.error) throw new Error(q3.error.message);
+            ok("📦 Enviado. O cliente recebeu o aviso com o número de rastreamento.");
+          } catch (er) { b.disabled = false; b.textContent = "📦 Enviado"; m.textContent = er.message; }
+          return;
+        }
+        if (acx === "entregar") {
           if (!(FOT[i] || []).length) { m.textContent = "Tire pelo menos uma foto da entrega ao cliente."; return; }
           if (!confirm("Confirmar que entregou o pedido " + String(p.order_id).slice(0, 8).toUpperCase() + " ao cliente?")) return;
           b.disabled = true; b.textContent = "A enviar fotos…";
