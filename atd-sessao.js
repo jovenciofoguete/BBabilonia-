@@ -28,7 +28,10 @@ window.ATD_AUTH={auth:{storage:window.sessionStorage,storageKey:'bb-atd',persist
    - antes de entrar: escolher a área (1. Atendimento ao cliente · 2. Busca e verificação);
    - depois de entrar: cada agente vai sozinho para a sua área; o dono vê as duas opções.
    A área escolhida fica com uma bola verde ✓ e a palavra "Escolhida"; a outra fica cinzenta.
-   Dono sem impressão digital/PIN nesta entrada: aviso com botão para o atendimento no painel do dono. */
+   Dono sem impressão digital/PIN nesta entrada: aviso com botão para o atendimento no painel do dono.
+   (13/11/2026) Página inicial dos agentes (atendimento.html?inicio=1): as duas áreas, a sua aberta e a outra cinzenta.
+   Seta "←" no cabeçalho de cada área para voltar ao início, e o botão Voltar do telemóvel também volta ao início
+   (antes saía do site). */
 (function(){
  if(typeof document==="undefined"||window.__bbArea)return;window.__bbArea=1;
  if(/^(admin|administrator)\./i.test(location.hostname))return;
@@ -40,7 +43,42 @@ window.ATD_AUTH={auth:{storage:window.sessionStorage,storageKey:'bb-atd',persist
   '#bb-area a.on{background:#ecfdf5;color:#065f46;border-color:#16a34a;box-shadow:0 0 0 3px #16a34a33}'+
   '#bb-area .bola{position:absolute;top:-11px;right:-6px;width:28px;height:28px;border-radius:50%;background:#16a34a;color:#fff;font:900 16px/28px system-ui,sans-serif;text-align:center;border:3px solid #fff;box-shadow:0 2px 6px #0004}'+
   '#bb-area .esc{display:inline-block;margin-top:6px;padding:2px 10px;border-radius:999px;background:#16a34a;color:#fff;font:800 12px system-ui,sans-serif}'+
-  '#bb-area small{display:block;font-weight:600;font-size:12px;opacity:.85;margin-top:3px}';
+  '#bb-area small{display:block;font-weight:600;font-size:12px;opacity:.85;margin-top:3px}'+
+  '#bb-area span.off{position:relative;flex:1;display:block;text-align:center;border-radius:14px;padding:16px 8px 14px;font:800 15px system-ui,sans-serif;background:#e2e8f0;color:#94a3b8;border:3px dashed #cbd5e1}'+
+  '#bb-area .sair{display:block;margin:14px auto 0;padding:11px 26px;border:0;border-radius:12px;font:800 15px system-ui,sans-serif;background:#ef4444;color:#fff}'+
+  'body.bb-inicio main,body.bb-inicio #tabs,body.bb-inicio .bar button:not(#bb-ini),body.bb-inicio #eu{display:none!important}'+
+  '#bb-ini{flex:none;width:40px;height:40px;margin-right:10px;border:0;border-radius:50%;background:#ffffff33;color:#fff;font:900 22px/40px system-ui,sans-serif;text-align:center;cursor:pointer}'+
+  '.bb-tit{display:flex;align-items:center}';
+ var INICIO=new URLSearchParams(location.search).get('inicio')==='1';
+ var URL_INICIO='atendimento.html?inicio=1';
+ /* página inicial já com sessão: a área do agente aberta, a outra cinzenta */
+ function montarInicio(eq){
+  document.body.classList.add('bb-inicio');
+  var d=document.getElementById('bb-area');if(d)d.remove();
+  var main=document.querySelector('main');if(!main)return;
+  var ver=eq==='verificacao';
+  d=document.createElement('div');d.id='bb-area';
+  d.innerHTML='<div class="t">Escolha a sua área</div><div class="o">'+
+   (ver?'<span class="off">🎧 1. Atendimento ao cliente<small>Só para a equipa de atendimento</small></span>':opcao(true,'a1','atendimento.html','🎧 1. Atendimento ao cliente','A sua área: casos, conversas e verificações'))+
+   (ver?opcao(true,'a2','confirmar-produto.html','🛡️ 2. Busca e verificação','A sua área: lojas, fotos, vídeos e recolha'):'<span class="off">🛡️ 2. Busca e verificação<small>Só para a equipa de busca e verificação</small></span>')+
+   '</div><button class="sair" type="button" id="bb-ini-sair">🚪 Sair</button>';
+  main.parentNode.insertBefore(d,main);
+  d.querySelectorAll('.esc').forEach(function(x){x.textContent='● A sua área'});
+  document.getElementById('bb-ini-sair').onclick=async function(){try{await window.sb.auth.signOut()}catch(e){}location.replace('atendimento.html')};
+ }
+ /* seta "←" no cabeçalho e botão Voltar do telemóvel: voltar ao início */
+ var voltarPosto=false;
+ function ligarVoltar(){
+  var bar=document.querySelector('.bar'),h1=bar&&bar.querySelector('h1');
+  if(h1&&!document.getElementById('bb-ini')){
+   var b=document.createElement('button');b.id='bb-ini';b.type='button';b.setAttribute('aria-label','Voltar ao início');b.textContent='←';
+   b.onclick=function(){location.href=URL_INICIO};
+   var w=document.createElement('div');w.className='bb-tit';h1.parentNode.insertBefore(w,h1);w.appendChild(b);w.appendChild(h1);
+  }
+  if(voltarPosto)return;voltarPosto=true;
+  try{history.pushState({bbArea:1},'',location.href)}catch(e){}
+  window.addEventListener('popstate',function(){location.replace(URL_INICIO)});
+ }
  function opcao(liga,cls,href,titulo,sub){
   return '<a class="'+cls+(liga?' on':'')+'" href="'+href+'">'+(liga?'<span class="bola">✓</span>':'')+titulo+'<small>'+sub+'</small>'+(liga?'<span class="esc">● Escolhida</span>':'')+'</a>';
  }
@@ -69,13 +107,15 @@ window.ATD_AUTH={auth:{storage:window.sessionStorage,storageKey:'bb-atd',persist
   if(aRever)return;aRever=true;
   try{
    var s=(await window.sb.auth.getSession()).data.session;
-   if(!s){montar(true);return}
+   if(!s){document.body.classList.remove('bb-inicio');montar(true);return}
    var e=await window.sb.rpc('bb_equipa'),d=await window.sb.rpc('bb_eh_dono');
    var eq=(e&&e.data)||'',dono=!!(d&&d.data);
    if(dono){montar(true);if(naAtd)donoSemAcesso(0);return}
+   if(INICIO&&naAtd){montarInicio(eq);return}
    montar(false);
    if(eq==='verificacao'&&naAtd){location.replace('confirmar-produto.html');return}
    if(eq!=='verificacao'&&naVer){location.replace('atendimento.html');return}
+   ligarVoltar();
   }catch(x){montar(true)}
   finally{aRever=false}
  }
