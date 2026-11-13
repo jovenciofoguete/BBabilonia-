@@ -26,7 +26,7 @@ h2{font-size:21px;margin:6px 0}p{font-size:15px;color:#475569;line-height:1.5;ma
 <script>
 (function(){
 var URL_SB='https://dsfoqoeawvjafypycldz.supabase.co';
-var PROT=/^\/(painel-vendedor|painel-vendedor-v2|fornecedor-v3|fornecedor-novo|fornecedor|registar-produto|detalhes-fornecedor|loja-criar|loja-editar|fornecedor-envios|fornecedor-saldo|conta-bancaria|fornecedor-disputas|painel-admin|admin-bbabilonia|admin-lojas|admin-disputas|admin-fotos|gerar-formas|atendimento|agentes|respostas|conversas)\.html$/;
+var PROT=/^\/(painel-vendedor|painel-vendedor-v2|fornecedor-v3|fornecedor-novo|fornecedor|registar-produto|detalhes-fornecedor|loja-criar|loja-editar|fornecedor-envios|fornecedor-saldo|conta-bancaria|fornecedor-disputas|painel-admin|admin-bbabilonia|admin-lojas|admin-disputas|admin-fotos|gerar-formas|admin-agentes|admin-pins|admin-pedidos|confirmar-produto|atd-verificacoes|atendimento|agentes|respostas|conversas)\.html$/;
 var AGENTE=/^\/(atendimento|agentes|respostas|conversas)\.html$/;
 var RAIZ={'fornecedor.bbabilonia.com':'/painel-vendedor-v2.html','suppliers.bbabilonia.com':'/painel-vendedor-v2.html','supplies.bbabilonia.com':'/painel-vendedor-v2.html',
  'admin.bbabilonia.com':'/painel-admin.html','administrator.bbabilonia.com':'/painel-admin.html','atendimento.bbabilonia.com':'/atendimento.html','service.bbabilonia.com':'/atendimento.html'};
@@ -91,6 +91,7 @@ async function abrir(){
  aberto=true;f.style.visibility='hidden';cx.classList.remove('hide');
  var s=sessao();aVer=s&&s.sid;
  ecra('🔐','Verificação em 2 passos','A carregar…','');
+ if(window.__bbTr){try{await window.__bbTr}catch(e){}window.__bbTr=null}
  if(!window.PublicKeyCredential){ecra('⚠️','Navegador sem suporte','Este navegador não aceita chaves de acesso. Abra o painel no Chrome, Edge ou Safari atualizado.','');return}
  try{
   var p=await pinApi('estado');
@@ -233,8 +234,32 @@ f.addEventListener('load',function(){
   if(w.document.title)document.title=w.document.title}catch(e){}
  vigiar();
 });
+/* 13/11/2026 — painel do DONO (administrator.bbabilonia.com): fecha-se sozinho ao sair dele.
+   Voltar para outro site, fechar o separador, recarregar ou 15 minutos sem mexer: volta a pedir a impressão digital e o PIN
+   (no aparelho e no servidor). Assim, ninguém vê o painel do dono só por tocar em "voltar" noutro domínio. */
+if(/^(admin|administrator)\./i.test(location.hostname)){
+ var TRK='bb-adm-trancar',LIM_ADM=15*60*1000,ultimo=Date.now();
+ var tirarOk=function(sid){try{localStorage.setItem(OKK,JSON.stringify(oks().filter(function(x){return x!==sid})))}catch(e){}};
+ var trancarServ=function(s,manter){return fetch('/api/pin-2fa',{method:'POST',keepalive:!!manter,headers:{'Content-Type':'application/json',Authorization:'Bearer '+s.tok},body:'{"acao":"trancar"}'})
+  .then(function(r){if(r.ok)try{if(localStorage.getItem(TRK)===s.sid)localStorage.removeItem(TRK)}catch(e){}})};
+ var trancar=function(manter){var s=sessao();if(!s||!s.sid)return null;tirarOk(s.sid);try{localStorage.setItem(TRK,s.sid)}catch(e){}return trancarServ(s,manter).catch(function(){})};
+ /* trancagem que ficou por confirmar no servidor (ex.: telemóvel sem rede ao sair): faz antes de abrir o painel */
+ var pendente=function(){var s=sessao(),t='';try{t=localStorage.getItem(TRK)||''}catch(e){}if(s&&t&&t===s.sid){tirarOk(s.sid);window.__bbTr=trancarServ(s,false).catch(function(){})}};
+ pendente();
+ window.addEventListener('pagehide',function(){trancar(true)});
+ window.addEventListener('pageshow',function(e){if(e.persisted){pendente();ultimo=Date.now();vigiar()}});
+ var mexeu=function(){ultimo=Date.now()};
+ var ouvir=function(d){['click','keydown','touchstart','scroll','input','mousemove'].forEach(function(n){try{d.addEventListener(n,mexeu,{passive:true,capture:true})}catch(e){}})};
+ ouvir(document);
+ f.addEventListener('load',function(){try{ouvir(f.contentWindow.document)}catch(e){}});
+ setInterval(function(){
+  if(aberto){ultimo=Date.now();return}
+  if(Date.now()-ultimo>LIM_ADM&&sessao()&&!falta()){window.__bbTr=trancar(false);vigiar()}
+ },5000);
+}
 if(falta()){faltaAntes=true;abrir()}
 f.src=location.pathname+location.search+location.hash;
+
 setInterval(function(){var s=sessao();if(aberto&&s&&s.sid!==aVer){aberto=false}vigiar()},1000);
 })();
 </script>

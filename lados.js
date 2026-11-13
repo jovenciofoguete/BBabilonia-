@@ -3,14 +3,17 @@
    suppliers.bbabilonia.com      → só o lado do FORNECEDOR e dos funcionários dele
    administrator.bbabilonia.com  → só o lado do DONO
    service.bbabilonia.com        → só o lado dos AGENTES de atendimento
+   13/11/2026: admin-agentes e admin-pins só no dono; meus-dados, confirmar-produto e atd-verificacoes nunca no cliente nem no fornecedor.
    Usado pelo ir-lado.html (páginas abertas no domínio errado) e pelos avisos (sino e páginas de avisos). */
 (function () {
   if (window.BBLado) return;
   var VENDEDOR = ['painel-vendedor', 'painel-vendedor-v2', 'fornecedor', 'fornecedor-novo', 'fornecedor-v3', 'fornecedor-envios',
     'fornecedor-saldo', 'fornecedor-disputas', 'fornecedor-pedidos-clientes', 'registar-produto', 'detalhes-fornecedor', 'loja-criar',
     'loja-editar', 'conta-bancaria', 'avisos-vendedor', 'produto-vendedor', 'importar-loja-v7', 'gongyingshang', 'fabrica'];
-  var DONO = ['painel-admin', 'admin-bbabilonia', 'admin-lojas', 'admin-disputas', 'admin-fotos', 'admin-pedidos', 'admin', 'gerar-formas'];
-  var AGENTE = ['atendimento', 'agentes', 'respostas', 'conversas'];
+  var DONO = ['painel-admin', 'admin-bbabilonia', 'admin-lojas', 'admin-disputas', 'admin-fotos', 'admin-pedidos', 'admin', 'gerar-formas', 'admin-agentes', 'admin-pins'];
+  var AGENTE = ['atendimento', 'agentes', 'respostas', 'conversas', 'meus-dados'];
+  /* páginas das equipas de agentes que o dono também usa no seu domínio (13/11/2026) */
+  var SERVICO = ['confirmar-produto', 'atd-verificacoes'];
   var CLIENTE = ['index', 'carrinho', 'checkout', 'finalizar', 'conta', 'moradas', 'moradas-v2', 'moradas-v3', 'minhas-moradas',
     'enderecos-entrega', 'pedidos', 'avisos', 'avaliar', 'minhas-disputas', 'pagamento-ok', 'pagar-link', 'pagar-link-v2',
     'pagar-link-seguro', 'produto-bbabilonia', 'produto-loja', 'produto2', 'produto-quadro', 'busca-imagem-v2', 'busca-imagem-v3',
@@ -35,8 +38,8 @@
   }
   /* páginas proibidas em cada domínio */
   function proibidas(lado) {
-    if (lado === 'cliente') return VENDEDOR.concat(DONO, AGENTE);
-    if (lado === 'vendedor') return CLIENTE.concat(DONO, AGENTE);
+    if (lado === 'cliente') return VENDEDOR.concat(DONO, AGENTE, SERVICO);
+    if (lado === 'vendedor') return CLIENTE.concat(DONO, AGENTE, SERVICO);
     if (lado === 'dono') return CLIENTE.concat(VENDEDOR, ['loja', 'chat', 'chat-novo', 'chat-novo2', 'live']);
     return CLIENTE.concat(VENDEDOR, DONO, LOJA_CLIENTE);       // agente
   }
@@ -44,7 +47,7 @@
   function donoDaPagina(p) {
     if (tem(VENDEDOR, p)) return 'vendedor';
     if (tem(DONO, p)) return 'dono';
-    if (tem(AGENTE, p)) return 'agente';
+    if (tem(AGENTE, p) || tem(SERVICO, p)) return 'agente';
     if (tem(CLIENTE, p) || tem(LOJA_CLIENTE, p)) return 'cliente';
     return null;
   }
@@ -84,5 +87,5 @@
   }
 
   window.BBLado = { ladoDoHost: ladoDoHost, pagina: pagina, proibidas: proibidas, donoDaPagina: donoDaPagina, dominio: DOM,
-    ladoDoAviso: ladoDoAviso, filtrar: filtrar, listas: { VENDEDOR: VENDEDOR, DONO: DONO, AGENTE: AGENTE, CLIENTE: CLIENTE, LOJA_CLIENTE: LOJA_CLIENTE } };
+    ladoDoAviso: ladoDoAviso, filtrar: filtrar, listas: { VENDEDOR: VENDEDOR, DONO: DONO, AGENTE: AGENTE, SERVICO: SERVICO, CLIENTE: CLIENTE, LOJA_CLIENTE: LOJA_CLIENTE } };
 })();
