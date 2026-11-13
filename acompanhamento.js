@@ -5,8 +5,8 @@
    - Atendimento e dono (atd-verificacoes.html): veem todos e tocam em "✅ Confirmar entrega".
    Em cada pedido: quem verificou, quem confirmou no atendimento, recolha, entrega e confirmação.
    13/11/2026 — Envio pela transportadora (quando o cliente não é entregue em mão):
-   - o agente manda a cotação (transportadora, valor do envio, taxa de serviço); o número M-Pesa/e-Mola e o nome
-     do recetor vêm sozinhos (escritos pelo dono em 👥 Agentes);
+   - o agente abre o 💬 chat do pedido e toca em "Enviar dados de pagamento do transporte" (transportadora, valor,
+     taxa); o número M-Pesa/e-Mola e o nome do recetor vão sozinhos (escritos pelo dono em 👥 Agentes);
    - o cliente transfere fora da plataforma e carrega as provas (foto + texto); o atendimento confirma;
    - o agente de busca marca "📦 Enviado" com a foto do talão e o nº de rastreamento. */
 (function () {
@@ -35,6 +35,13 @@
     ".ac-env input{width:100%;box-sizing:border-box;margin-top:6px;padding:11px;border:2px solid #e2e8f0;border-radius:10px;font:inherit;font-size:15px}" +
     ".ac-env .ac-lb{font-size:12.5px;color:#475569;margin-top:8px;font-weight:700}.ac-env .ac-pg{font-size:13.5px;background:#eef2ff;border-radius:10px;padding:8px 10px;margin-top:8px;line-height:1.5}" +
     ".ac-env .ac-dois{display:flex;gap:8px}.ac-env .ac-dois .ac-bt{flex:1}.ac-bt.r{background:#ef4444}.ac-env .ac-tx{font-size:13.5px;background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:8px;margin-top:6px;white-space:pre-line}" +
+    ".ac-ch{margin-top:10px;border:1px solid #e2e8f0;border-radius:14px;background:#fff;padding:10px}.ac-ms{max-height:380px;overflow:auto;display:flex;flex-direction:column;gap:8px}" +
+    ".ac-b{max-width:86%;padding:9px 12px;border-radius:14px;font-size:14px;line-height:1.45;white-space:pre-wrap;word-break:break-word}.ac-b.eu{align-self:flex-end;background:#dbeafe;color:#1e3a8a}" +
+    ".ac-b.ou{align-self:flex-start;background:#f1f5f9}.ac-b small{display:block;font-size:11.5px;color:#64748b;margin-top:3px}.ac-b .nm{display:block;font-weight:800;font-size:12.5px;color:#0f766e}" +
+    ".ac-sis{align-self:center;font-size:12.5px;color:#475569;background:#e2e8f0;border-radius:10px;padding:6px 10px;text-align:center}" +
+    ".ac-dp{align-self:stretch;border:2px solid #16a34a;border-radius:12px;padding:10px;font-size:14px;background:#f0fdf4}" +
+    ".ac-es{display:flex;gap:6px;margin-top:8px}.ac-es input{flex:1;min-width:0;margin:0!important}.ac-es button{border:0;border-radius:10px;padding:0 14px;font:inherit;font-weight:800;background:#0ea5e9;color:#fff}" +
+    ".ac-df{margin-top:8px;border:2px solid #16a34a;border-radius:12px;padding:10px;background:#f0fdf4}" +
     ".ac-m{font-size:14px;margin-top:8px;color:#dc2626;white-space:pre-line}.ac-m.ok{color:#059669}.ac-vz{text-align:center;color:#64748b;padding:30px 10px}";
   document.head.appendChild(css);
 
@@ -79,30 +86,25 @@
     return h + "</div>";
   }
 
-  /* número de pagamento do envio, sempre visível para as equipas (só o dono o escreve) */
-  function numeroEnvio(def) {
-    def = def || {};
-    if (!def.nome_recetor) return '<div class="ac-c"><div class="ac-pg" style="background:#fff7ed">💳 O dono ainda não escreveu o número de pagamento do envio. Sem ele não é possível mandar cotações.</div></div>';
-    return '<div class="ac-c"><b>💳 Número para o cliente pagar o envio</b><div class="ac-cx">' +
-      (def.mpesa_numero ? "M-Pesa: <b>" + esc(def.mpesa_numero) + "</b><br>" : "") + (def.emola_numero ? "e-Mola: <b>" + esc(def.emola_numero) + "</b><br>" : "") +
-      "Nome do recetor: <b>" + esc(def.nome_recetor) + "</b></div><small style=\"color:#64748b\">Só o dono da plataforma pode mudar estes dados.</small></div>";
-  }
   function envioHtml(env, def, modo) {
     def = def || {};
-    var pg = (def.mpesa_numero ? "M-Pesa <b>" + esc(def.mpesa_numero) + "</b>" : "") + (def.mpesa_numero && def.emola_numero ? " · " : "") +
-      (def.emola_numero ? "e-Mola <b>" + esc(def.emola_numero) + "</b>" : "");
     var h = '<div class="ac-env"><h5>🚚 Envio pela transportadora</h5>';
-    if (!env || env.estado === "aguarda_pagamento") {
-      if (env) h += '<div class="ac-pg">⏳ Cotação enviada ao cliente: ' + din(env.valor_envio, env.moeda) + " + taxa " + din(env.taxa_servico, env.moeda) +
-        " = <b>" + din(env.total, env.moeda) + "</b> (" + esc(env.transportadora || "") + ")." + (env.recusa_motivo ? "<br>⚠️ Pagamento recusado: " + esc(env.recusa_motivo) : "<br>À espera que o cliente pague e carregue as provas.") + "</div>";
-      if (!pg || !def.nome_recetor) return h + '<div class="ac-pg">⚠️ O dono ainda não escreveu os números de pagamento do envio. Peça ao dono para os escrever em 👥 Agentes.</div></div>';
-      h += (env ? '<div class="ac-lb" style="margin-top:12px">Corrigir a cotação</div>' : '<div class="ac-lb">Depois de a transportadora dizer o preço, mande a cotação ao cliente:</div>') +
-        '<input data-env="transp" placeholder="Transportadora (ex.: Nhamaz, Etrago…)" value="' + esc(env ? env.transportadora : "") + '">' +
-        '<input data-env="valor" type="number" inputmode="decimal" min="0" step="any" placeholder="Valor do envio cobrado pela transportadora" value="' + esc(env ? env.valor_envio : "") + '">' +
+    var podeDados = !env || env.estado === "aguarda_pagamento";
+    if (!env) h += '<div class="ac-pg">Depois de a transportadora dizer o preço, abra o chat e toque em "Enviar dados de pagamento do transporte".</div>';
+    else if (env.estado === "aguarda_pagamento") h += '<div class="ac-pg">⏳ Dados de pagamento enviados no chat: <b>' + din(env.total, env.moeda) + "</b> (" + esc(env.transportadora || "") + ")." +
+      (env.recusa_motivo ? "<br>⚠️ Pagamento recusado: " + esc(env.recusa_motivo) : "<br>À espera que o cliente pague e carregue as provas.") + "</div>";
+    h += '<button class="ac-bt" data-acx="chat">💬 Chat com o cliente</button>' +
+      '<div class="ac-ch" data-chat style="display:none"><div class="ac-ms"><div class="ac-sis">A carregar…</div></div>' +
+      (podeDados ? (!def.nome_recetor ? '<div class="ac-pg">⚠️ O dono ainda não escreveu os dados de pagamento do transporte.</div>' :
+        '<button class="ac-bt v" data-acx="dados">📨 Enviar dados de pagamento do transporte</button>' +
+        '<div class="ac-df" data-df style="display:none"><input data-env="transp" placeholder="Transportadora (ex.: Nhamaz, Etrago…)" value="' + esc(env ? env.transportadora : "") + '">' +
+        '<input data-env="valor" type="number" inputmode="decimal" min="0" step="any" placeholder="Valor do transporte cobrado pela transportadora" value="' + esc(env ? env.valor_envio : "") + '">' +
         '<div class="ac-lb">Taxa de serviço</div><input data-env="taxa" type="number" inputmode="decimal" min="0" step="any" value="' + esc(env ? env.taxa_servico : (def.taxa_servico || 0)) + '">' +
-        '<div class="ac-pg">💳 O cliente paga para: ' + pg + "<br>Nome do recetor: <b>" + esc(def.nome_recetor) + "</b><br><small>Escrito pelo dono da plataforma.</small></div>" +
-        '<button class="ac-bt" data-acx="cotar">📨 ' + (env ? "Mandar a cotação corrigida" : "Mandar a cotação ao cliente") + "</button>";
-    } else if (env.estado === "pago_cliente") {
+        '<div class="ac-lb">Os números de pagamento e o nome do recetor vão sozinhos na mensagem.</div>' +
+        '<button class="ac-bt v" data-acx="cotar">📨 Enviar ao cliente</button></div>') : "") +
+      '<div class="ac-es"><input data-chatin placeholder="Escreva ao cliente" maxlength="1000"><button type="button" data-acx="chatenv">Enviar</button></div></div>';
+    if (podeDados) return h + "</div>";
+    if (env.estado === "pago_cliente") {
       h += '<div class="ac-pg">💰 O cliente carregou as provas da transferência (' + (env.cliente_meio === "emola" ? "e-Mola" : "M-Pesa") + ") de <b>" + din(env.total, env.moeda) + "</b> · " + esc(dt(env.cliente_pagou_em)) + "</div>" +
         '<div class="ac-md" data-provas="' + esc(JSON.stringify(arr(env.cliente_fotos))) + '"></div>' +
         (env.cliente_ref ? '<div class="ac-tx">' + esc(env.cliente_ref) + "</div>" : "");
@@ -116,6 +118,37 @@
           '<button class="ac-bt v" data-acx="enviado">📦 Enviado</button>';
     } else return "";
     return h + "</div>";
+  }
+
+  function chatMsg(m) {
+    var t = esc(dt(m.criado_em));
+    if (m.tipo === "aviso") return '<div class="ac-sis">' + esc(m.texto) + "<br>" + t + "</div>";
+    if (m.tipo === "dados_pagamento") {
+      var x = m.dados || {};
+      return '<div class="ac-dp"><b>📨 Dados de pagamento do transporte enviados</b><br>' + esc(x.transportadora || "") + ": " + din(x.valor_envio, x.moeda) + " + taxa " + din(x.taxa_servico, x.moeda) +
+        " = <b>" + din(x.total, x.moeda) + "</b><br><small>" + (m.nome ? esc(m.nome) + " · " : "") + t + "</small></div>";
+    }
+    if (m.tipo === "provas") return '<div class="ac-b ou"><span class="nm">Cliente</span><b>📤 Provas de pagamento</b> (' + ((m.dados || {}).meio === "emola" ? "e-Mola" : "M-Pesa") + ')' +
+      '<div class="ac-md" data-provas="' + esc(JSON.stringify((m.dados || {}).fotos || [])) + '"></div>' + esc(m.texto) + "<small>" + t + "</small></div>";
+    var eu = m.autor !== "cliente";
+    return '<div class="ac-b ' + (eu ? "eu" : "ou") + '"><span class="nm">' + (eu ? esc(m.nome || "Agente") : "Cliente") + "</span>" + esc(m.texto) + "<small>" + t + "</small></div>";
+  }
+  async function provasImg(sb, raiz) {
+    raiz.querySelectorAll("[data-provas]").forEach(async function (bx) {
+      if (bx.getAttribute("data-ok")) return; bx.setAttribute("data-ok", "1");
+      var l = []; try { l = JSON.parse(bx.getAttribute("data-provas")) || []; } catch (e) {}
+      for (var k = 0; k < l.length; k++) {
+        try { var u = await sb.storage.from("provas-envio").createSignedUrl(l[k], 3600);
+          if (u.data && u.data.signedUrl) bx.insertAdjacentHTML("beforeend", '<a href="' + esc(u.data.signedUrl) + '" target="_blank" rel="noopener"><img src="' + esc(u.data.signedUrl) + '" alt="Comprovativo"></a>'); } catch (e) {}
+      }
+    });
+  }
+  async function carregarChat(sb, ch, pid) {
+    var ms = ch.querySelector(".ac-ms"), r = await sb.rpc("envio_chat_ver", { p_order: pid });
+    if (r.error) { ms.innerHTML = '<div class="ac-sis">' + esc(r.error.message) + "</div>"; return; }
+    var L = r.data || [];
+    ms.innerHTML = L.length ? L.map(chatMsg).join("") : '<div class="ac-sis">Ainda não há mensagens.</div>';
+    ms.scrollTop = ms.scrollHeight; provasImg(sb, ms);
   }
 
   async function enviarFoto(sb, pid, file) {
@@ -135,15 +168,9 @@
     if (L.length) {
       try { var e1 = await sb.rpc("envio_equipa_lista", { p_orders: L.map(function (p) { return p.order_id; }) }); if (!e1.error && e1.data) ENV = e1.data; } catch (e) {}
     }
-    el.innerHTML = numeroEnvio(DEF) + (L.length ? L.map(function (p, i) { return caixa(p, i, modo, ENV[String(p.order_id)], DEF); }).join("") :
+    el.innerHTML = (L.length ? L.map(function (p, i) { return caixa(p, i, modo, ENV[String(p.order_id)], DEF); }).join("") :
       '<div class="ac-c ac-vz">' + (modo === "verificacao" ? "Ainda não há pedidos seus para acompanhar." : "Não há pedidos em acompanhamento.") + "</div>");
-    el.querySelectorAll("[data-provas]").forEach(async function (bx) {
-      var l = []; try { l = JSON.parse(bx.getAttribute("data-provas")) || []; } catch (e) {}
-      for (var k = 0; k < l.length; k++) {
-        try { var u = await sb.storage.from("provas-envio").createSignedUrl(l[k], 3600);
-          if (u.data && u.data.signedUrl) bx.insertAdjacentHTML("beforeend", '<a href="' + esc(u.data.signedUrl) + '" target="_blank" rel="noopener"><img src="' + esc(u.data.signedUrl) + '" alt="Comprovativo"></a>'); } catch (e) {}
-      }
-    });
+    provasImg(sb, el);
     el.querySelectorAll("[data-ac]").forEach(function (c) {
       var i = +c.getAttribute("data-ac"), p = L[i], m = c.querySelector(".ac-m");
       c.addEventListener("change", function (e) {
@@ -156,16 +183,30 @@
         m.className = "ac-m"; m.textContent = "";
         var acx = b.getAttribute("data-acx"), ok = function (t) { m.className = "ac-m ok"; m.textContent = t; setTimeout(function () { carregar(sb, el, modo); }, 1500); };
         var campo = function (n) { var x = c.querySelector('[data-env="' + n + '"]'); return x ? x.value.trim() : ""; };
+        if (acx === "chat") {
+          var ch = c.querySelector("[data-chat]"), abre = ch.style.display === "none";
+          ch.style.display = abre ? "" : "none"; b.textContent = abre ? "💬 Fechar o chat" : "💬 Chat com o cliente";
+          if (abre) carregarChat(sb, ch, p.order_id);
+          return;
+        }
+        if (acx === "dados") { var df = c.querySelector("[data-df]"); df.style.display = df.style.display === "none" ? "" : "none"; return; }
+        if (acx === "chatenv") {
+          var inp = c.querySelector("[data-chatin]"), tx0 = inp.value.trim(); if (!tx0) return;
+          b.disabled = true; var q0 = await sb.rpc("envio_chat_enviar", { p_order: p.order_id, p_texto: tx0 }); b.disabled = false;
+          if (q0.error) { m.textContent = q0.error.message; return; }
+          inp.value = ""; carregarChat(sb, c.querySelector("[data-chat]"), p.order_id);
+          return;
+        }
         if (acx === "cotar") {
           var tr = campo("transp"), vl = Number(campo("valor").replace(",", ".")), tx = Number((campo("taxa") || "0").replace(",", "."));
           if (!tr) { m.textContent = "Escreva o nome da transportadora."; return; }
           if (!(vl > 0)) { m.textContent = "Escreva o valor do envio cobrado pela transportadora."; return; }
           if (!(tx >= 0)) { m.textContent = "A taxa de serviço não pode ser negativa."; return; }
-          if (!confirm("Mandar ao cliente: envio " + din(vl, p.moeda) + " + taxa " + din(tx, p.moeda) + " = " + din(vl + tx, p.moeda) + "?")) return;
+          if (!confirm("Enviar ao cliente no chat: transporte " + din(vl, p.moeda) + " + taxa " + din(tx, p.moeda) + " = " + din(vl + tx, p.moeda) + "?")) return;
           b.disabled = true;
           var q1 = await sb.rpc("envio_cotar", { p_order: p.order_id, p_transportadora: tr, p_valor: vl, p_taxa: tx });
           if (q1.error) { b.disabled = false; m.textContent = q1.error.message; return; }
-          ok("📨 Cotação enviada. O cliente foi avisado.");
+          ok("📨 Dados de pagamento enviados no chat. O cliente foi avisado.");
           return;
         }
         if (acx === "pagok" || acx === "pagno") {
