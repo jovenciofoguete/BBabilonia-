@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Pagar por levantamento | BBabilônia</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:system-ui,Arial,sans-serif;background:#f1f5f9;color:#0f172a;color-scheme:light}
+header{background:linear-gradient(135deg,#10b981,#0ea5e9 55%,#2563eb);color:#fff;padding:18px 16px 44px}
+header h1{margin:0;font-size:21px}header p{margin:4px 0 0;font-size:13.5px;opacity:.95}
+main{max-width:540px;margin:-28px auto 0;padding:0 14px 40px}
+.box{background:#fff;border-radius:16px;padding:16px;margin-bottom:14px;box-shadow:0 4px 14px #0f172a12}
+.box h2{margin:0 0 8px;font-size:16px}
+.tot{font-size:24px;font-weight:900;color:#065f46;margin:4px 0}
+.frase{margin:8px 0 0;padding:10px 12px;border-radius:10px;background:#ecfdf5;color:#065f46;font-weight:700;font-size:14.5px;line-height:1.45}
+.num{display:flex;align-items:center;gap:10px;border:2px solid #e2e8f0;border-radius:12px;padding:12px;margin:10px 0}
+.num .t{flex:1;min-width:0}.num b{display:block;font-size:20px;letter-spacing:.5px}.num small{display:block;color:#475569;font-size:13.5px}
+.num .tg{font-size:13px;font-weight:800;color:#be123c}.num.em .tg{color:#c2410c}
+.num button{border:0;border-radius:10px;padding:10px 12px;background:#e0f2fe;color:#075985;font-weight:800;font-size:14px}
+ol{margin:6px 0 0;padding-left:20px;font-size:14px;line-height:1.55;color:#334155}
+label.r{display:flex;gap:10px;align-items:center;border:2px solid #e2e8f0;border-radius:12px;padding:11px;margin:8px 0;font-size:15px;font-weight:700}
+label.r.on{border-color:#0ea5e9;background:#f0f9ff}label.r input{width:20px;height:20px}
+.cp{display:block;font-size:14px;font-weight:700;margin:12px 0 4px;color:#334155}
+textarea,input[type=email],input[type=password]{width:100%;padding:12px;border:2px solid #e2e8f0;border-radius:12px;font-size:16px;font-family:inherit}
+input[type=file]{width:100%;font-size:15px}
+.fotos{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.fotos img{width:70px;height:70px;object-fit:cover;border-radius:8px}
+.ok{width:100%;margin-top:14px;padding:15px;border:0;border-radius:14px;background:linear-gradient(90deg,#10b981,#0ea5e9);color:#fff;font-size:16px;font-weight:800}
+.ok:disabled{opacity:.5}
+.err{color:#dc2626;font-size:14px;margin-top:8px;min-height:18px;white-space:pre-line}
+.estado{padding:12px;border-radius:12px;font-size:15px;line-height:1.5;font-weight:700}
+.estado.esp{background:#fef3c7;color:#92400e}.estado.sim{background:#d1fae5;color:#065f46}.estado.nao{background:#ffe4e6;color:#9f1239}
+a.lk{display:block;text-align:center;margin-top:12px;color:#0b57d0;font-size:15px}
+.hide{display:none}
+</style>
+</head>
+<body>
+<header><h1>💵 Pagar por levantamento</h1><p>M-Pesa ou e-Mola, direto à BBabilônia.</p></header>
+<main>
+ <div id="login" class="box hide"><h2>Entre na sua conta</h2>
+  <input id="em" type="email" placeholder="Email" autocomplete="username" style="margin-bottom:8px"><input id="pw" type="password" placeholder="Palavra-passe" autocomplete="current-password">
+  <button class="ok" id="ent">Entrar</button><div class="err" id="lmsg"></div></div>
+ <div id="app" class="hide">
+  <div class="box"><div id="res">A carregar…</div></div>
+  <div class="box" id="estadoBox" style="display:none"><div id="estado"></div></div>
+  <div class="box" id="numBox" style="display:none">
+   <h2>1. Faça o levantamento / transferência para a BBabilônia</h2>
+   <div id="nums"></div>
+   <ol><li>Envie <b id="valor2"></b> para um destes números.</li><li>Guarde a mensagem (SMS) de confirmação e tire uma foto ou captura de ecrã.</li><li>Carregue as provas aqui em baixo.</li></ol>
+  </div>
+  <div class="box" id="formBox" style="display:none">
+   <h2>2. Carregar provas do pagamento</h2>
+   <div id="meios"></div>
+   <span class="cp">📷 Foto ou captura de ecrã do comprovativo (até 5)</span>
+   <input id="fx" type="file" accept="image/*" multiple>
+   <div class="fotos" id="prev"></div>
+   <span class="cp">✍️ Texto da transferência (cole a mensagem que recebeu por SMS)</span>
+   <textarea id="ref" rows="4" maxlength="1000" placeholder="Ex.: Confirmado ABC123XYZ. Transferiste 1500.00MT para ..."></textarea>
+   <button class="ok" id="enviar">📤 Enviar provas</button>
+   <div class="err" id="msg"></div>
+  </div>
+  <a class="lk" href="pedidos.html">← Os meus pedidos</a>
+ </div>
+</main>
+<script>
+var sb=supabase.createClient('https://dsfoqoeawvjafypycldz.supabase.co','sb_publishable_BN4NiVcDab9CqdTY_odgDA_uUOhjja0');
+function $(i){return document.getElementById(i)}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function din(v,m){return Number(v||0).toLocaleString('pt-PT',{maximumFractionDigits:2})+' '+(m||'MZN')}
+function tel(n){n=String(n||'');return n.length===9?n.slice(0,2)+' '+n.slice(2,5)+' '+n.slice(5):n}
+var PED=new URLSearchParams(location.search).get('pedido'),eu=null,D=null,FOTOS=[];
+var TXT='Pagar com levantamento direto na BBabilônia e a BBabilônia paga o fornecedor.';
+async function abrir(){
+ var s=(await sb.auth.getSession()).data.session;eu=s?s.user:null;
+ $('login').classList.toggle('hide',!!eu);$('app').classList.toggle('hide',!eu);
+ if(!eu)return;
+ if(!PED){$('res').textContent='Pedido não indicado.';return}
+ var r=await sb.rpc('levantamento_ver',{p_order:PED});
+ if(r.error){$('res').innerHTML='<div class="err">'+esc(/function|find|exist/i.test(r.error.message)?'O pagamento por levantamento ainda não está disponível. Tente mais tarde.':r.error.message)+'</div>';return}
+ D=r.data||{};pintar();
+}
+function pintar(){
+ var itens=[];try{itens=(typeof D.itens==='string'?JSON.parse(D.itens):D.itens)||[]}catch(e){}
+ $('res').innerHTML='<div style="font-size:13.5px;color:#475569">Pedido #'+esc(D.pedido)+'</div>'+
+  (itens.length?'<div style="font-size:14px;margin-top:4px">'+itens.map(function(i){return esc(i.nome||i.name||'Produto')+' × '+esc(i.qtd||1)}).join('<br>')+'</div>':'')+
+  '<div class="tot">'+din(D.total,D.moeda)+'</div><div class="frase">💵 '+TXT+'</div>';
+ $('valor2').textContent=din(D.total,D.moeda);
+ var est=$('estado'),eb=$('estadoBox');eb.style.display='none';
+ var temNum=!!(D.mpesa_numero||D.emola_numero);
+ var mostrarForm=!D.pago&&!D.cancelado&&temNum&&D.estado!=='por_confirmar'&&D.estado!=='confirmado';
+ if(D.pago){eb.style.display='block';est.className='estado sim';est.innerHTML='✅ Pagamento confirmado. Um agente da BBabilônia vai à loja verificar os produtos.'}
+ else if(D.cancelado){eb.style.display='block';est.className='estado nao';est.textContent='Este pedido foi cancelado.'}
+ else if(D.estado==='por_confirmar'){eb.style.display='block';est.className='estado esp';est.innerHTML='⏳ Provas enviadas'+(D.meio?' ('+(D.meio==='emola'?'e-Mola':'M-Pesa')+')':'')+'. A BBabilônia está a confirmar se o dinheiro entrou. Vai receber um aviso 🔔.'}
+ else if(D.estado==='recusado'){eb.style.display='block';est.className='estado nao';est.innerHTML='⚠️ Pagamento não confirmado: '+esc(D.motivo||'')+'<br>Carregue as provas de novo.'}
+ else if(!temNum){eb.style.display='block';est.className='estado esp';est.textContent='A BBabilônia ainda não pôs os números de pagamento. Tente daqui a pouco ou fale com o atendimento.'}
+ var h='';
+ if(D.mpesa_numero)h+='<div class="num mp"><div class="t"><span class="tg">📱 M-Pesa</span><b>'+esc(tel(D.mpesa_numero))+'</b><small>Nome: '+esc(D.mpesa_nome)+'</small></div><button type="button" data-cp="'+esc(D.mpesa_numero)+'">Copiar</button></div>';
+ if(D.emola_numero)h+='<div class="num em"><div class="t"><span class="tg">📱 e-Mola</span><b>'+esc(tel(D.emola_numero))+'</b><small>Nome: '+esc(D.emola_nome)+'</small></div><button type="button" data-cp="'+esc(D.emola_numero)+'">Copiar</button></div>';
+ $('nums').innerHTML=h;$('numBox').style.display=(temNum&&!D.pago&&!D.cancelado&&D.estado!=='por_confirmar')?'block':'none';
+ var m='';
+ if(D.mpesa_numero)m+='<label class="r"><input type="radio" name="meio" value="mpesa">Paguei por M-Pesa</label>';
+ if(D.emola_numero)m+='<label class="r"><input type="radio" name="meio" value="emola">Paguei por e-Mola</label>';
+ $('meios').innerHTML=m;$('formBox').style.display=mostrarForm?'block':'none';
+ document.querySelectorAll('input[name=meio]').forEach(function(x){x.onchange=function(){document.querySelectorAll('label.r').forEach(function(l){l.classList.toggle('on',l.querySelector('input').checked)})}});
+ if(document.querySelectorAll('input[name=meio]').length===1){var u=document.querySelector('input[name=meio]');u.checked=true;u.onchange()}
+}
+$('nums').addEventListener('click',function(e){var b=e.target.closest('[data-cp]');if(!b)return;var t=b.getAttribute('data-cp');
+ (navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(function(){b.textContent='✔ Copiado'},function(){b.textContent=tel(t)});setTimeout(function(){b.textContent='Copiar'},2500)});
+$('fx').onchange=function(){
+ var fs=Array.prototype.slice.call(this.files||[]),m=$('msg');m.textContent='';
+ if(fs.length>5){m.textContent='No máximo 5 fotos.';fs=fs.slice(0,5)}
+ FOTOS=fs.filter(function(f){return /^image\//.test(f.type)&&f.size<=10*1024*1024});
+ if(FOTOS.length<fs.length)m.textContent='Algumas fotos não foram aceites (só imagens até 10 MB).';
+ $('prev').innerHTML='';FOTOS.forEach(function(f){var i=document.createElement('img');i.src=URL.createObjectURL(f);$('prev').appendChild(i)});
+};
+$('enviar').onclick=async function(){
+ var b=this,m=$('msg');m.textContent='';
+ var meio=(document.querySelector('input[name=meio]:checked')||{}).value,ref=$('ref').value.trim();
+ if(!meio){m.textContent='Escolha se pagou por M-Pesa ou por e-Mola.';return}
+ if(!FOTOS.length){m.textContent='Carregue a foto do comprovativo da transferência.';return}
+ if(ref.length<10){m.textContent='Cole ou escreva o texto da transferência (a mensagem que recebeu por SMS).';return}
+ b.disabled=true;b.textContent='A enviar…';
+ try{
+  var caminhos=[];
+  for(var i=0;i<FOTOS.length;i++){
+   var f=FOTOS[i],ext=(f.type.split('/')[1]||'jpg').replace('jpeg','jpg').replace(/[^a-z0-9]/g,'');
+   var c=eu.id+'/'+PED+'/lev-'+Date.now()+'-'+i+'.'+ext;
+   var up=await sb.storage.from('provas-envio').upload(c,f,{contentType:f.type,upsert:false});
+   if(up.error)throw new Error('Não foi possível carregar a foto: '+up.error.message);
+   caminhos.push(c);
+  }
+  var r=await sb.rpc('levantamento_enviar',{p_order:PED,p_meio:meio,p_ref:ref,p_fotos:caminhos});
+  if(r.error)throw new Error(r.error.message);
+  FOTOS=[];$('prev').innerHTML='';$('ref').value='';$('fx').value='';
+  await abrir();window.scrollTo(0,0);
+ }catch(e){m.textContent=e.message||String(e)}
+ b.disabled=false;b.textContent='📤 Enviar provas';
+};
+$('ent').onclick=async function(){var r=await sb.auth.signInWithPassword({email:$('em').value.trim(),password:$('pw').value});if(r.error){$('lmsg').textContent='Email ou palavra-passe errados.';return}abrir()};
+abrir();
+</script>
+</body>
+</html>
