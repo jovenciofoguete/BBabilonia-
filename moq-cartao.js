@@ -1,0 +1,93 @@
+/* moq-cartao.js — B-Babilônia: nos cartões da página inicial, onde estavam as cores,
+   mostra o MOQ (pedido mínimo) que o fornecedor definiu ao registar o produto, seguido de "Negociável".
+   (06/11/2026) Por cima do preço mostra também a descrição do produto em 2 linhas (como no Alibaba).
+   (14/11/2026) Lojas de Moçambique (bandeira 🇲🇿 posta pelo pais-fornecedor.js): só "MOQ: n", sem "Negociável".
+   Coluna usada: products.pedido_minimo (a mesma do pedido-minimo.js). Não altera index.html. */
+(function () {
+  if (window.__bbMoqCartao) return; window.__bbMoqCartao = 1;
+  var SB = "https://dsfoqoeawvjafypycldz.supabase.co";
+  var KEY = "sb_publishable_BN4NiVcDab9CqdTY_odgDA_uUOhjja0";
+  var minDe = {};            /* id do produto -> MOQ, quando a lista global não tem o produto */
+  var descDe = {};           /* id do produto -> descrição, quando a lista global não tem o produto */
+  var aBuscar = false;
+  var MZ = "🇲🇿"; /* 🇲🇿 */
+
+  var css = document.createElement("style");
+  css.textContent =
+    "#grelha .card .cores{display:none!important}" +
+    "#grelha .card .moq{margin-top:3px;font-size:12px;color:#555;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}" +
+    "#grelha .card .moq b{font-weight:700;color:#222}" +
+    "#grelha .card .moq i{font-style:normal;color:#0f9d58;font-weight:700}" +
+    "#grelha .card .desc{margin-top:2px;font-size:12px;line-height:1.35;color:#666;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word}";
+  document.head.appendChild(css);
+
+  function moq(v) { var n = Math.floor(Number(v) || 1); return n > 1 ? n : 1; }
+  function lista() {
+    try { if (typeof produtos !== "undefined" && Array.isArray(produtos)) return produtos; } catch (e) {}
+    return [];
+  }
+  function descricao(id) {
+    var l = lista();
+    for (var i = 0; i < l.length; i++) if (String(l[i].id) === id) return String(l[i].description || l[i].descricao || "").replace(/\s+/g, " ").trim();
+    return descDe[id] || "";
+  }
+  function moqDe(id) {
+    var l = lista();
+    for (var i = 0; i < l.length; i++) if (String(l[i].id) === id) return moq(l[i].pedido_minimo || l[i].min_order || l[i].moq);
+    return (id in minDe) ? minDe[id] : null;
+  }
+  function lojaMZ(a) {
+    var pf = a.querySelector(".pf");
+    return !!(pf && pf.textContent.indexOf(MZ) === 0);
+  }
+
+  function aplicar() {
+    var cards = document.querySelectorAll("#grelha a.card"), faltam = [];
+    cards.forEach(function (a) {
+      var info = a.querySelector(".info");
+      if (!info) return;
+      var m = /[?&]id=([^&]+)/.exec(a.getAttribute("href") || "");
+      if (!m) return;
+      var id = decodeURIComponent(m[1]), n = moqDe(id);
+      if (n === null) { faltam.push(id); return; }
+      var el = info.querySelector(".moq");
+      var html = "MOQ: <b>" + n + "</b>" + (lojaMZ(a) ? "" : " · <i>Negociável</i>");
+      if (!el) {
+        el = document.createElement("div"); el.className = "moq";
+        var pr = info.querySelector(".preco");
+        if (pr && pr.nextSibling) info.insertBefore(el, pr.nextSibling); else info.appendChild(el);
+      }
+      if (el.innerHTML !== html) el.innerHTML = html;
+      var t = descricao(id), ds = info.querySelector(".desc"), pr2 = info.querySelector(".preco");
+      if (t) {
+        if (!ds) { ds = document.createElement("div"); ds.className = "desc"; if (pr2) info.insertBefore(ds, pr2); else info.appendChild(ds); }
+        if (ds.textContent !== t) ds.textContent = t;
+      } else if (ds) ds.remove();
+    });
+    if (faltam.length) buscar(faltam);
+  }
+
+  function buscar(ids) {
+    if (aBuscar) return; aBuscar = true;
+    fetch(SB + "/rest/v1/products?select=id,pedido_minimo,description&id=in.(" + ids.map(encodeURIComponent).join(",") + ")",
+      { headers: { apikey: KEY, Authorization: "Bearer " + KEY } })
+      .then(function (r) { return r.ok ? r.json() : []; })
+      .then(function (l) {
+        ids.forEach(function (i) { minDe[i] = 1; });
+        (l || []).forEach(function (p) { minDe[String(p.id)] = moq(p.pedido_minimo); descDe[String(p.id)] = String(p.description || "").replace(/\s+/g, " ").trim(); });
+      })
+      .catch(function () { ids.forEach(function (i) { minDe[i] = 1; }); })
+      .then(function () { aBuscar = false; aplicar(); });
+  }
+
+  function observar() {
+    var g = document.getElementById("grelha");
+    if (!g) return setTimeout(observar, 300);
+    var t = null;
+    new MutationObserver(function () { clearTimeout(t); t = setTimeout(aplicar, 30); }).observe(g, { childList: true, subtree: true });
+    aplicar();
+  }
+  observar();
+})();
+/* (14/11/2026) separador "🛠️ Aluguer, serviços e diversos" na faixa da página inicial (servicos-faixa.js) */
+(function () { if (document.querySelector('script[src*="servicos-faixa.js"]')) return; var s = document.createElement("script"); s.src = "servicos-faixa.js?v=1"; document.head.appendChild(s); })();
