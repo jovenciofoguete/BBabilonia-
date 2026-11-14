@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>O seu país | BBabilônia</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:system-ui,Arial,sans-serif;background:#f1f5f9;color:#0f172a}
+header{background:linear-gradient(135deg,#10b981,#0ea5e9 55%,#2563eb);color:#fff;padding:18px 16px 44px}
+header h1{margin:0;font-size:21px}header p{margin:4px 0 0;font-size:13.5px;opacity:.92}
+main{max-width:520px;margin:-28px auto 0;padding:0 14px 40px}
+.box{background:#fff;border-radius:16px;padding:16px;margin-bottom:14px;box-shadow:0 4px 14px #0f172a12}
+input{width:100%;padding:13px;border:2px solid #e2e8f0;border-radius:12px;font-size:16px;margin:6px 0}
+button{width:100%;margin-top:10px;padding:14px;border:0;border-radius:12px;background:linear-gradient(90deg,#10b981,#0ea5e9);color:#fff;font-size:16px;font-weight:800}
+.err{color:#dc2626;font-size:14px;margin-top:8px;min-height:18px}
+a.voltar{display:block;text-align:center;margin-top:14px;color:#0b57d0;font-size:15px}
+</style>
+</head>
+<body>
+<header><h1>🌍 O seu país</h1><p>É obrigatório para comprar e para partilhar o endereço de entrega.</p></header>
+<main>
+  <div class="box" id="login" style="display:none">
+    <b>Entre na sua conta para guardar o país</b>
+    <input id="em" type="email" placeholder="Email" autocomplete="username">
+    <input id="pw" type="password" placeholder="Palavra-passe" autocomplete="current-password">
+    <button id="entrar">Entrar</button>
+    <div class="err" id="lerro"></div>
+  </div>
+  <div class="box" id="escolha"></div>
+  <a class="voltar" id="voltar" href="index.html">← Voltar</a>
+</main>
+<script>
+(function () {
+  var U = 'https://dsfoqoeawvjafypycldz.supabase.co', K = 'sb_publishable_BN4NiVcDab9CqdTY_odgDA_uUOhjja0', SK = 'sb-dsfoqoeawvjafypycldz-auth-token';
+  var $ = function (i) { return document.getElementById(i); };
+  var v = new URLSearchParams(location.search).get('voltar');
+  if (v && /^[\w\-.]+\.html([?#].*)?$/.test(v)) $('voltar').href = v;
+  function sessao() { try { var s = JSON.parse(localStorage.getItem(SK) || 'null'); return s && s.access_token ? s : null; } catch (e) { return null; } }
+  if (!sessao()) $('login').style.display = 'block';
+  $('entrar').onclick = async function () {
+    $('lerro').textContent = '';
+    try {
+      var r = await fetch(U + '/auth/v1/token?grant_type=password', { method: 'POST', headers: { apikey: K, 'Content-Type': 'application/json' }, body: JSON.stringify({ email: $('em').value.trim(), password: $('pw').value }) });
+      var j = await r.json();
+      if (!r.ok || !j.access_token) throw new Error('Email ou palavra-passe incorretos.');
+      localStorage.setItem(SK, JSON.stringify({ access_token: j.access_token, refresh_token: j.refresh_token, token_type: j.token_type || 'bearer', expires_in: j.expires_in, expires_at: j.expires_at || Math.floor(Date.now() / 1000) + (j.expires_in || 3600), user: j.user }));
+      location.reload();
+    } catch (e) { $('lerro').textContent = e.message; }
+  };
+})();
+</script>
+<script src="pais-cliente.js?v=1"></script>
+<script>
+(function () {
+  var cx = window.BBPais.caixa('bb-pais', 'claro');
+  document.getElementById('escolha').appendChild(cx);
+})();
+</script>
+</body>
+</html>
