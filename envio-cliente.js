@@ -78,6 +78,8 @@
   async function assinada(c) { try { var r = await sb.storage.from("provas-envio").createSignedUrl(c, 3600); return r.data && r.data.signedUrl; } catch (e) { return null; } }
 
   /* uma mensagem do chat */
+  /* 19/11/2026 — Moçambique: o transporte paga-se sempre por M-Pesa automático (PIN no ecrã); nada de agente, levantamento ou provas */
+  function mz() { try { return String((PED && PED.cliente_pais) || "").toUpperCase() === "MZ"; } catch (e) { return false; } }
   function msg(m, ultimoDados) {
     var t = esc(quando(m.criado_em));
     if (m.tipo === "aviso") return '<div class="sis">' + esc(m.texto) + "<br><small>" + t + "</small></div>";
@@ -88,16 +90,14 @@
         '<div class="tt" style="margin-top:6px"><span>Transporte (' + esc(x.transportadora || "transportadora") + ')</span><span>' + din(x.valor_envio, x.moeda) + "</span></div>" +
         '<div class="tt"><span>Taxa de serviço (busca e embalagem)</span><span>' + din(x.taxa_servico, x.moeda) + "</span></div>" +
         '<div class="tt g"><span>Total a pagar</span><span>' + din(x.total, x.moeda) + "</span></div>" +
-        (x.mpesa_numero ? '<div class="nr" style="display:block"><span>🟥 <b>Agente M-Pesa</b></span>' +
+        (mz() ? '<div class="ins">👉 Para pagar: toque em <b>Pagar</b> no quadro "Pagar o transporte" deste pedido e confirme o PIN no ecrã do telemóvel. Não precisa de enviar provas.</div>' : "") +
+        (!mz() && x.mpesa_numero ? '<div class="nr" style="display:block"><span>🟥 <b>Agente M-Pesa</b></span>' +
           '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:4px"><span>Código do agente: <b>' + esc(x.mpesa_numero) + '</b></span><button type="button" data-cp="' + esc(x.mpesa_numero) + '">Copiar</button></div>' +
           '<div style="margin-top:4px">Nome do agente: <b>' + esc(x.nome_recetor || "") + '</b></div></div>' +
           '<div class="pq">M-Pesa: abra o menu M-Pesa → <b>Levantar dinheiro</b> → <b>Agente</b> → escreva o código do agente acima, o valor total e o seu PIN.</div>' : "") +
-        (x.emola_numero ? '<div class="nr" style="display:block"><span>🟧 <b>Agente e-Mola</b></span>' +
-          '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:4px"><span>Código do agente: <b>' + esc(x.emola_numero) + '</b></span><button type="button" data-cp="' + esc(x.emola_numero) + '">Copiar</button></div>' +
-          '<div style="margin-top:4px">Nome do agente: <b>' + esc(x.nome_recetor || "") + '</b></div></div>' +
-          '<div class="pq">e-Mola: abra o menu e-Mola → <b>Levantar dinheiro</b> → <b>Agente</b> → escreva o código do agente acima, o valor total e o seu PIN.</div>' : "") +
-        '<div class="ins">Pagar o valor de transporte e taxas através destes dados e carregar provas após pagamento.</div>' +
-        (podeCarregar ? '<button class="bt" type="button" data-prov="1">📤 Carregar provas de pagamento</button>' : "") +
+        (mz() ? "" : '<div class="pq" style="opacity:.8">🟧 e-Mola: <b>indisponível de momento</b>. Pague pelo M-Pesa.</div>' +
+        '<div class="ins">Pagar o valor de transporte e taxas através destes dados e carregar provas após pagamento.</div>') +
+        (!mz() && podeCarregar ? '<button class="bt" type="button" data-prov="1">📤 Carregar provas de pagamento</button>' : "") +
         "<small style=\"display:block;color:#64748b;margin-top:6px\">" + t + "</small></div>";
     }
     var eu = m.autor === "cliente";
@@ -135,9 +135,9 @@
     var box = d.createElement("div"); box.className = "pv"; box.id = "bb-env-pf";
     box.innerHTML = '<h4>📤 Carregar provas de pagamento</h4>' +
       '<div class="meios">' + (c.mpesa_numero ? '<label data-m="mpesa"><input type="radio" name="bbm">Paguei no agente M-Pesa</label>' : "") +
-      (c.emola_numero ? '<label data-m="emola"><input type="radio" name="bbm">Paguei no agente e-Mola</label>' : "") + "</div>" +
+      "</div>" +
       '<label class="up">📷 Foto do comprovativo da transferência<input type="file" accept="image/*" multiple id="bb-env-f"></label><div class="fts" id="bb-env-pv"></div>' +
-      '<textarea id="bb-env-t" placeholder="Texto da transferência: cole aqui a mensagem (SMS) que recebeu do M-Pesa / e-Mola"></textarea>' +
+      '<textarea id="bb-env-t" placeholder="Texto da transferência: cole aqui a mensagem (SMS) que recebeu do M-Pesa"></textarea>' +
       '<button class="bt" type="button" id="bb-env-ok">📤 Enviar provas ao agente</button><div class="m" id="bb-env-m"></div>';
     $("bb-env-ch").appendChild(box); box.scrollIntoView({ block: "center" });
     var FOT = [], meio = "", labs = box.querySelectorAll(".meios label");
@@ -149,7 +149,7 @@
     };
     $("bb-env-ok").onclick = async function () {
       var b = this, m = $("bb-env-m"), t = $("bb-env-t").value.trim(); m.textContent = "";
-      if (!meio) { m.textContent = "Escolha se pagou por M-Pesa ou por e-Mola."; return; }
+      if (!meio) { m.textContent = "Escolha M-Pesa."; return; }
       if (!FOT.length) { m.textContent = "Carregue a foto do comprovativo da transferência."; return; }
       if (t.length < 10) { m.textContent = "Cole ou escreva o texto da transferência (a mensagem que recebeu por SMS)."; return; }
       b.disabled = true; b.textContent = "A carregar fotos…";
@@ -173,10 +173,10 @@
 
   function estadoHtml(e) {
     var c = e.cotacao;
-    if (!c) return '<div class="av a">📦 <b>A BBabilônia coletou o seu produto.</b><br>Aguarde a cotação do valor de transporte e o pagamento do transporte (taxa de serviço de 200 MT). O agente BBabilônia manda os dados de pagamento no chat deste pedido e recebe um aviso 🔔.</div>';
+    if (!c) return '<div class="av a">📦 <b>A BBabilônia coletou o seu produto.</b><br>Aguarde a cotação do valor de transporte e o pagamento do transporte (taxa de serviço de 200 MT). O agente BBabilônia envia a cotação e o pagamento do transporte é automático: só toca em Pagar e confirma o PIN no telemóvel. Recebe um aviso 🔔.</div>';
     if (c.estado === "aguarda_pagamento") return c.recusa_motivo
-      ? '<div class="av r">⚠️ <b>Pagamento não confirmado:</b> ' + esc(c.recusa_motivo) + "<br>Abra o chat e carregue as provas de novo.</div>"
-      : '<div class="av z">💬 Recebeu o pagamento do transporte no chat. Pague e carregue as provas.</div>';
+      ? '<div class="av r">⚠️ <b>Pagamento não confirmado:</b> ' + esc(c.recusa_motivo) + (mz() ? "<br>Toque em Pagar e confirme o PIN no telemóvel." : "<br>Abra o chat e carregue as provas de novo.") + "</div>"
+      : (mz() ? '<div class="av z">💳 Pague o transporte: toque em <b>Pagar</b> e confirme o PIN no ecrã do telemóvel.</div>' : '<div class="av z">💬 Recebeu o pagamento do transporte no chat. Pague e carregue as provas.</div>');
     if (c.estado === "pago_cliente") return '<div class="av z">⏳ <b>Provas enviadas</b> ' + esc(quando(c.cliente_pagou_em)) + ". A BBabilônia está a confirmar se a transferência entrou.</div>";
     if (c.estado === "pago_confirmado") return '<div class="av v">✅ <b>Transporte pago.</b> O agente vai entregar a mercadoria na transportadora.</div>';
     return "";
@@ -192,7 +192,7 @@
       li(true, false, "1 · PRODUTO PAGO", "Aguarde a resposta da BBabilônia.") +
       li(rec, !rec, "2 · A BBABILÔNIA COLETOU O SEU PRODUTO", rec ? "Aguarde a cotação do valor de transporte." + ag : "A BBabilônia está a tratar do seu pedido." + ag) +
       li(pagoT, rec && !pagoT, "3 · PAGAMENTO DE TRANSPORTE", c ? (med(c) ? "📦 " + med(c) + "<br>" : "") + "Transporte " + din(c.valor_envio, c.moeda) + " · taxa de serviço " + din(c.taxa_servico, c.moeda) + "<br><b>Total: " + din(c.total, c.moeda) + "</b>" +
-        (c.estado === "aguarda_pagamento" ? "<br>👉 Abra o chat abaixo para pagar e carregar as provas." : c.estado === "pago_cliente" ? "<br>⏳ A confirmar o seu pagamento." : "") : "Kg, tamanhos, valor de transporte e taxa de serviço (200 MT) aparecem aqui quando a cotação estiver pronta.") +
+        (c.estado === "aguarda_pagamento" ? (mz() ? "<br>👉 Toque em Pagar (mais abaixo) e confirme o PIN no telemóvel." : "<br>👉 Abra o chat abaixo para pagar e carregar as provas.") : c.estado === "pago_cliente" ? "<br>⏳ A confirmar o seu pagamento." : "") : "Kg, tamanhos, valor de transporte e taxa de serviço (200 MT) aparecem aqui quando a cotação estiver pronta.") +
       li(env, pagoT && !env, "4 · TRANSPORTE PAGO", env ? "A BBabilônia enviou o seu pedido" + (c.transportadora ? " (" + esc(c.transportadora) + ")" : "") + (c.rastreio ? ". Rastreamento: <b>" + esc(c.rastreio) + "</b>" : "") + ". Aguarde a receção." : pagoT ? "Transporte pago. A BBabilônia vai entregar o pedido na transportadora." : "Depois de pagar o transporte, a BBabilônia envia o seu pedido.") +
       li(fim, env && !fim, "5 · RECEBIDO", fim ? "Recebido. Obrigado pela avaliação!" : "Ao levantar a encomenda: <b>Recebido</b> (com foto e avaliação) · <b>Não recebido</b> · <b>Abrir disputa</b>.") +
       "</ul>";
@@ -207,7 +207,7 @@
       '<div class="tt g" id="bb-pm-tot"><span>Total a pagar</span><span>' + din(tot, c.moeda) + "</span></div>" +
       '<label for="bb-pm-t">Número M-Pesa</label><input id="bb-pm-t" type="tel" inputmode="tel" maxlength="18" placeholder="84 123 4567" value="' + esc(String((p && p.customer_phone) || "").replace(/[^\d+ ]/g, "")) + '">' +
       '<button class="bt" type="button" id="bb-pm-b">📱 Pagar ' + din(tot, c.moeda) + " com M-Pesa</button><div id=\"bb-pm-e\"></div>" +
-      '<div class="pq">Toque em Pagar e escreva o PIN do M-Pesa no seu telemóvel. Não precisa de enviar provas.<br>Se não conseguir pagar assim, abra o chat, pague no agente com os dados e carregue as provas.</div></div>';
+      '<div class="pq">Toque em Pagar e escreva o PIN do M-Pesa no seu telemóvel. Não precisa de enviar provas.</div></div>';
   }
   function ligarPagar(p) {
     var b = $("bb-pm-b"); if (!b) return;

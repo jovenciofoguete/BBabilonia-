@@ -2,7 +2,7 @@
    Quem confirma a receção é o cliente, o dono da plataforma ou um agente.
    Prazo de 30 dias depois do envio; no fim o cliente é avisado e tem 3 dias; depois liberta sozinho.
    (19/11/2026) Textos certos por país:
-     - Moçambique: o fornecedor recebe por M-Pesa / e-Mola (não por banco/SWIFT) e vê "Meios para receber" no lugar da conta bancária.
+     - Moçambique: o fornecedor recebe por M-Pesa (não por banco/SWIFT) e vê "Meios para receber" no lugar da conta bancária.
      - Moçambique, Tanzânia e África do Sul: o produto é buscado por um agente da BBabilônia (o fornecedor não envia nem põe rastreio).
      - Outros países: igual a antes (conta bancária, SWIFT, envio com rastreio).
    (19/11/2026) Moçambique: o fornecedor NÃO pede levantamento. O dinheiro entra sozinho no M-Pesa quando o atendimento confirma o produto
@@ -70,7 +70,7 @@
     } catch (e) { return; }
     if (PAIS === "MZ") {
       try {
-        var m = await fetch(SUPA + "/rest/v1/meios_recebimento?select=*&dono_id=eq." + encodeURIComponent(s.user.id), { headers: cab() });
+        var m = await fetch(SUPA + "/rest/v1/meios_recebimento?select=id&tipo=eq.mpesa&dono_id=eq." + encodeURIComponent(s.user.id), { headers: cab() });
         var j = m.ok ? await m.json() : [];
         MEIOS = Array.isArray(j) ? j.length : 0;
       } catch (e) { MEIOS = 0; }
@@ -79,22 +79,22 @@
     comoFunciona(); contaMZ(); modalMZ(); trocar();
   }
 
-  /* Moçambique: no lugar da conta bancária, o M-Pesa / e-Mola */
+  /* Moçambique: no lugar da conta bancária, o M-Pesa */
   function contaMZ() {
     if (PAIS !== "MZ" || MEIOS == null) return;
     var cx = document.getElementById("contaCx"); if (!cx) return;
     if (ESTADO.indexOf("aprov") !== 0) return;                  /* loja ainda em análise: fica o aviso de antes */
     var h = MEIOS > 0
-      ? '<div class="aviso ok" data-bbmz="1">📱 O dinheiro das vendas entra <b>sozinho</b> no seu <b>M-Pesa / e-Mola</b> · <a href="meios-receber.html">Mudar</a></div>'
-      : '<div class="aviso er" data-bbmz="1">Para receber o dinheiro, registe o seu M-Pesa ou e-Mola. <a href="meios-receber.html"><b>Registar ›</b></a></div>';
+      ? '<div class="aviso ok" data-bbmz="1">📱 O dinheiro das vendas entra <b>sozinho</b> no seu <b>M-Pesa</b> · <a href="meios-receber.html">Mudar</a></div>'
+      : '<div class="aviso er" data-bbmz="1">Para receber o dinheiro, registe o seu M-Pesa. <a href="meios-receber.html"><b>Registar ›</b></a></div>';
     if (!cx.querySelector("[data-bbmz]")) cx.innerHTML = h;
   }
   function modalMZ() {
     var cx = document.getElementById("modalCx"); if (!cx || PAIS !== "MZ") return;
     var av = cx.querySelector(".aviso.az");
-    if (av && /SWIFT/.test(av.textContent)) av.textContent = "A BBabilônia verifica o pedido e envia o valor para o seu M-Pesa ou e-Mola.";
+    if (av && /SWIFT/.test(av.textContent)) av.textContent = "A BBabilônia verifica o pedido e envia o valor para o seu M-Pesa.";
     cx.querySelectorAll(".dl b").forEach(function (b) {
-      if (b.textContent === "Banco" && b.nextElementSibling) { b.textContent = "Receber em"; b.nextElementSibling.textContent = "M-Pesa / e-Mola"; }
+      if (b.textContent === "Banco" && b.nextElementSibling) { b.textContent = "Receber em"; b.nextElementSibling.textContent = "M-Pesa"; }
     });
   }
 
@@ -108,10 +108,10 @@
         ? "2. Um agente da BBabilônia vai à sua loja buscar o produto e leva-o à transportadora. O senhor <b>não envia nem regista rastreio</b>: só confirma o agente em «Por enviar e Enviados». O cliente tem <b>30 dias</b> para receber; se ainda não recebeu, pode prolongar 7, 15 ou 30 dias.<br>"
         : "2. Envie o pedido com fotos e número de rastreio. O cliente tem <b>30 dias</b> para receber; se ainda não recebeu, pode prolongar 7, 15 ou 30 dias.<br>";
       var passo4 = PAIS === "MZ"
-        ? "4. <b>Não precisa de pedir nada.</b> Logo que o agente de busca confirma a coleta e o atendimento confirma o produto, o valor entra <b>sozinho</b> no seu <b>M-Pesa ou e-Mola</b> (registe-o em «Meios para receber»).<br>"
+        ? "4. <b>Não precisa de pedir nada.</b> Logo que o agente de busca confirma a coleta e o atendimento confirma o produto, o valor entra <b>sozinho</b> no seu <b>M-Pesa</b> (registe-o em «Meios para receber»).<br>"
         : "4. Toque em <b>Pedir levantamento</b>. A BBabilônia verifica e transfere para a sua conta bancária confirmada (em USD por SWIFT; o seu banco converte para a moeda local).<br>";
       ps[i].innerHTML = "1. Quando o cliente paga, o valor fica <b>retido</b>.<br>" + passo2 +
-        (PAIS === "MZ" ? "3. Quando o atendimento confirma que o produto é igual ao pedido, o valor é <b>pago</b> ao seu M-Pesa ou e-Mola.<br>" : "3. O valor passa a <b>disponível</b> quando o cliente confirma que recebeu (ou a BBabilônia confirma). Se o prazo acabar, o cliente é avisado e, sem resposta em 3 dias, o valor fica disponível automaticamente.<br>") +
+        (PAIS === "MZ" ? "3. Quando o atendimento confirma que o produto é igual ao pedido, o valor é <b>pago</b> ao seu M-Pesa.<br>" : "3. O valor passa a <b>disponível</b> quando o cliente confirma que recebeu (ou a BBabilônia confirma). Se o prazo acabar, o cliente é avisado e, sem resposta em 3 dias, o valor fica disponível automaticamente.<br>") +
         passo4 + "5. Pedidos com disputa aberta ficam bloqueados até a disputa terminar.";
       ps[i].setAttribute("data-bbpais", PAIS);
     }

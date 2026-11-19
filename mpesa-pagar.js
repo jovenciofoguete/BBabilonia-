@@ -201,6 +201,9 @@ export default async function handler(req, res) {
     if (/pago|paid|succeeded/i.test(String(o.payment_status || "")) || String(o.escrow_status || "").toLowerCase() === "retido")
       return res.end(JSON.stringify({ erro: "Este pedido já está pago." }));
     if (/cancel/i.test(String(o.status || ""))) return res.end(JSON.stringify({ erro: "Este pedido foi cancelado." }));
+    /* (19/11/2026) M-Pesa só para fornecedores de Moçambique; se não der para confirmar, recusa */
+    let fmz = false; try { fmz = (await supa("rpc/bb_mpesa_pedido", "POST", { p_order: o.id })) === true; } catch (e) { fmz = false; }
+    if (!fmz) return res.end(JSON.stringify({ erro: "O M-Pesa só está disponível para fornecedores de Moçambique. Pague por cartão (Visa/Mastercard) ou por cripto (USDT)." }));
     const moeda = tel.pais === "MZ" ? "MZN" : "TZS";
     const base = Number(o.total || o.subtotal || 0);
     if (!(base > 0)) return res.end(JSON.stringify({ erro: "Valor do pedido inválido." }));

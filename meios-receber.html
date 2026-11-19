@@ -86,7 +86,8 @@ function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){retur
 var CODES="AF AL DZ AD AO AG AR AM AW AU AT AZ BS BH BD BB BY BE BZ BJ BM BT BO BA BW BR BN BG BF BI CV KH CM CA KY CF TD CL CN CO KM CG CD CR CI HR CU CW CY CZ DK DJ DM DO EC EG SV GQ ER EE SZ ET FO FJ FI FR GF PF GA GM GE DE GH GI GR GL GD GP GU GT GG GN GW GY HT HN HK HU IS IN ID IR IQ IE IM IL IT JM JP JE JO KZ KE KI XK KW KG LA LV LB LS LR LY LI LT LU MO MG MW MY MV ML MT MH MQ MR MU YT MX FM MD MC MN ME MA MZ MM NA NR NP NL NC NZ NI NE NG MK NO OM PK PW PS PA PG PY PE PH PL PT PR QA RE RO RU RW KN LC VC WS SM ST SA SN RS SC SL SG SX SK SI SB SO ZA KR SS ES LK SD SR SE CH SY TW TJ TZ TH TL TG TO TT TN TR TM TC TV UG UA AE GB US UY UZ VU VA VE VN VG VI YE ZM ZW".split(" ");
 var DN=null;try{DN=new Intl.DisplayNames(['pt'],{type:'region'})}catch(e){}
 function nomeP(c){try{return(DN&&DN.of(c))||c}catch(e){return c}}
-var TIPOS_MZ=[['mpesa','📱 M-Pesa','84 ou 85 + 7 algarismos'],['emola','📱 e-Mola','86 ou 87 + 7 algarismos'],['mkesh','📱 mKesh','82 ou 83 + 7 algarismos'],['banco','🏦 Conta bancária','NIB']];
+/* (19/11/2026) Moçambique: só M-Pesa. e-Mola indisponível de momento; mKesh e conta bancária deixaram de existir */
+var TIPOS_MZ=[['mpesa','📱 M-Pesa','84 ou 85 + 7 algarismos',false],['emola','📱 e-Mola','Indisponível de momento',true]];
 var NOME_TIPO={mpesa:'M-Pesa',emola:'e-Mola',mkesh:'mKesh',mixx:'Mixx by Yas',airtel:'Airtel Money',halopesa:'HaloPesa',payshap:'PayShap',banco:'Conta bancária'};
 var U=null,PAIS='MZ',MZ=true,TIPO='mpesa',L=[];
 function limpa(v){return String(v||'').replace(/\s+/g,'').toUpperCase()}
@@ -108,17 +109,14 @@ function montarPaises(){
 }
 function desenharTipos(){
  if(MZ){
-  $('paisTxt').textContent='Meios disponíveis em Moçambique 🇲🇿. M-Pesa, e-Mola e mKesh só existem para lojas de Moçambique.';
+  $('paisTxt').textContent='Meio disponível em Moçambique 🇲🇿: M-Pesa. O e-Mola está indisponível de momento. O dinheiro das vendas entra sozinho no seu número M-Pesa, sem precisar de pedir levantamento.';
   if(!TIPOS_MZ.some(function(x){return x[0]===TIPO}))TIPO='mpesa';
-  $('tipos').innerHTML=TIPOS_MZ.map(function(x){return'<label class="'+(x[0]===TIPO?'on':'')+'"><input type="radio" name="tp" value="'+x[0]+'"'+(x[0]===TIPO?' checked':'')+'>'+x[1]+(x[2]?'<br><small style="font-weight:400;color:#6b7280">'+x[2]+'</small>':'')+'</label>'}).join('');
+  $('tipos').innerHTML=TIPOS_MZ.map(function(x){return'<label class="'+(x[0]===TIPO?'on':'')+'"'+(x[3]?' style="opacity:.5"':'')+'><input type="radio" name="tp" value="'+x[0]+'"'+(x[0]===TIPO?' checked':'')+(x[3]?' disabled':'')+'>'+x[1]+(x[2]?'<br><small style="font-weight:400;color:#6b7280">'+x[2]+'</small>':'')+'</label>'}).join('');
   document.querySelectorAll('input[name=tp]').forEach(function(r){r.onchange=function(){TIPO=r.value;desenharTipos()}});
-  var banco=TIPO==='banco';
-  $('fMovel').classList.toggle('hide',banco);$('fBanco').classList.toggle('hide',!banco);$('fInt').classList.add('hide');
+  $('fMovel').classList.remove('hide');$('fBanco').classList.add('hide');$('fInt').classList.add('hide');
   $('lNum').textContent='Número '+NOME_TIPO[TIPO]+' (+258)';
-  $('num').placeholder=TIPO==='emola'?'86 123 4567':TIPO==='mkesh'?'82 123 4567':'84 123 4567';
+  $('num').placeholder='84 123 4567';
   $('dNum').textContent='Escreva o número sem o indicativo +258.';
-  $('cConta').classList.add('hide');$('cCod').classList.remove('hide');
-  $('lCod').textContent='NIB (21 algarismos)';$('dCod').textContent='O NIB está no extrato ou na app do banco.';
   $('ligaConta').classList.add('hide');
  }else{
   TIPO='banco';
@@ -137,7 +135,9 @@ async function carregar(){
  var r=await sb.from('meios_recebimento').select('*').eq('dono_id',U.id).order('criado_em');
  if(r.error){$('lista').innerHTML='<p class="msg">'+esc(/relation|exist/i.test(r.error.message)?'Falta correr o SQL novo no Supabase.':r.error.message)+'</p>';return}
  L=r.data||[];
- $('estado').innerHTML=L.length?'<b>✅ Pronto para receber.</b> Já pode criar links de pagamento no chat.':'<div class="aviso">⚠️ Ainda não registou nenhum meio para receber. <b>Sem isto não pode criar links de pagamento</b> no chat.</div>';
+ /* Moçambique: só conta o M-Pesa (e-Mola indisponível; conta bancária e mKesh deixaram de existir) */
+ if(MZ)L=L.filter(function(m){return m.tipo==='mpesa'});
+ $('estado').innerHTML=L.length?'<b>✅ Pronto para receber.</b> Já pode criar links de pagamento no chat.'+(MZ?' O dinheiro das vendas entra sozinho no seu número principal.':''):'<div class="aviso">⚠️ Ainda não registou nenhum meio para receber. <b>Sem isto não pode criar links de pagamento</b> no chat.</div>';
  $('lista').innerHTML=L.length?L.map(function(m){return'<div class="mr"><div class="t"><b>'+esc(NOME_TIPO[m.tipo]||m.tipo)+(m.principal?'<span class="bdg">Principal</span>':'')+'</b><small>'+descr(m)+' · '+esc(m.titular)+'</small></div>'+
   (m.principal?'':'<button class="p" data-p="'+esc(m.id)+'">Principal</button>')+'<button data-x="'+esc(m.id)+'">Apagar</button></div>'}).join(''):'<p style="color:#6b7280">Nenhum ainda.</p>';
 }
@@ -160,8 +160,13 @@ $('guardar').onclick=async function(){
   if(reg.iban&&!ibanOk(reg.iban))return m.textContent='O IBAN não está correto. Confira letra a letra.';
   if(!reg.iban&&!reg.conta)return m.textContent='Escreva o IBAN ou o número de conta.';
   reg.codigo=reg.swift;
- }else if(TIPO==='banco'){reg.banco=$('banco').value.trim();reg.conta=$('conta').value.trim()||null;reg.codigo=$('cod').value.trim()||null;if(reg.banco.length<2)return m.textContent='Escreva o nome do banco.'}
- else{reg.numero=$('num').value.trim();if(reg.numero.replace(/\D/g,'').length<9)return m.textContent='Escreva o número completo.'}
+ }else{
+  reg.tipo='mpesa';reg.numero=$('num').value.trim();
+  var d=reg.numero.replace(/\D/g,'').replace(/^258/,'');
+  if(d.length!==9)return m.textContent='Escreva o número completo (9 algarismos, sem +258).';
+  if(!/^8[45]/.test(d))return m.textContent='O número M-Pesa começa por 84 ou 85.';
+  reg.numero=d;
+ }
  this.disabled=true;var r=await sb.from('meios_recebimento').insert(reg);this.disabled=false;
  if(r.error)return m.textContent=/relation|exist/i.test(r.error.message)&&!/column/i.test(r.error.message)?'Falta correr o SQL novo no Supabase.':r.error.message;
  m.className='msg ok';m.textContent='✅ Guardado.';['num','banco','conta','cod','tit','bancoI','swiftI','ibanI','contaI'].forEach(function(i){$(i).value=''});carregar();
