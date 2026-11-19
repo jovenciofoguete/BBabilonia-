@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>O meu perfil · BBabilônia</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script>if(!/^(admin|administrator)\./i.test(location.hostname))document.write('<script src="atd-sessao.js?v=1"><\/script>');</script>
+<style>
+:root{--fundo:#eef2f7;--texto:#0f172a;--suave:#64748b;--linha:#e2e8f0;--vd:#047857}
+*{box-sizing:border-box;margin:0}
+body{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--fundo);color:var(--texto);line-height:1.45;color-scheme:light}
+.bar{position:sticky;top:0;z-index:5;background:linear-gradient(135deg,#065f46,#059669);color:#fff;padding:12px 14px;display:flex;align-items:center;gap:8px}
+.bar h1{font-size:17px;flex:1}.bar a{color:#fff;background:#ffffff2e;border-radius:999px;padding:7px 12px;font-size:13px;font-weight:700;text-decoration:none}
+main{max-width:560px;margin:0 auto;padding:14px 12px 60px}
+.box{background:#fff;border-radius:16px;padding:16px;box-shadow:0 4px 14px #0001;margin-bottom:12px}
+.aviso{background:#fff7ed;color:#9a3412;border-radius:12px;padding:10px 12px;font-size:14px;font-weight:700;margin-bottom:12px}
+label.t{display:block;font-size:13.5px;font-weight:800;margin:14px 0 4px}
+input[type=text],input[type=date]{width:100%;padding:12px;border:2px solid var(--linha);border-radius:12px;font:inherit;font-size:16px;background:#fff}
+.foto{display:flex;align-items:center;gap:12px}
+.foto img,.foto .sf{width:84px;height:84px;border-radius:50%;object-fit:cover;background:#e2e8f0;flex:none}
+.doc img{width:100%;max-height:220px;object-fit:contain;border-radius:10px;background:#f1f5f9;margin-top:6px}
+.up{flex:1;text-align:center;border:2px dashed #10b981;border-radius:12px;padding:12px 6px;font-weight:800;font-size:14px;color:#065f46;background:#f0fdf4;display:block}
+.up input{display:none}
+.bt{width:100%;border:0;border-radius:12px;padding:14px;font:inherit;font-size:16px;font-weight:800;color:#fff;background:var(--vd);margin-top:18px}.bt:disabled{opacity:.5}
+.msg{font-size:14px;margin-top:10px;color:#dc2626;white-space:pre-line}.msg.ok{color:#059669}
+.pq{font-size:12.5px;color:var(--suave);margin-top:4px}
+.hide{display:none}
+</style>
+</head>
+<body>
+<div class="bar"><h1>👤 O meu perfil</h1><a id="vlt" href="/">Voltar</a></div>
+<main>
+ <div id="obr" class="aviso hide">Antes de começar a trabalhar, complete o seu perfil. Todos os campos são obrigatórios.</div>
+ <section id="vEntrar" class="box hide">
+  <p style="font-size:14.5px">Entre primeiro na sua conta de agente (ou do dono) e volte a esta página.</p>
+  <a class="bt" style="display:block;text-align:center;text-decoration:none" href="/">Ir para a entrada</a>
+ </section>
+ <section id="vForm" class="box hide">
+  <p style="font-size:13.5px;color:#64748b">O cliente e o fornecedor veem só o seu <b>nome</b> e a sua <b>foto</b>. O resto só o dono e os agentes superiores veem.</p>
+  <label class="t">📸 Foto de perfil</label>
+  <div class="foto"><img id="pf" class="hide" alt=""><div id="pfs" class="sf"></div>
+   <label class="up">Escolher foto<input id="fFoto" type="file" accept="image/*"></label></div>
+  <label class="t" for="nome">Nome completo</label>
+  <input id="nome" type="text" maxlength="80" autocomplete="name">
+  <label class="t">🪪 Foto do documento (BI, passaporte ou carta)</label>
+  <div class="doc"><img id="pd" class="hide" alt=""></div>
+  <label class="up" style="margin-top:6px">Escolher foto do documento<input id="fBi" type="file" accept="image/*"></label>
+  <label class="t" for="num">Número do documento</label>
+  <input id="num" type="text" maxlength="40">
+  <label class="t" for="val">Validade do documento</label>
+  <input id="val" type="date">
+  <label class="t" for="bai">Bairro onde mora</label>
+  <input id="bai" type="text" maxlength="80">
+  <button class="bt" id="gr" type="button">💾 Guardar perfil</button>
+  <p class="msg" id="msg"></p>
+ </section>
+</main>
+<script>
+var ADM=/^(admin|administrator)\./i.test(location.hostname);
+var sb=supabase.createClient('https://dsfoqoeawvjafypycldz.supabase.co','sb_publishable_BN4NiVcDab9CqdTY_odgDA_uUOhjja0',ADM?{}:(window.ATD_AUTH||{}));
+function $(i){return document.getElementById(i)}
+var Q=new URLSearchParams(location.search),VOLTAR=Q.get('voltar')||'/';
+if(!/^[\w.\-\/]+$/.test(VOLTAR)||/^\/\//.test(VOLTAR))VOLTAR='/';
+$('vlt').href=VOLTAR;
+if(Q.get('obrigatorio'))$('obr').classList.remove('hide');
+var U=null,FOTO='',BI='';
+function ext(f){return(f.name.split('.').pop()||'jpg').toLowerCase().replace(/[^a-z0-9]/g,'')||'jpg'}
+function dizer(t,ok){var m=$('msg');m.className='msg'+(ok?' ok':'');m.textContent=t}
+function mostrarFoto(u){if(u){$('pf').src=u;$('pf').classList.remove('hide');$('pfs').classList.add('hide')}}
+async function mostrarBi(p){if(!p)return;var s=await sb.storage.from('identidades').createSignedUrl(p,600);if(s.data&&s.data.signedUrl){$('pd').src=s.data.signedUrl;$('pd').classList.remove('hide')}}
+async function iniciar(){
+ var s=(await sb.auth.getSession()).data.session;
+ if(!s){$('vEntrar').classList.remove('hide');return}
+ U=s.user;
+ var r=await sb.rpc('perfil_meu_ver');
+ if(r.error){$('vForm').classList.add('hide');$('vEntrar').classList.remove('hide');$('vEntrar').querySelector('p').textContent=/function|exist/i.test(r.error.message)?'Falta correr o SQL novo no Supabase.':r.error.message;return}
+ var d=r.data||{};
+ $('nome').value=d.nome||'';$('num').value=d.bi_numero||'';$('val').value=d.bi_validade||'';$('bai').value=d.bairro||'';
+ FOTO=d.foto_url||'';BI=d.bi_url||'';
+ mostrarFoto(FOTO);mostrarBi(BI);
+ $('vForm').classList.remove('hide');
+}
+async function subir(bucket,file){
+ var c='perfil/'+U.id+'/'+Date.now()+'-'+Math.random().toString(36).slice(2,7)+'.'+ext(file);
+ var r=await sb.storage.from(bucket).upload(c,file,{contentType:file.type||undefined,upsert:false});
+ if(r.error)throw new Error(r.error.message);
+ return c;
+}
+$('fFoto').onchange=async function(){
+ var f=this.files[0];this.value='';if(!f)return;
+ if(f.size>8*1024*1024)return dizer('A foto tem mais de 8 MB.');
+ dizer('A enviar a foto…',true);
+ try{var c=await subir('verificacoes',f);FOTO=sb.storage.from('verificacoes').getPublicUrl(c).data.publicUrl;mostrarFoto(FOTO);dizer('Foto enviada. Toque em Guardar perfil.',true)}catch(e){dizer(e.message)}
+};
+$('fBi').onchange=async function(){
+ var f=this.files[0];this.value='';if(!f)return;
+ if(f.size>8*1024*1024)return dizer('A foto tem mais de 8 MB.');
+ dizer('A enviar o documento…',true);
+ try{BI=await subir('identidades',f);mostrarBi(BI);dizer('Documento enviado. Toque em Guardar perfil.',true)}catch(e){dizer(e.message)}
+};
+$('gr').onclick=async function(){
+ var b=this;b.disabled=true;dizer('');
+ var r=await sb.rpc('perfil_meu_guardar',{p_nome:$('nome').value,p_foto_url:FOTO,p_bi_url:BI,p_bi_numero:$('num').value,p_bi_validade:$('val').value||null,p_bairro:$('bai').value});
+ b.disabled=false;
+ if(r.error)return dizer(r.error.message);
+ dizer('✅ Perfil guardado.',true);
+ if(Q.get('obrigatorio'))setTimeout(function(){location.href=VOLTAR},900);
+};
+iniciar();
+</script>
+</body>
+</html>
