@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Meios para receber · B-Babilônia</title>
+<meta name="color-scheme" content="light">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0}
+body{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:#f1effb;color:#1b1740;line-height:1.4}
+.top{background:linear-gradient(135deg,#065f46 0%,#059669 55%,#0ea5e9 100%);color:#fff;padding:22px 16px 58px;border-radius:0 0 28px 28px}
+.top .lg{font-size:13px;letter-spacing:2px;color:#fcd34d;font-weight:bold}
+.top h1{margin:8px 0 4px;font-size:23px}.top p{font-size:14px;color:#d1fae5}
+main{padding:0 14px 40px;margin:-40px auto 0;max-width:620px}
+.voltar{display:inline-block;background:#fff;color:#065f46;font-weight:800;border-radius:999px;padding:8px 14px;margin-bottom:12px;box-shadow:0 4px 12px #0002;font-size:14px;text-decoration:none}
+.cx{background:#fff;border-radius:16px;padding:16px;box-shadow:0 4px 14px #0001;margin-bottom:12px}
+.cx h2{font-size:16px;margin-bottom:8px}
+label{display:block;font-size:13px;color:#6b7280;margin-top:10px;font-weight:700}
+input,select{width:100%;border:1.5px solid #ddd;border-radius:10px;padding:11px;font-size:16px;margin-top:4px;background:#fff;color:#1b1740}
+.dica{font-size:12.5px;color:#6b7280;margin-top:4px}
+.bt{border:0;border-radius:12px;padding:13px;font-weight:800;font-size:15px;width:100%;margin-top:14px;background:#059669;color:#fff}
+.bt:disabled{opacity:.55}
+.tps{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px}
+.tps label{margin:0;border:2px solid #e5e7eb;border-radius:12px;padding:11px;text-align:center;color:#1b1740;font-size:14.5px}
+.tps input{display:none}.tps label.on{border-color:#059669;background:#ecfdf5;color:#065f46}
+.mr{display:flex;gap:10px;align-items:center;padding:11px 0;border-top:1px solid #eee}.mr:first-child{border-top:0}
+.mr .t{flex:1;min-width:0}.mr b{display:block;font-size:15px}.mr small{color:#6b7280;font-size:13px;word-break:break-all}
+.mr button{border:0;border-radius:10px;padding:8px 10px;font-size:13px;font-weight:700;background:#fee2e2;color:#b91c1c}
+.mr button.p{background:#ecfdf5;color:#065f46}
+.bdg{display:inline-block;font-size:12px;font-weight:800;border-radius:999px;padding:2px 8px;background:#d1fae5;color:#065f46;margin-left:6px}
+.msg{font-size:14px;margin-top:10px;color:#b91c1c;white-space:pre-line}.msg.ok{color:#047857}
+.aviso{border-left:6px solid #f59e0b;background:#fffbeb;border-radius:12px;padding:12px;font-size:14px}
+.liga{display:block;margin-top:12px;font-size:13.5px;color:#065f46;font-weight:700}
+.hide{display:none!important}
+</style>
+</head>
+<body>
+<div class="top"><div class="lg">BBABILÔNIA</div><h1>💰 Meios para receber</h1><p>Onde a BBabilônia lhe envia o dinheiro das vendas, depois de o atendimento confirmar os produtos.</p></div>
+<main>
+ <a class="voltar" href="painel-vendedor-v2.html#inicio">← Voltar ao painel</a>
+ <section id="vEntrar" class="cx hide">
+  <h2>Entrar</h2>
+  <label>Email</label><input id="em" type="email" autocomplete="email">
+  <label>Palavra-passe</label><input id="pw" type="password" autocomplete="current-password">
+  <button class="bt" id="ent" type="button">Entrar</button><p class="msg" id="eMsg"></p>
+ </section>
+ <section id="vSemLoja" class="cx hide"><h2>Ainda não tem loja</h2><p>Crie primeiro a sua loja. <a href="loja-criar.html">Criar loja</a></p></section>
+ <section id="vApp" class="hide">
+  <div class="cx" id="estado"></div>
+  <div class="cx"><h2>Os meus meios para receber</h2><div id="lista">A carregar…</div></div>
+  <div class="cx">
+   <h2>➕ Acrescentar meio para receber</h2>
+   <div class="dica" id="paisTxt"></div>
+   <div class="tps" id="tipos"></div>
+   <div id="fMovel">
+    <label id="lNum">Número</label><input id="num" type="tel" inputmode="tel" maxlength="18" placeholder="">
+    <div class="dica" id="dNum"></div>
+   </div>
+   <div id="fBanco" class="hide">
+    <label>Nome do banco</label><input id="banco" maxlength="60" placeholder="Ex.: BCI, Millennium bim, Standard Bank">
+    <div id="cConta" class="hide"><label id="lConta">Número de conta</label><input id="conta" inputmode="numeric" maxlength="24"></div>
+    <div id="cCod"><label id="lCod">NIB</label><input id="cod" inputmode="numeric" maxlength="25"><div class="dica" id="dCod"></div></div>
+   </div>
+   <div id="fInt" class="hide">
+    <label>País do banco</label><select id="paisI"></select>
+    <label>Nome do banco</label><input id="bancoI" maxlength="80" placeholder="Nome do banco">
+    <label>Código SWIFT / BIC (8 ou 11 letras e números)</label><input id="swiftI" maxlength="11" autocapitalize="characters" placeholder="ex.: BKCHCNBJ">
+    <label>IBAN (se o seu país tiver)</label><input id="ibanI" maxlength="34" autocapitalize="characters">
+    <label>Número de conta (se não tiver IBAN)</label><input id="contaI" maxlength="34" inputmode="numeric">
+    <label>Moeda para receber</label>
+    <select id="moedaI"><option value="USD">USD — dólar americano</option><option value="EUR">EUR — euro</option><option value="CNY">CNY — yuan</option></select>
+    <div class="dica">Peça ao seu banco o código SWIFT/BIC para receber transferências internacionais.</div>
+   </div>
+   <div id="fCri" class="hide">
+    <label>Rede</label>
+    <select id="redeC"><option value="USDT TRC20">USDT — rede TRON (TRC20)</option><option value="USDT ERC20">USDT — rede Ethereum (ERC20)</option><option value="USDT BEP20">USDT — rede BNB (BEP20)</option></select>
+    <label>Endereço da carteira</label><input id="cartC" maxlength="100" autocapitalize="off" autocomplete="off" placeholder="Cole aqui o endereço da sua carteira">
+    <div class="dica">Confira letra a letra e use a mesma rede que escolheu. Um endereço errado perde o dinheiro.</div>
+   </div>
+   <label>Nome do titular *</label><input id="tit" maxlength="80" placeholder="Nome como está registado no banco ou no M-Pesa">
+   <div class="dica">Tem de ser o titular da loja (o mesmo nome do documento de identificação ou da empresa). Pagamentos para outras pessoas não são feitos.</div>
+   <button class="bt" id="guardar" type="button">Guardar</button><p class="msg" id="fMsg"></p>
+   <a class="liga hide" id="ligaConta" href="conta-bancaria.html">🏦 Para pedir levantamentos do saldo, confirme também a sua conta bancária completa ›</a>
+  </div>
+ </section>
+</main>
+<script>
+var sb=supabase.createClient('https://dsfoqoeawvjafypycldz.supabase.co','sb_publishable_BN4NiVcDab9CqdTY_odgDA_uUOhjja0');
+function $(i){return document.getElementById(i)}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+var CODES="AF AL DZ AD AO AG AR AM AW AU AT AZ BS BH BD BB BY BE BZ BJ BM BT BO BA BW BR BN BG BF BI CV KH CM CA KY CF TD CL CN CO KM CG CD CR CI HR CU CW CY CZ DK DJ DM DO EC EG SV GQ ER EE SZ ET FO FJ FI FR GF PF GA GM GE DE GH GI GR GL GD GP GU GT GG GN GW GY HT HN HK HU IS IN ID IR IQ IE IM IL IT JM JP JE JO KZ KE KI XK KW KG LA LV LB LS LR LY LI LT LU MO MG MW MY MV ML MT MH MQ MR MU YT MX FM MD MC MN ME MA MZ MM NA NR NP NL NC NZ NI NE NG MK NO OM PK PW PS PA PG PY PE PH PL PT PR QA RE RO RU RW KN LC VC WS SM ST SA SN RS SC SL SG SX SK SI SB SO ZA KR SS ES LK SD SR SE CH SY TW TJ TZ TH TL TG TO TT TN TR TM TC TV UG UA AE GB US UY UZ VU VA VE VN VG VI YE ZM ZW".split(" ");
+var DN=null;try{DN=new Intl.DisplayNames(['pt'],{type:'region'})}catch(e){}
+function nomeP(c){try{return(DN&&DN.of(c))||c}catch(e){return c}}
+/* (19/11/2026) Moçambique: M-Pesa (clientes de Moçambique) + banco SWIFT e cripto (clientes de fora). e-Mola indisponível de momento; mKesh deixou de existir */
+var TIPOS_MZ=[['mpesa','📱 M-Pesa','Clientes de Moçambique · 84 ou 85 + 7 algarismos',false],['banco','🏦 Banco (SWIFT)','Clientes de fora de Moçambique',false],['cripto','🪙 Cripto (USDT)','Clientes de fora de Moçambique',false],['emola','📱 e-Mola','Indisponível de momento',true]];
+var NOME_TIPO={mpesa:'M-Pesa',emola:'e-Mola',mkesh:'mKesh',mixx:'Mixx by Yas',airtel:'Airtel Money',halopesa:'HaloPesa',payshap:'PayShap',banco:'Conta bancária (SWIFT)',cripto:'Cripto (USDT)'};
+var U=null,PAIS='MZ',MZ=true,TIPO='mpesa',L=[];
+function limpa(v){return String(v||'').replace(/\s+/g,'').toUpperCase()}
+async function iniciar(){
+ var s=(await sb.auth.getSession()).data.session;
+ if(!s){vista('vEntrar');return}
+ U=s.user;
+ var l=await sb.from('lojas').select('pais,nome').eq('dono_id',U.id).maybeSingle();
+ if(!l.data){vista('vSemLoja');return}
+ PAIS=String(l.data.pais||'MZ').toUpperCase();MZ=PAIS==='MZ';
+ TIPO=MZ?'mpesa':'banco';
+ vista('vApp');montarPaises();desenharTipos();carregar();
+}
+function vista(v){['vEntrar','vSemLoja','vApp'].forEach(function(x){$(x).classList.toggle('hide',x!==v)})}
+$('ent').onclick=async function(){var r=await sb.auth.signInWithPassword({email:$('em').value.trim(),password:$('pw').value});if(r.error){$('eMsg').textContent='Email ou palavra-passe errados.';return}iniciar()};
+function montarPaises(){
+ var l=CODES.map(function(c){return{c:c,n:nomeP(c)}}).sort(function(a,b){return a.n.localeCompare(b.n,'pt')});
+ $('paisI').innerHTML=l.map(function(p){return'<option value="'+p.c+'"'+(p.c===PAIS?' selected':'')+'>'+esc(p.n)+'</option>'}).join('');
+}
+function desenharTipos(){
+ if(MZ){
+  $('paisTxt').textContent='Moçambique 🇲🇿: clientes de Moçambique pagam-lhe por M-Pesa (entra sozinho no seu número). Clientes de fora de Moçambique pagam-lhe por conta bancária (SWIFT) ou por cripto (USDT). O e-Mola está indisponível de momento.';
+  if(!TIPOS_MZ.some(function(x){return x[0]===TIPO}))TIPO='mpesa';
+  $('tipos').innerHTML=TIPOS_MZ.map(function(x){return'<label class="'+(x[0]===TIPO?'on':'')+'"'+(x[3]?' style="opacity:.5"':'')+'><input type="radio" name="tp" value="'+x[0]+'"'+(x[0]===TIPO?' checked':'')+(x[3]?' disabled':'')+'>'+x[1]+(x[2]?'<br><small style="font-weight:400;color:#6b7280">'+x[2]+'</small>':'')+'</label>'}).join('');
+  document.querySelectorAll('input[name=tp]').forEach(function(r){r.onchange=function(){TIPO=r.value;desenharTipos()}});
+  $('fMovel').classList.toggle('hide',TIPO!=='mpesa');$('fBanco').classList.add('hide');$('fInt').classList.toggle('hide',TIPO!=='banco');$('fCri').classList.toggle('hide',TIPO!=='cripto');
+  $('lNum').textContent='Número '+NOME_TIPO[TIPO]+' (+258)';
+  $('num').placeholder='84 123 4567';
+  $('dNum').textContent='Escreva o número sem o indicativo +258.';
+  $('ligaConta').classList.add('hide');
+ }else{
+  TIPO='banco';
+  $('paisTxt').innerHTML='A sua loja é de <b>'+esc(nomeP(PAIS))+'</b>. Fora de Moçambique o dinheiro é enviado por <b>transferência bancária internacional (SWIFT)</b>, em USD, EUR ou Yuan. M-Pesa e e-Mola só existem para lojas de Moçambique.';
+  $('tipos').innerHTML='';
+  $('fMovel').classList.add('hide');$('fBanco').classList.add('hide');$('fInt').classList.remove('hide');
+  $('ligaConta').classList.remove('hide');
+ }
+}
+function descr(m){
+ if(m.tipo==='cripto')return esc(m.banco||'USDT')+' · '+esc(m.numero);
+ if(m.tipo==='banco'&&m.swift)return esc(m.banco)+(m.pais_banco?' ('+esc(nomeP(m.pais_banco))+')':'')+' · SWIFT '+esc(m.swift)+(m.iban?' · IBAN '+esc(m.iban):(m.conta?' · Conta '+esc(m.conta):''))+(m.moeda?' · '+esc(m.moeda):'');
+ if(m.tipo==='banco')return esc(m.banco)+' · '+(m.conta?'Conta '+esc(m.conta):'')+(m.codigo?(m.pais==='MZ'?' NIB ':' · Agência ')+esc(m.codigo):'');
+ return esc(m.numero);
+}
+async function carregar(){
+ var r=await sb.from('meios_recebimento').select('*').eq('dono_id',U.id).order('criado_em');
+ if(r.error){$('lista').innerHTML='<p class="msg">'+esc(/relation|exist/i.test(r.error.message)?'Falta correr o SQL novo no Supabase.':r.error.message)+'</p>';return}
+ L=r.data||[];
+ /* Moçambique: só conta o M-Pesa (e-Mola indisponível; conta bancária e mKesh deixaram de existir) */
+ if(MZ)L=L.filter(function(m){return m.tipo==='mpesa'||m.tipo==='cripto'||(m.tipo==='banco'&&m.swift)});
+ $('estado').innerHTML=L.length?'<b>✅ Pronto para receber.</b> Já pode criar links de pagamento no chat.'+(MZ?' Clientes de Moçambique: entra sozinho no M-Pesa. Clientes de fora: a BBabilônia envia para o seu banco (SWIFT) ou cripto.':''):'<div class="aviso">⚠️ Ainda não registou nenhum meio para receber. <b>Sem isto não pode criar links de pagamento</b> no chat.</div>';
+ $('lista').innerHTML=L.length?L.map(function(m){return'<div class="mr"><div class="t"><b>'+esc(NOME_TIPO[m.tipo]||m.tipo)+(m.principal?'<span class="bdg">Principal</span>':'')+'</b><small>'+descr(m)+' · '+esc(m.titular)+'</small></div>'+
+  (m.principal?'':'<button class="p" data-p="'+esc(m.id)+'">Principal</button>')+'<button data-x="'+esc(m.id)+'">Apagar</button></div>'}).join(''):'<p style="color:#6b7280">Nenhum ainda.</p>';
+}
+$('lista').addEventListener('click',async function(e){
+ var p=e.target.closest('[data-p]'),x=e.target.closest('[data-x]');
+ if(p){p.disabled=true;await sb.from('meios_recebimento').update({principal:false}).eq('dono_id',U.id);var r=await sb.from('meios_recebimento').update({principal:true}).eq('id',p.getAttribute('data-p'));if(r.error)alert(r.error.message);carregar();return}
+ if(x){if(!confirm('Apagar este meio para receber?'))return;x.disabled=true;var r2=await sb.from('meios_recebimento').delete().eq('id',x.getAttribute('data-x'));if(r2.error)alert(r2.error.message);carregar()}
+});
+function swiftOk(s){return/^[A-Z]{4}[A-Z]{2}[A-Z0-9]{2}([A-Z0-9]{3})?$/.test(s)}
+function ibanOk(s){return/^[A-Z]{2}\d{2}[A-Z0-9]{10,30}$/.test(s)}
+$('guardar').onclick=async function(){
+ var m=$('fMsg');m.className='msg';m.textContent='';
+ var reg={dono_id:U.id,pais:PAIS,tipo:TIPO,titular:$('tit').value.trim(),principal:!L.length};
+ if(reg.titular.length<3)return m.textContent='Escreva o nome do titular.';
+ if(!MZ||TIPO==='banco'){
+  reg.tipo='banco';reg.banco=$('bancoI').value.trim();reg.pais_banco=$('paisI').value;
+  reg.swift=limpa($('swiftI').value);reg.iban=limpa($('ibanI').value)||null;reg.conta=$('contaI').value.trim()||null;reg.moeda=$('moedaI').value;
+  if(reg.banco.length<2)return m.textContent='Escreva o nome do banco.';
+  if(!swiftOk(reg.swift))return m.textContent='O código SWIFT/BIC não é válido (8 ou 11 letras e números).';
+  if(reg.iban&&!ibanOk(reg.iban))return m.textContent='O IBAN não está correto. Confira letra a letra.';
+  if(!reg.iban&&!reg.conta)return m.textContent='Escreva o IBAN ou o número de conta.';
+  reg.codigo=reg.swift;
+ }else if(TIPO==='cripto'){
+  reg.tipo='cripto';reg.banco=$('redeC').value;reg.numero=$('cartC').value.trim();reg.moeda='USDT';
+  if(!/^[A-Za-z0-9]{26,64}$/.test(reg.numero))return m.textContent='O endereço da carteira não parece correto. Confira e cole outra vez.';
+ }else{
+  reg.tipo='mpesa';reg.numero=$('num').value.trim();
+  var d=reg.numero.replace(/\D/g,'').replace(/^258/,'');
+  if(d.length!==9)return m.textContent='Escreva o número completo (9 algarismos, sem +258).';
+  if(!/^8[45]/.test(d))return m.textContent='O número M-Pesa começa por 84 ou 85.';
+  reg.numero=d;
+ }
+ this.disabled=true;var r=await sb.from('meios_recebimento').insert(reg);this.disabled=false;
+ if(r.error)return m.textContent=/relation|exist/i.test(r.error.message)&&!/column/i.test(r.error.message)?'Falta correr o SQL novo no Supabase.':r.error.message;
+ m.className='msg ok';m.textContent='✅ Guardado.';['num','banco','conta','cod','tit','bancoI','swiftI','ibanI','contaI','cartC'].forEach(function(i){$(i).value=''});carregar();
+};
+iniciar();
+</script>
+<script src="fornecedor-idioma.js?v=1"></script>
+</body>
+    </html>
