@@ -214,7 +214,7 @@
     var t = $("bb-pm-t"), er = $("bb-pm-e"), tm;
     async function api(corpo) {
       var s = (await sb.auth.getSession()).data.session; if (!s) return { erro: "Entre de novo na sua conta." };
-      var r = await fetch("/api/mpesa-transporte", { method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer " + s.access_token }, body: JSON.stringify(corpo) });
+      var r = await fetch("/api/mpesa-pagar", { method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer " + s.access_token }, body: JSON.stringify(Object.assign({ tipo: "transporte" }, corpo)) });
       try { return await r.json(); } catch (x) { return { erro: "O pagamento M-Pesa não respondeu. Tente outra vez." }; }
     }
     function cotar() {
