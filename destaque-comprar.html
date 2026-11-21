@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Pôr produto em destaque · BBabilônia</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0}
+body{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:#f4f1ec;color:#0f172a;line-height:1.45;color-scheme:light}
+.bar{position:sticky;top:0;z-index:5;background:linear-gradient(135deg,#ea580c,#FF6A00);color:#fff;padding:12px 14px;display:flex;align-items:center;gap:8px;box-shadow:0 4px 14px #0003}
+.bar h1{font-size:17px;flex:1}.bar a{color:#fff;background:#ffffff2e;border-radius:999px;padding:7px 12px;font-size:13px;font-weight:700;text-decoration:none}
+main{max-width:560px;margin:0 auto;padding:14px 12px 60px}
+.box{background:#fff;border-radius:16px;padding:14px;box-shadow:0 4px 14px #0001;margin-bottom:12px}
+.box h2{font-size:16px;margin-bottom:6px}.l{font-size:14px;color:#475569;margin:3px 0}.hide{display:none}
+.prod{display:flex;gap:10px;align-items:center;padding:9px;border:2px solid #e2e8f0;border-radius:12px;margin-top:8px;cursor:pointer}
+.prod.on{border-color:#FF6A00;background:#fff7ed}.prod img,.prod .sf{width:46px;height:46px;border-radius:8px;object-fit:cover;background:#f1f5f9;flex:none}
+.prod b{display:block;font-size:14.5px}.prod small{color:#16a34a;font-weight:700}
+.tot{font-size:30px;font-weight:900;color:#c2410c;text-align:center;margin:6px 0 0}
+.sub{text-align:center;color:#475569;font-size:14px}
+input[type=range]{width:100%;height:36px;accent-color:#FF6A00;margin-top:10px}
+.esc{display:flex;justify-content:space-between;font-size:12px;color:#64748b}
+.alc{background:#fff7ed;border-radius:12px;padding:10px;margin-top:10px;text-align:center}.alc b{font-size:20px;color:#c2410c;display:block}
+.alc i{display:block;height:8px;border-radius:9px;background:#fed7aa;margin-top:8px;overflow:hidden}.alc i u{display:block;height:100%;background:#FF6A00;width:0;transition:width .15s}
+input[type=text],input[type=tel],textarea{width:100%;padding:12px;border:2px solid #e2e8f0;border-radius:12px;font:inherit;font-size:16px;margin-top:8px}
+.bt{border:0;border-radius:12px;padding:14px;font:inherit;font-size:16px;font-weight:800;color:#fff;background:#FF6A00;width:100%;margin-top:12px}.bt:disabled{opacity:.5}
+.msg{font-size:14px;margin-top:8px;color:#dc2626;white-space:pre-line}.msg.ok{color:#059669}
+.ins{background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:10px;font-size:14px;white-space:pre-wrap;word-break:break-word;margin-top:8px}
+.ped{font-size:13.5px;border-top:1px solid #e2e8f0;padding:8px 0}.ped:first-of-type{border:0}
+.est{font-size:12px;font-weight:800;padding:2px 8px;border-radius:20px}.e1{background:#fef3c7;color:#92400e}.e2{background:#d1fae5;color:#065f46}.e3{background:#ffe4e6;color:#9f1239}
+.pv img{width:64px;height:64px;object-fit:cover;border-radius:8px;margin:6px 6px 0 0}
+</style>
+</head>
+<body>
+<div class="bar"><h1>⭐ Pôr em destaque</h1><a href="painel-vendedor.html">← Painel</a></div>
+<main>
+ <section id="vEntrar" class="box hide"><h2>Entre na sua conta de fornecedor</h2><p class="l">Abra a página inicial do fornecedor, entre, e volte aqui.</p></section>
+ <section id="vApp" class="hide">
+  <div class="box"><h2>1. Escolha o produto</h2><div id="prods"></div></div>
+  <div class="box" id="bPlano"><h2>2. Quanto quer pagar?</h2>
+   <p class="tot" id="tot">—</p><p class="sub" id="sub"></p>
+   <input type="range" id="barra" min="1" max="30" step="1" value="7">
+   <div class="esc"><span id="eMin"></span><span id="eMax"></span></div>
+   <div class="alc">Alcance estimado<b id="alc">—</b><span id="fim" style="font-size:13px;color:#475569"></span><i><u id="alcBar"></u></i></div>
+   <p class="l" style="margin-top:8px">O produto aparece em <b>⭐ Em destaque</b> na página inicial e sai sozinho quando o tempo acabar. Se pagar outra vez antes de acabar, os dias somam-se.</p>
+  </div>
+  <div class="box hide" id="bMZ"><h2>3. Pagar com M-Pesa</h2>
+   <p class="l">Escreva o seu número M-Pesa. Vai aparecer no telemóvel o pedido do PIN: é só confirmar.</p>
+   <input type="tel" id="tel" placeholder="84 123 4567" inputmode="tel" autocomplete="tel">
+   <button class="bt" id="pagar">Pagar</button><p class="msg" id="mMsg"></p>
+  </div>
+  <div class="box hide" id="bEx"><h2>3. Pagar</h2>
+   <div class="ins" id="ins"></div>
+   <input type="text" id="ref" placeholder="Referência da transferência (opcional se enviar foto)">
+   <p class="l" style="margin-top:8px">Foto do comprovativo:</p><input type="file" id="fo" accept="image/*" multiple style="margin-top:6px">
+   <div class="pv" id="pv"></div>
+   <button class="bt" id="enviar">Enviar pagamento</button><p class="msg" id="xMsg"></p>
+  </div>
+  <div class="box"><h2>Os meus destaques</h2><div id="peds"><p class="l">Ainda não há.</p></div></div>
+ </section>
+</main>
+<script>
+var sb=supabase.createClient('https://dsfoqoeawvjafypycldz.supabase.co','sb_publishable_BN4NiVcDab9CqdTY_odgDA_uUOhjja0');
+function $(i){return document.getElementById(i)}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function n(v,d){return Number(v||0).toLocaleString('pt-PT',{maximumFractionDigits:d==null?2:d})}
+function dh(d){try{return new Date(d).toLocaleString('pt-PT',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})}catch(e){return''}}
+function vista(v){['vEntrar','vApp'].forEach(function(x){$(x).classList.toggle('hide',x!==v)})}
+var D=null,PROD=null,FOT=[];
+async function iniciar(){
+ var s=(await sb.auth.getSession()).data.session;if(!s){vista('vEntrar');return}
+ var r=await sb.rpc('destaque_inicio');
+ if(r.error){vista('vApp');$('prods').innerHTML='<p class="msg">'+esc(/function|find|exist/i.test(r.error.message)?'Falta correr o SQL do destaque no Supabase.':r.error.message)+'</p>';return}
+ D=r.data;vista('vApp');
+ var b=$('barra');b.max=D.max_dias;b.value=Math.min(7,D.max_dias);
+ $('eMin').textContent='1 dia';$('eMax').textContent=D.max_dias+' dias';
+ $('bMZ').classList.toggle('hide',!D.mz);$('bEx').classList.toggle('hide',D.mz);
+ $('ins').textContent=D.instrucoes||'';
+ var ps=D.produtos||[];
+ $('prods').innerHTML=ps.length?ps.map(function(p){return '<div class="prod" data-id="'+esc(p.id)+'">'+(p.foto?'<img alt="" src="'+esc(p.foto)+'">':'<div class="sf"></div>')+'<div><b>'+esc(p.nome)+'</b>'+(p.ate?'<small>⭐ em destaque até '+esc(dh(p.ate))+'</small>':'')+'</div></div>'}).join(''):'<p class="l">Ainda não tem produtos.</p>';
+ if(ps.length===1){PROD=ps[0].id;marcar()}
+ calc();pedidos();$('pagar').disabled=false;
+}
+function marcar(){document.querySelectorAll('.prod').forEach(function(e){e.classList.toggle('on',e.getAttribute('data-id')===PROD)})}
+$('prods').addEventListener('click',function(e){var p=e.target.closest('.prod');if(!p)return;PROD=p.getAttribute('data-id');marcar()});
+function dias(){return parseInt($('barra').value,10)||1}
+function calc(){
+ if(!D)return;var d=dias(),v=D.mz?d*D.preco_dia_mzn:d*D.preco_dia_usd,m=D.mz?'MZN':'USD';
+ $('tot').textContent=n(v)+' '+m;$("sub").textContent="Dura "+d+(d===1?" dia":" dias")+" · mínimo "+(D.mz?n(D.preco_dia_mzn)+" MZN":n(D.preco_dia_usd)+" USD");
+ var a=d*D.alcance_dia,mx=D.max_dias*D.alcance_dia;
+ $('alc').textContent='≈ '+n(a,0)+' pessoas';$('alcBar').style.width=Math.max(4,Math.round(100*a/mx))+'%';
+ $('fim').textContent='Termina em '+dh(new Date(Date.now()+d*864e5));
+ if(D.mz){$('pagar').textContent='Pagar '+n(v)+' MZN'}
+}
+$('barra').addEventListener('input',calc);
+function pedidos(){
+ var l=D.pedidos||[];if(!l.length)return;
+ $('peds').innerHTML=l.map(function(p){var e=p.estado==='pago'?'<span class="est e2">✅ Pago</span>':p.estado==='recusado'?'<span class="est e3">❌ Recusado</span>':'<span class="est e1">⏳ A confirmar</span>';
+  return '<div class="ped"><b>'+esc(p.produto_nome||'Produto')+'</b> · '+p.dias+' dias · '+n(p.valor)+' '+esc(p.moeda)+' '+e+(p.motivo?'<br><span style="color:#dc2626">'+esc(p.motivo)+'</span>':'')+'<br><span class="l">'+esc(dh(p.criado_em))+'</span></div>'}).join('');
+}
+$('pagar').onclick=async function(){
+ var m=$('mMsg');m.className='msg';m.textContent='';
+ if(!PROD){m.textContent='Escolha o produto.';return}
+ var s=(await sb.auth.getSession()).data.session;if(!s){m.textContent='Entre de novo na sua conta.';return}
+ var b=$('pagar');b.disabled=true;b.textContent='Veja o telemóvel e ponha o PIN…';
+ try{
+  var r=await fetch('/api/mpesa-pagar',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+s.access_token},body:JSON.stringify({tipo:'destaque',produto_id:PROD,dias:dias(),telefone:$('tel').value})});
+  var j=await r.json();
+  if(j.erro){m.textContent=j.erro;b.disabled=false;calc();return}
+  m.className='msg ok';m.textContent='✅ Pago! O produto já está em destaque'+(j.ate?' até '+dh(j.ate):'')+'.';
+  setTimeout(iniciar,1200);
+ }catch(e){m.textContent='Sem ligação. Se o M-Pesa já lhe pediu o PIN, espere e veja os seus destaques antes de pagar outra vez.';b.disabled=false;calc()}
+};
+$('fo').onchange=function(){FOT=FOT.concat(Array.prototype.slice.call(this.files)).slice(0,6);this.value='';$('pv').innerHTML=FOT.map(function(f){return '<img src="'+URL.createObjectURL(f)+'" alt="">'}).join('')};
+$('enviar').onclick=async function(){
+ var m=$('xMsg');m.className='msg';m.textContent='';
+ if(!PROD){m.textContent='Escolha o produto.';return}
+ var s=(await sb.auth.getSession()).data.session;if(!s){m.textContent='Entre de novo na sua conta.';return}
+ var b=$('enviar');b.disabled=true;b.textContent='A enviar…';
+ try{
+  var cam=[];
+  for(var i=0;i<FOT.length;i++){var f=FOT[i],ext=((f.name||'').split('.').pop()||'jpg').toLowerCase().replace(/[^a-z0-9]/g,'')||'jpg';
+   var p=s.user.id+'/destaque/'+Date.now()+'-'+i+'.'+ext;
+   var up=await sb.storage.from('provas-envio').upload(p,f,{contentType:f.type||undefined,upsert:false});
+   if(up.error)throw new Error('Foto: '+up.error.message);cam.push(p)}
+  var r=await sb.rpc('destaque_pedir',{p_produto:PROD,p_dias:dias(),p_ref:$('ref').value.trim(),p_fotos:cam});
+  if(r.error)throw new Error(r.error.message);
+  m.className='msg ok';m.textContent='✅ Enviado. A BBabilônia confirma o pagamento e o destaque começa logo a seguir.';FOT=[];$('pv').innerHTML='';$('ref').value='';
+  setTimeout(iniciar,1200);
+ }catch(e){m.textContent=e.message}
+ b.disabled=false;b.textContent='Enviar pagamento';
+};
+iniciar();
+</script>
+</body>
+</html>

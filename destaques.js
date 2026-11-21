@@ -1,6 +1,6 @@
 /* destaques.js — B-Babilônia: fila "⭐ Em destaque" no topo da página inicial.
-   Os produtos são escolhidos pelo dono no Painel do dono › Destaques da página inicial.
-   Sem destaques escolhidos, não aparece nada. Não altera index.html. */
+   Mostra primeiro os produtos com destaque PAGO ainda dentro do prazo (saem sozinhos quando o tempo acaba),
+   depois os escolhidos pelo dono no Painel do dono › Destaques da página inicial. Sem nenhum, não aparece nada. Não altera index.html. */
 (function () {
   if (window.__bbDestaques) return; window.__bbDestaques = 1;
   var pg = location.pathname.split("/").pop() || "index.html";
@@ -25,9 +25,19 @@
 
   async function iniciar() {
     try {
-      var d = await (await fetch(SUPA + "/rest/v1/destaques?select=produto_id,ordem&order=ordem.asc&limit=20", { headers: H })).json();
-      if (!Array.isArray(d) || !d.length) return;
-      var ids = d.map(function (x) { return x.produto_id; });
+      var ids = [], visto = {};
+      function juntar(l) { (Array.isArray(l) ? l : []).forEach(function (x) { var k = String(x.produto_id); if (!visto[k]) { visto[k] = 1; ids.push(x.produto_id); } }); }
+      /* pagos: só os que ainda não acabaram (o servidor também esconde os acabados) */
+      try {
+        var pg2 = await (await fetch(SUPA + "/rest/v1/destaque_ativos?select=produto_id,ate&ate=gt." + encodeURIComponent(new Date().toISOString()) + "&order=ate.desc&limit=20", { headers: H })).json();
+        juntar(pg2);
+      } catch (e) {}
+      try {
+        var d = await (await fetch(SUPA + "/rest/v1/destaques?select=produto_id,ordem&order=ordem.asc&limit=20", { headers: H })).json();
+        juntar(d);
+      } catch (e) {}
+      ids = ids.slice(0, 20);
+      if (!ids.length) return;
       var l = await (await fetch(SUPA + "/rest/v1/products?select=*&id=in.(" + ids.map(encodeURIComponent).join(",") + ")", { headers: H })).json();
       if (!Array.isArray(l)) return;
       var por = {}; l.forEach(function (p) { if (p.active !== false) por[String(p.id)] = p; });
