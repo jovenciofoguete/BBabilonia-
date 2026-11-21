@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Mensalidades dos serviços · BBabilônia</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script>if(!/^(admin|administrator)\./i.test(location.hostname))document.write('<script src="atd-sessao.js?v=1"><\/script>');</script>
+<style>
+*{box-sizing:border-box;margin:0}
+body{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:#eef2f7;color:#0f172a;line-height:1.45;color-scheme:light}
+.bar{position:sticky;top:0;z-index:5;background:linear-gradient(135deg,#065f46,#10b981);color:#fff;padding:12px 14px;display:flex;align-items:center;gap:8px;box-shadow:0 4px 14px #0003}
+.bar h1{font-size:17px;flex:1}.bar a{color:#fff;background:#ffffff2e;border-radius:999px;padding:7px 12px;font-size:13px;font-weight:700;text-decoration:none}
+main{max-width:760px;margin:0 auto;padding:14px 12px 60px}
+.tabs{display:flex;gap:6px;margin-bottom:12px}.tabs button{flex:1;border:0;border-radius:12px;padding:12px 8px;font:inherit;font-weight:800;background:#fff;color:#475569}
+.tabs button.on{background:#10b981;color:#fff}.tabs i{font-style:normal;background:#ef4444;color:#fff;border-radius:999px;padding:0 7px;font-size:12px;margin-left:4px}
+.box{background:#fff;border-radius:16px;padding:14px;box-shadow:0 4px 14px #0001;margin-bottom:12px}
+.box h2{font-size:16px;margin-bottom:4px}
+.l{font-size:14px;color:#334155;margin:2px 0}.l b{color:#0f172a}
+.val{font-size:20px;font-weight:900;color:#065f46;margin:6px 0}
+.per{display:inline-block;font-size:12.5px;font-weight:800;padding:3px 10px;border-radius:20px;background:#dbeafe;color:#1e40af;vertical-align:middle}.per.ano{background:#ede9fe;color:#5b21b6}
+.ref{background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:10px;font-size:14px;white-space:pre-wrap;word-break:break-word;margin-top:8px}
+.fotos{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}.fotos a img{width:96px;height:96px;object-fit:cover;border-radius:10px;border:1px solid #e2e8f0}
+.est{display:inline-block;font-size:12.5px;font-weight:800;padding:4px 10px;border-radius:20px;margin-top:6px}
+.est.esp{background:#fef3c7;color:#92400e}.est.ok{background:#d1fae5;color:#065f46}.est.no{background:#ffe4e6;color:#9f1239}
+.bs{display:flex;gap:8px;margin-top:12px}.bs button{flex:1;border:0;border-radius:12px;padding:13px;font:inherit;font-size:15px;font-weight:800;color:#fff}
+.sim{background:#10b981}.nao{background:#ef4444}button:disabled{opacity:.5}
+textarea,input{width:100%;padding:11px;border:2px solid #e2e8f0;border-radius:12px;font:inherit;font-size:16px;margin-top:8px}
+.msg{font-size:14px;margin-top:8px;color:#dc2626;white-space:pre-line}.msg.ok{color:#059669}
+.vz{text-align:center;color:#64748b;padding:24px 10px}.hide{display:none}
+label{display:block;font-size:13px;font-weight:700;margin-top:10px;color:#475569}
+.bt{border:0;border-radius:12px;padding:12px;font:inherit;font-size:15px;font-weight:800;color:#fff;background:#2563eb;width:100%;margin-top:10px}
+</style>
+</head>
+<body>
+<script>/* Botão voltar do telemóvel: volta sempre ao painel principal e nunca sai do site */
+(function(){var H=(/^(admin|administrator)\./i.test(location.hostname)?'/':'atendimento.html');try{var r=document.referrer?new URL(document.referrer):null;if(r&&r.host===location.host&&history.length>1)return}catch(e){}
+var u=location.href;try{history.replaceState({bbBase:1},'',H);history.pushState({bbPag:1},'',u)}catch(e){return}
+addEventListener('popstate',function(e){if(e.state&&e.state.bbBase)location.replace(H)});})();</script>
+<div class="bar"><h1>🛠️ Mensalidades dos serviços</h1><a id="painel" href="atendimento.html">← Painel</a></div>
+<main>
+ <section id="vEntrar" class="box hide">
+  <h2>Entrar</h2>
+  <input id="em" type="email" placeholder="Email" autocomplete="username">
+  <input id="pw" type="password" placeholder="Palavra-passe" autocomplete="current-password">
+  <button class="bt" id="ent">Entrar</button><p class="msg" id="eMsg"></p>
+ </section>
+ <section id="vApp" class="hide">
+  <div class="tabs"><button id="sM" class="on">💵 Mensalidades</button><button id="sD">⭐ Destaques<i id="nD" class="hide"></i></button></div>
+  <div id="pM">
+  <p class="l" style="margin:0 2px 10px">Contas (de todos os países) que pagaram a mensalidade de uma categoria em "Aluguer, serviços e diversos" (na moeda do seu país). Aprove só depois de ver o dinheiro na conta: os anúncios dessa categoria ficam visíveis 30 dias (pagamento mensal) ou 12 meses (pagamento anual). Agentes de atendimento, agentes de busca e o dono podem tratar.</p>
+  <div class="tabs"><button id="tP" class="on">⏳ Por confirmar</button><button id="tT">📋 Todos</button></div>
+  <div id="lista"><div class="box vz">A carregar…</div></div>
+  </div>
+  <div id="pD" class="hide">
+   <p class="l" style="margin:0 2px 10px">Anúncios de "Aluguer, serviços e diversos" que pagaram destaque. O dinheiro entra nos mesmos números das mensalidades. Aprove só depois de ver o dinheiro na conta: o anúncio fica em destaque o número de dias pago, e sai sozinho quando acabar.</p>
+   <div class="box hide" id="cfg"><h2>💰 Preços do destaque (só o dono)</h2>
+    <label>Preço por dia (em MT; nos outros países converte pelo câmbio)</label><input id="cMt" type="number" min="1" step="any" inputmode="decimal">
+    <label>Aumento por cada 5 dias seguidos (%). 50 = 5 dias custam 7,5 dias</label><input id="cAum" type="number" min="0" max="1000" step="any" inputmode="decimal">
+    <label>Alcance estimado por dia (pessoas)</label><input id="cAlc" type="number" min="1" step="1" inputmode="numeric">
+    <label>Máximo de dias que se pode comprar</label><input id="cMax" type="number" min="1" max="365" step="1" inputmode="numeric">
+    <button class="bt" id="cGrava" type="button">Guardar preços</button><p class="msg" id="cMsg"></p></div>
+   <div id="listaD"><div class="box vz">A carregar…</div></div>
+  </div>
+ </section>
+</main>
+<script>
+/* sessão igual à das outras páginas da equipa: no service a do agente (atd-sessao.js, bb-atd); no administrator a do dono */
+var ADM=/^(admin|administrator)\./i.test(location.hostname);
+var sb=supabase.createClient('https://dsfoqoeawvjafypycldz.supabase.co','sb_publishable_BN4NiVcDab9CqdTY_odgDA_uUOhjja0',ADM?{}:(window.ATD_AUTH||{}));
+function $(i){return document.getElementById(i)}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function din(v,m){return Number(v||0).toLocaleString('pt-PT',{maximumFractionDigits:2})+' '+(m||'MZN')}
+function dh(d){try{return d?new Date(d).toLocaleString('pt-PT',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):''}catch(e){return''}}
+if(ADM)$('painel').setAttribute('href','/');
+var L=[],ABA='por';
+function vista(v){['vEntrar','vApp'].forEach(function(x){$(x).classList.toggle('hide',x!==v)})}
+async function iniciar(){var s=(await sb.auth.getSession()).data.session;if(!s){vista('vEntrar');return}vista('vApp');carregar();carregarD();config();if(/aba=destaques/.test(location.search))aba('D')}
+var PAINEL='M';
+function aba(x){PAINEL=x;$('pM').classList.toggle('hide',x!=='M');$('pD').classList.toggle('hide',x!=='D');$('sM').classList.toggle('on',x==='M');$('sD').classList.toggle('on',x==='D')}
+$('sM').onclick=function(){aba('M')};$('sD').onclick=function(){aba('D');carregarD()};
+var DL=[];
+async function carregarD(){
+ var r=await sb.rpc('servicos_destaques_lista');
+ if(r.error){$('listaD').innerHTML='<div class="box"><p class="msg">'+esc(/function|find|exist/i.test(r.error.message)?'Falta correr o SQL do destaque dos serviços no Supabase.':r.error.message)+'</p></div>';return}
+ DL=Array.isArray(r.data)?r.data:[];pintarD();
+}
+function pintarD(){
+ var n=DL.filter(function(x){return x.estado==='por_confirmar'}).length;
+ $('nD').textContent=n;$('nD').classList.toggle('hide',!n);
+ if(!DL.length){$('listaD').innerHTML='<div class="box vz">Ainda não há pedidos de destaque.</div>';return}
+ $('listaD').innerHTML=DL.map(function(p){
+  var est=p.estado==='confirmado'?'<span class="est ok">✅ Aprovado'+(p.decidido_por?' por '+esc(p.decidido_por):'')+' · '+esc(dh(p.decidido_em))+(p.ate?' · em destaque até '+esc(new Date(p.ate).toLocaleDateString('pt-PT')):'')+'</span>':
+   p.estado==='recusado'?'<span class="est no">❌ Recusado: '+esc(p.motivo)+'</span>':'<span class="est esp">⏳ Por aprovar</span>';
+  return '<div class="box" data-d="'+esc(p.id)+'"><h2>'+esc(p.titulo)+' <small style="font-weight:400;color:#64748b">· '+esc(p.categoria||'')+'</small></h2>'+
+   '<div class="val">'+din(p.valor,p.moeda==='MZN'?'MTS':(p.moeda||'MTS'))+' · 📱 '+esc(p.meio_nome||p.meio)+' <span class="per ano">⭐ '+esc(p.dias)+' dias</span></div>'+
+   '<p class="l"><b>Conta:</b> '+esc(p.conta||'—')+(p.pais?' · 🌍 '+esc(p.pais):'')+(p.provincia?' · 📍 '+esc(p.provincia):'')+'</p>'+
+   '<p class="l"><b>Enviado:</b> '+esc(dh(p.enviado_em))+'</p>'+
+   '<div class="ref">'+esc(p.ref)+'</div><div class="fotos" data-f></div>'+est+
+   (p.estado==='por_confirmar'?'<div class="bs"><button class="sim" data-dok="1">✅ O dinheiro entrou · aprovar</button><button class="nao" data-dok="0">❌ Não entrou</button></div><textarea rows="2" class="hide" data-mot placeholder="Motivo (a pessoa vai ver). Ex.: O valor não entrou na conta."></textarea><p class="msg"></p>':'')+'</div>';
+ }).join('');
+ DL.forEach(function(p){var c=document.querySelector('[data-d="'+p.id+'"] [data-f]');if(!c)return;
+  (p.fotos||[]).forEach(async function(cam){try{var u=await sb.storage.from('provas-envio').createSignedUrl(cam,3600);if(u.data&&u.data.signedUrl)c.insertAdjacentHTML('beforeend','<a href="'+esc(u.data.signedUrl)+'" target="_blank"><img src="'+esc(u.data.signedUrl)+'" alt="Prova"></a>');else c.insertAdjacentHTML('beforeend','<span class="l">📷 foto não abriu</span>')}catch(e){}})});
+}
+$('listaD').addEventListener('click',async function(ev){
+ var b=ev.target.closest('[data-dok]');if(!b)return;
+ var box=b.closest('[data-d]'),id=box.getAttribute('data-d'),ok=b.getAttribute('data-dok')==='1',m=box.querySelector('.msg'),mot=box.querySelector('[data-mot]');
+ var it=DL.filter(function(x){return String(x.id)===id})[0]||{};
+ m.className='msg';m.textContent='';
+ if(!ok&&mot.classList.contains('hide')){mot.classList.remove('hide');mot.focus();b.textContent='❌ Recusar com este motivo';return}
+ if(ok&&!confirm('Confirmar que o dinheiro entrou na conta?\nO anúncio fica em destaque '+(it.dias||'')+' dias.'))return;
+ box.querySelectorAll('button').forEach(function(x){x.disabled=true});
+ var r=await sb.rpc('servicos_destaque_decidir',{p_id:id,p_ok:ok,p_motivo:ok?'':mot.value});
+ if(r.error){box.querySelectorAll('button').forEach(function(x){x.disabled=false});m.textContent=r.error.message;return}
+ m.className='msg ok';m.textContent=ok?'✅ Aprovado. O anúncio está em destaque.':'Feito: a pessoa foi avisada.';setTimeout(carregarD,900);
+});
+async function config(){
+ var r=await sb.rpc('servicos_destaque_config_ler');if(r.error||!r.data)return;var c=r.data;
+ $('cfg').classList.remove('hide');$('cMt').value=c.preco_dia_mt;$('cAum').value=c.aumento;$('cAlc').value=c.alcance_dia;$('cMax').value=c.max_dias;
+}
+$('cGrava').onclick=async function(){
+ var m=$('cMsg');m.className='msg';m.textContent='';
+ var r=await sb.rpc('servicos_destaque_config_gravar',{p_mt:Number($('cMt').value),p_aum:Number($('cAum').value),p_alc:parseInt($('cAlc').value,10),p_max:parseInt($('cMax').value,10)});
+ if(r.error){m.textContent=r.error.message;return}m.className='msg ok';m.textContent='✅ Preços guardados.';
+};
+async function carregar(){
+ var r=await sb.rpc('servicos_pagamentos_lista');
+ if(r.error){$('lista').innerHTML='<div class="box"><p class="msg">'+esc(/function|find|exist/i.test(r.error.message)?'Falta correr o SQL novo (PARTE 16) no Supabase.':r.error.message)+'</p></div>';return}
+ L=r.data||[];pintar();
+}
+function pintar(){
+ var n=L.filter(function(x){return x.estado==='por_confirmar'}).length;
+ $('tP').innerHTML='⏳ Por aprovar'+(n?'<i>'+n+'</i>':'');$('tT').textContent='📋 Todos ('+L.length+')';
+ $('tP').classList.toggle('on',ABA==='por');$('tT').classList.toggle('on',ABA==='todos');
+ var l=ABA==='por'?L.filter(function(x){return x.estado==='por_confirmar'}):L;
+ if(!l.length){$('lista').innerHTML='<div class="box vz">'+(ABA==='por'?'Nenhuma mensalidade à espera de aprovação. 👍':'Ainda não há mensalidades.')+'</div>';return}
+ $('lista').innerHTML=l.map(function(p){
+  var ex=p.exemplo||{},ano=p.periodo==='ano';
+  var est=p.estado==='confirmado'?'<span class="est ok">✅ Aprovado'+(p.decidido_por?' por '+esc(p.decidido_por):'')+' · '+esc(dh(p.decidido_em))+(p.valido_ate?' · visível até '+esc(new Date(p.valido_ate).toLocaleDateString('pt-PT')):'')+'</span>':
+   p.estado==='recusado'?'<span class="est no">❌ Recusado: '+esc(p.motivo)+'</span>':'<span class="est esp">⏳ Por aprovar</span>';
+  return '<div class="box" data-o="'+esc(p.id)+'"><h2>'+esc(p.categoria)+' <small style="font-weight:400;color:#64748b">· '+esc(p.grupo)+'</small></h2>'+
+   '<div class="val">'+din(p.valor,p.moeda==='MZN'?'MTS':(p.moeda||'MTS'))+' · 📱 '+esc(p.meio_nome||p.meio)+' <span class="per'+(ano?' ano':'')+'">'+(ano?'🗓️ ANUAL · 12 meses':'📅 Mensal · 30 dias')+'</span></div>'+
+   '<p class="l"><b>Conta:</b> '+esc(p.conta||'—')+(p.pais?' · 🌍 '+esc(p.pais):'')+'</p>'+
+   '<p class="l"><b>Anúncios nesta categoria:</b> '+esc(p.anuncios)+(ex.provincia?' · 📍 '+esc(ex.provincia):'')+(ex.telefone?' · 📞 '+esc(ex.telefone):'')+'</p>'+
+   (ex.descricao?'<p class="l" style="display:flex;gap:8px;align-items:center">'+(ex.foto?'<img src="'+esc(ex.foto)+'" alt="" style="width:48px;height:48px;object-fit:cover;border-radius:8px">':'')+'<span>'+esc(String(ex.descricao).slice(0,120))+'</span></p>':'')+
+   '<p class="l"><b>Enviado:</b> '+esc(dh(p.enviado_em))+'</p>'+
+   '<div class="ref">'+esc(p.ref)+'</div><div class="fotos" data-f></div>'+est+
+   (p.estado==='por_confirmar'?'<div class="bs"><button class="sim" data-ok="1">✅ O dinheiro entrou · aprovar</button><button class="nao" data-ok="0">❌ Não entrou</button></div><textarea rows="2" class="hide" data-mot placeholder="Motivo (a pessoa vai ver). Ex.: O valor não entrou na conta."></textarea><p class="msg"></p>':'')+
+   '</div>';
+ }).join('');
+ l.forEach(function(p){
+  var c=document.querySelector('[data-o="'+p.id+'"] [data-f]');if(!c)return;
+  (p.fotos||[]).forEach(async function(cam){try{var u=await sb.storage.from('provas-envio').createSignedUrl(cam,3600);if(u.data&&u.data.signedUrl)c.insertAdjacentHTML('beforeend','<a href="'+esc(u.data.signedUrl)+'" target="_blank"><img src="'+esc(u.data.signedUrl)+'" alt="Prova"></a>');else c.insertAdjacentHTML('beforeend','<span class="l">📷 foto não abriu</span>')}catch(e){}});
+ });
+}
+$('tP').onclick=function(){ABA='por';pintar()};$('tT').onclick=function(){ABA='todos';pintar()};
+$('lista').addEventListener('click',async function(ev){
+ var b=ev.target.closest('[data-ok]');if(!b)return;
+ var box=b.closest('[data-o]'),id=box.getAttribute('data-o'),ok=b.getAttribute('data-ok')==='1',m=box.querySelector('.msg'),mot=box.querySelector('[data-mot]');
+ var it=L.filter(function(x){return String(x.id)===id})[0]||{},dias=it.periodo==='ano'?'12 meses (anual)':'30 dias';
+ m.className='msg';m.textContent='';
+ if(!ok&&mot.classList.contains('hide')){mot.classList.remove('hide');mot.focus();b.textContent='❌ Recusar com este motivo';return}
+ if(ok&&!confirm('Confirmar que o dinheiro entrou na conta?\nOs anúncios desta categoria ficam visíveis '+dias+'.'))return;
+ box.querySelectorAll('button').forEach(function(x){x.disabled=true});
+ var r=await sb.rpc('servicos_pagamento_decidir',{p_id:id,p_ok:ok,p_motivo:ok?'':mot.value});
+ if(r.error){box.querySelectorAll('button').forEach(function(x){x.disabled=false});m.textContent=r.error.message;return}
+ m.className='msg ok';m.textContent=ok?'✅ Aprovado. Os anúncios já estão visíveis.':'Feito: a pessoa foi avisada.';setTimeout(carregar,900);
+});
+$('ent').onclick=async function(){var r=await sb.auth.signInWithPassword({email:$('em').value.trim(),password:$('pw').value});if(r.error){$('eMsg').textContent='Email ou palavra-passe errados.';return}iniciar()};
+setInterval(function(){if(!document.hidden&&!$("vApp").classList.contains("hide")&&!document.querySelector("[data-mot]:not(.hide)")){carregar();carregarD()}},20000);
+iniciar();
+</script>
+</body>
+</html>

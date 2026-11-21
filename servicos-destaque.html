@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Pôr anúncio em destaque · BBabilônia</title>
+<meta name="color-scheme" content="light">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0}
+body{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:#f5f5f5;color:#222;line-height:1.4;color-scheme:light}
+.bar{position:sticky;top:0;z-index:5;background:linear-gradient(135deg,#ff6a00,#ff8c1a);color:#fff;box-shadow:0 3px 12px #0002;display:flex;align-items:center;gap:6px;padding:10px 8px 8px}
+.bar a{color:#fff;font-size:26px;width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;text-decoration:none}
+.bar h1{font-size:17px;flex:1}
+main{max-width:560px;margin:0 auto;padding:12px 12px 60px}
+.box{background:#fff;border-radius:14px;padding:14px;margin-bottom:12px;box-shadow:0 2px 10px #0000000d}
+.box h2{font-size:16px;margin-bottom:6px}.l{font-size:14px;color:#475569;margin:3px 0}.hide{display:none!important}
+.an{display:flex;gap:10px;align-items:center;padding:9px;border:2px solid #e2e8f0;border-radius:12px;margin-top:8px;cursor:pointer}
+.an.on{border-color:#ff6a00;background:#fff7ed}.an img,.an .sf{width:46px;height:46px;border-radius:8px;object-fit:cover;background:#f1f5f9;flex:none}
+.an b{display:block;font-size:14.5px}.an small{display:block;color:#64748b}.an small.ok{color:#16a34a;font-weight:700}.an small.no{color:#b45309;font-weight:700}
+.tot{font-size:30px;font-weight:900;color:#c2410c;text-align:center;margin:6px 0 0}
+.sub{text-align:center;color:#475569;font-size:14px}
+input[type=range]{width:100%;height:36px;accent-color:#ff6a00;margin-top:10px}
+.esc{display:flex;justify-content:space-between;font-size:12px;color:#64748b}
+.alc{background:#fff7ed;border-radius:12px;padding:10px;margin-top:10px;text-align:center}.alc b{font-size:20px;color:#c2410c;display:block}
+.alc i{display:block;height:8px;border-radius:9px;background:#fed7aa;margin-top:8px;overflow:hidden}.alc i u{display:block;height:100%;background:#ff6a00;width:0;transition:width .15s}
+.meios{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}.meios label{flex:1;margin:0;border:2px solid #fed7aa;background:#fff;border-radius:12px;padding:10px;text-align:center;font-size:14px;font-weight:700;min-width:30%}
+.meios input{width:auto;margin:0 6px 0 0}
+.num{background:#fff7ed;border-radius:12px;padding:10px;margin-top:8px;font-size:14.5px}.num b{font-size:17px;letter-spacing:.5px}
+label.t{display:block;font-size:14px;font-weight:700;color:#333;margin:12px 0 0}
+input[type=file],textarea{width:100%;padding:12px;border:2px solid #e8e8e8;border-radius:12px;font:inherit;font-size:16px;margin-top:6px;background:#fff}
+textarea{min-height:80px}
+.bt{display:block;width:100%;border:0;border-radius:12px;padding:14px;font:inherit;font-weight:800;font-size:16px;color:#fff;background:#ff6a00;margin-top:14px}.bt:disabled{opacity:.5}
+.msg{font-size:14px;margin-top:8px;color:#dc2626;white-space:pre-line}.msg.ok{color:#059669;font-weight:700}
+.ped{font-size:13.5px;border-top:1px solid #e2e8f0;padding:8px 0}.ped:first-of-type{border:0}
+.est{font-size:12px;font-weight:800;padding:2px 8px;border-radius:20px}.e1{background:#fef3c7;color:#92400e}.e2{background:#d1fae5;color:#065f46}.e3{background:#ffe4e6;color:#9f1239}
+a.bt2{display:block;text-align:center;border:2px solid #ff6a00;color:#ff6a00;border-radius:12px;padding:12px;font-weight:800;text-decoration:none;margin-top:10px}
+</style>
+</head>
+<body>
+<div class="bar"><a href="servicos-registar.html" aria-label="Voltar">&#8592;</a><h1>⭐ Pôr anúncio em destaque</h1></div>
+<main>
+ <section id="vEntrar" class="box hide"><h2>Entre na sua conta</h2><p class="l">Abra "Aluguer, serviços e diversos", entre na sua conta e volte aqui.</p><a class="bt2" href="servicos-registar.html">Ir para o painel de publicador</a></section>
+ <section id="vApp" class="hide">
+  <div class="box"><h2>1. Escolha o anúncio</h2><div id="ans"></div></div>
+  <div class="box" id="bPlano"><h2>2. Quanto quer pagar?</h2>
+   <p class="tot" id="tot">—</p><p class="sub" id="sub"></p>
+   <input type="range" id="barra" min="1" max="30" step="1" value="7">
+   <div class="esc"><span id="eMin"></span><span id="eMax"></span></div>
+   <div class="alc">Alcance estimado<b id="alc">—</b><span id="fim" style="font-size:13px;color:#475569"></span><i><u id="alcBar"></u></i></div>
+   <p class="l" style="margin-top:8px">O anúncio aparece <b>primeiro</b> na lista de "Aluguer, serviços e diversos" com o selo ⭐ e volta ao normal sozinho quando o tempo acabar. Se pagar outra vez antes de acabar, os dias somam-se.</p>
+  </div>
+  <div class="box" id="bPag"><h2>3. Pagar</h2>
+   <div class="meios" id="meios"></div><div id="nums"></div>
+   <label class="t">📷 Foto do comprovativo</label><input type="file" id="fo" accept="image/*" multiple>
+   <label class="t">📝 Texto da transferência</label><textarea id="ref" placeholder="Cole aqui a mensagem que recebeu (SMS) ou o código da transação"></textarea>
+   <button class="bt" id="enviar" type="button">Enviar provas</button><p class="msg" id="xMsg"></p>
+  </div>
+  <div class="box"><h2>Os meus destaques</h2><div id="peds"><p class="l">Ainda não há.</p></div></div>
+ </section>
+</main>
+<script>
+var sb=supabase.createClient('https://dsfoqoeawvjafypycldz.supabase.co','sb_publishable_BN4NiVcDab9CqdTY_odgDA_uUOhjja0');
+function $(i){return document.getElementById(i)}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function n(v,d){return Number(v||0).toLocaleString('pt-PT',{maximumFractionDigits:d==null?2:d})}
+function dh(d){try{return new Date(d).toLocaleString('pt-PT',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})}catch(e){return''}}
+function cent(m){return /^(USD|USDC|USDT|EUR|GBP)$/i.test(m||'')}
+function valor(t,cb,m){var x=Number(t||0)*Number(cb);return cent(m)?Math.ceil(Math.round(x*1e6)/1e4)/100:Math.ceil(Math.round(x*1e6)/1e6)}
+function fmt(v,m){return (m==='MZN'?n(v)+' MTS':Number(v).toLocaleString('pt-PT',{minimumFractionDigits:cent(m)?2:0,maximumFractionDigits:2})+' '+m)}
+function vista(v){['vEntrar','vApp'].forEach(function(x){$(x).classList.toggle('hide',x!==v)})}
+var D=null,AN=null,FOT=[],MS=[];
+function reduzir(file){return new Promise(function(ok){
+ var img=new Image(),u=URL.createObjectURL(file);
+ img.onload=function(){var m=1280,w=img.width,h=img.height,k=Math.min(1,m/Math.max(w,h));var c=document.createElement('canvas');c.width=Math.round(w*k);c.height=Math.round(h*k);
+  c.getContext('2d').drawImage(img,0,0,c.width,c.height);c.toBlob(function(b){URL.revokeObjectURL(u);ok(b||file)},'image/jpeg',0.82)};
+ img.onerror=function(){ok(file)};img.src=u})}
+async function iniciar(){
+ var s=(await sb.auth.getSession()).data.session;if(!s){vista('vEntrar');return}
+ var r=await sb.rpc('servicos_destaque_inicio');
+ vista('vApp');
+ if(r.error){$('ans').innerHTML='<p class="msg">'+esc(/function|find|exist/i.test(r.error.message)?'Falta correr o SQL do destaque no Supabase.':r.error.message)+'</p>';return}
+ D=r.data||{};MS=(D.pagamento&&D.pagamento.meios)||[];
+ var c=D.config||{},b=$('barra');b.max=c.max_dias;b.value=Math.min(7,c.max_dias);$('eMin').textContent='1 dia';$('eMax').textContent=c.max_dias+' dias';
+ var q=new URLSearchParams(location.search).get('id');
+ var as=D.anuncios||[];
+ $('ans').innerHTML=as.length?as.map(function(a){var st=!a.visivel?'<small class="no">Primeiro pague a mensalidade desta categoria</small>':a.pendente?'<small class="no">⏳ Pagamento por verificar</small>':a.destaque_ate&&new Date(a.destaque_ate)>new Date()?'<small class="ok">⭐ em destaque até '+esc(dh(a.destaque_ate))+'</small>':'';
+  return '<div class="an" data-id="'+esc(a.id)+'" data-ok="'+(a.visivel&&!a.pendente?1:0)+'">'+(a.foto?'<img alt="" src="'+esc(a.foto)+'">':'<div class="sf"></div>')+'<div><b>'+esc(a.titulo||a.categoria)+'</b><small>'+esc(a.categoria)+' · '+esc(a.provincia||'')+'</small>'+st+'</div></div>'}).join(''):'<p class="l">Ainda não tem anúncios. <a href="servicos-registar.html" style="color:#ff6a00;font-weight:700">Publicar um anúncio</a></p>';
+ if(q&&as.some(function(a){return a.id===q&&a.visivel&&!a.pendente}))AN=q;else if(as.length===1&&as[0].visivel&&!as[0].pendente)AN=as[0].id;
+ marcar();
+ var ms=MS;
+ $('meios').innerHTML=ms.map(function(m,i){return '<label><input type="radio" name="m" value="'+esc(m.id)+'"'+(i?'':' checked')+'>'+esc(m.id==='mpesa'?'Agente M-Pesa':m.nome||'Pagamento')+'</label>'}).join('');
+ $('bPag').querySelector('h2').textContent=ms.length?'3. Pagar':'3. Pagar (ainda não disponível no seu país)';
+ calc();pedidos();
+}
+function marcar(){document.querySelectorAll('.an').forEach(function(e){e.classList.toggle('on',e.getAttribute('data-id')===AN)})}
+$('ans').addEventListener('click',function(e){var a=e.target.closest('.an');if(!a)return;if(a.getAttribute('data-ok')!=='1'){alert('Este anúncio ainda não pode ser posto em destaque: está à espera da mensalidade ou do pagamento por verificar.');return}AN=a.getAttribute('data-id');marcar()});
+function dias(){return parseInt($('barra').value,10)||1}
+function unid(d){var a=Number(D.config.aumento)||0;return Math.floor(d/5)*5*(1+a/100)+(d%5)}
+function meio(){var r=document.querySelector('input[name=m]:checked');return MS.filter(function(m){return r&&m.id===r.value})[0]||MS[0]}
+function calc(){
+ if(!D||!D.config)return;var c=D.config,d=dias(),u=unid(d),mt=u*Number(c.preco_dia_mt),m=meio();
+ var txt=m?fmt(valor(mt,m.cambio,m.moeda),m.moeda):n(Math.ceil(mt))+' MT (equivalente)';
+ $('tot').textContent=txt;$('sub').textContent='Dura '+d+(d===1?' dia':' dias');
+ var a=Math.round(u*c.alcance_dia),mx=Math.round(unid(c.max_dias)*c.alcance_dia);
+ $('alc').textContent='≈ '+n(a,0)+' pessoas';$('alcBar').style.width=Math.max(4,Math.round(100*a/mx))+'%';
+ $('fim').textContent='Termina em '+dh(new Date(Date.now()+d*864e5));
+ var cripto=function(x){return /USDC|USDT/i.test(x.moeda||'')};
+ $('nums').innerHTML=MS.map(function(x){var vv=fmt(valor(mt,x.cambio,x.moeda),x.moeda);return '<div class="num" data-mn="'+esc(x.id)+'"'+(m&&x.id===m.id?'':' style="display:none"')+'>'+(x.id==='mpesa'?'🟥 Agente M-Pesa':'📱 '+esc(x.nome||''))+' · <b>'+esc(vv)+'</b><br>'+
+  (x.id==='mpesa'?'Código do agente: <b>'+esc(x.numero)+'</b><br>Nome do agente: <b>'+esc(x.recetor||'')+'</b><br><small style="color:#555">Menu M-Pesa → Levantar dinheiro → Agente → código do agente, valor e PIN.</small>':cripto(x)?'Carteira: <b style="word-break:break-all">'+esc(x.numero)+'</b><br>Rede: '+esc(x.recetor||''):'Número / conta: <b>'+esc(x.numero)+'</b><br>Nome: '+esc(x.recetor||''))+'</div>'}).join('');
+}
+$('barra').addEventListener('input',calc);
+document.addEventListener('change',function(e){if(e.target.name==='m')calc()});
+function pedidos(){
+ var l=D.pedidos||[];if(!l.length)return;
+ $('peds').innerHTML=l.map(function(p){var e=p.estado==='confirmado'?'<span class="est e2">✅ Aprovado</span>':p.estado==='recusado'?'<span class="est e3">❌ Recusado</span>':'<span class="est e1">⏳ A confirmar</span>';
+  return '<div class="ped"><b>'+esc(p.titulo)+'</b> · '+p.dias+' dias · '+esc(fmt(p.valor,p.moeda))+' '+e+(p.motivo?'<br><span style="color:#dc2626">'+esc(p.motivo)+'</span>':'')+(p.ate?'<br><span class="l">Em destaque até '+esc(dh(p.ate))+'</span>':'')+'<br><span class="l">'+esc(dh(p.enviado_em))+'</span></div>'}).join('');
+}
+$('fo').onchange=function(){FOT=FOT.concat(Array.prototype.slice.call(this.files)).slice(0,5);this.value=''};
+$('enviar').onclick=async function(){
+ var m=$('xMsg'),b=this;m.className='msg';m.textContent='';
+ if(!AN){m.textContent='Escolha o anúncio.';return}
+ if(!MS.length){m.textContent='O pagamento ainda não está disponível no seu país.';return}
+ if(!FOT.length){m.textContent='Carregue a foto do comprovativo.';return}
+ if($('ref').value.trim().length<10){m.textContent='Cole o texto da transferência (a mensagem que recebeu).';return}
+ var s=(await sb.auth.getSession()).data.session;if(!s){m.textContent='Entre de novo na sua conta.';return}
+ b.disabled=true;
+ try{
+  var cam=[];
+  for(var i=0;i<FOT.length;i++){b.textContent='A enviar foto '+(i+1)+'…';var bl=await reduzir(FOT[i]),p=s.user.id+'/servicos/'+Date.now()+'-d'+i+'.jpg';
+   var up=await sb.storage.from('provas-envio').upload(p,bl,{contentType:'image/jpeg'});if(up.error)throw new Error('A foto não foi enviada: '+up.error.message);cam.push(p)}
+  var r=await sb.rpc('servicos_destaque_pedir',{p_anuncio:AN,p_dias:dias(),p_meio:meio().id,p_ref:$('ref').value.trim(),p_fotos:cam});
+  if(r.error)throw new Error(r.error.message);
+  m.className='msg ok';m.textContent='✅ Provas enviadas. A BBabilônia confirma o pagamento e o destaque começa logo a seguir. Recebe um aviso 🔔.';FOT=[];$('ref').value='';
+  setTimeout(iniciar,1200);
+ }catch(e){m.textContent=e.message||String(e)}
+ b.disabled=false;b.textContent='Enviar provas';
+};
+iniciar();
+</script>
+</body>
+</html>
