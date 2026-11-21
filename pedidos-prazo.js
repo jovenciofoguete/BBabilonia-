@@ -1,9 +1,11 @@
 /* pedidos-prazo.js — B-Babilônia: prazo de entrega na página do cliente (pedidos.html).
    Mostra até quando é o prazo (30 dias depois do envio) e deixa prolongar 7, 15 ou 30 dias
    (até 60 dias a mais no total). No fim do prazo avisa: sem resposta em 3 dias, fica entregue.
-   Não altera pedidos.html: só acrescenta por baixo do botão "Confirmei a receção". */
+   Não altera pedidos.html: só acrescenta por baixo do botão "Confirmei a receção".
+   (21/11/2026) Também carrega etapas-pagina.js: etapas da encomenda no topo do detalhe do pedido. */
 (function () {
   if (!window.sb) return;
+  try { if (!document.querySelector('script[src*="etapas-pagina.js"]')) { var ep = document.createElement("script"); ep.src = "etapas-pagina.js?v=1"; document.body.appendChild(ep); } } catch (e) {}
   var MAX = 60, OPC = [7, 15, 30];
   function data(d) { try { return new Date(d).toLocaleDateString("pt-PT"); } catch (e) { return ""; } }
 

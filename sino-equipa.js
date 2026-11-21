@@ -47,7 +47,7 @@
     ".bb-seq-a{display:block;width:100%;text-align:left;border:0;border-top:1px solid #e2e8f0;background:#fff;padding:12px 4px;font:inherit;color:inherit;cursor:pointer}.bb-seq-a.novo{background:#fff7ed}" +
     ".bb-seq-a b{display:block;font-size:14.5px}.bb-seq-a span{display:block;font-size:13.5px;color:#334155;margin-top:2px}.bb-seq-a small{display:block;font-size:12px;color:#64748b;margin-top:3px}.bb-seq-a em{font-style:normal;color:#2563eb;font-weight:700}" +
     ".bb-seq-p{display:flex;align-items:center;gap:10px;width:100%;text-align:left;border:1px solid #e2e8f0;border-radius:12px;background:#f8fafc;padding:12px;margin:0 0 8px;font:inherit;color:inherit;cursor:pointer}.bb-seq-p.novo{background:#fff7ed;border-color:#fdba74}" +
-    ".bb-seq-p .ic{font-size:26px}.bb-seq-p .tx{flex:1;min-width:0}.bb-seq-p b{display:block;font-size:15px}.bb-seq-p span{display:block;font-size:13px;color:#475569;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.bb-seq-p small{display:block;font-size:12px;color:#64748b;margin-top:2px}" +
+    ".bb-seq-p .ic{font-size:26px;width:56px;text-align:center}.bb-seq-p .ph{width:56px;height:56px;object-fit:cover;border-radius:10px;flex:none;background:#e2e8f0}.bb-seq-p .tx{flex:1;min-width:0}.bb-seq-p b{display:block;font-size:15px}.bb-seq-p span{display:block;font-size:13px;color:#475569;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.bb-seq-p small{display:block;font-size:12px;color:#64748b;margin-top:2px}" +
     ".bb-seq-p .nb{min-width:24px;height:24px;border-radius:12px;background:#dc2626;color:#fff;font:800 12px system-ui,sans-serif;display:flex;align-items:center;justify-content:center;padding:0 6px}.bb-seq-p .ct{color:#64748b;font-size:12px}" +
     ".bb-seq-voltar{border:0;background:#f1f5f9;border-radius:20px;padding:9px 14px;font:600 14px system-ui,sans-serif;margin:0 0 6px;cursor:pointer}.bb-seq-t{font-weight:800;font-size:15px;margin:6px 2px}" +
     ".bb-seq-v{text-align:center;color:#64748b;padding:24px 8px;font-size:14px}";
@@ -116,9 +116,12 @@
   function chaveMes(p) { var t = new Date(tempo(p.itens[0])); return t.getFullYear() + "-" + ("0" + (t.getMonth() + 1)).slice(-2); }
   function nomeMes(c) { var x = c.split("-"); return MESES[Number(x[1]) - 1] + " " + x[0]; }
   function novos(p) { return p.itens.filter(function (a) { return a.lido !== true; }).length; }
+  function mini(k) { return window.BBPastas && window.BBPastas.mini ? window.BBPastas.mini(k) : null; }
+  function icone(k) { var m = mini(k); if (m && m.foto) return '<img class="ph" src="' + esc(m.foto) + '" alt="" onerror="this.outerHTML=\'<span class=ic>🛍️</span>\'">'; return '<span class="ic">' + (k ? "🛍️" : "📋") + "</span>"; }
+  function trabalhar(p) { var av = p.itens.filter(function (a) { return a.link; })[0]; return av ? '<a class="bbp-l" style="margin:0 0 12px" href="' + esc(av.link) + '">🛠️ Tratar esta encomenda ›</a>' : ""; }
   function pasta(p, extra) {
     var nv = novos(p), u = p.itens[0];
-    return '<button type="button" class="bb-seq-p' + (nv ? " novo" : "") + '" data-p="' + esc(p.k) + '"><span class="ic">' + (p.k ? "📁" : "📋") + '</span><span class="tx"><b>' + (p.k ? "Pedido #" + esc(p.k) : "Outros avisos") + "</b>" + (p.k ? "<span>" + esc(u.titulo) + "</span>" : "") + "<small>" + (p.k ? esc(quando(u)) + " · " : "") + p.itens.length + (p.itens.length === 1 ? " aviso" : " avisos") + "</small></span>" +
+    return '<button type="button" class="bb-seq-p' + (nv ? " novo" : "") + '" data-p="' + esc(p.k) + '">' + icone(p.k) + '<span class="tx"><b>' + (p.k ? "Pedido #" + esc(p.k) : "Outros avisos") + "</b>" + (p.k ? "<span>" + esc(mini(p.k) && mini(p.k).nome ? mini(p.k).nome : u.titulo) + "</span>" : "") + "<small>" + (p.k ? esc(quando(u)) + " · " : "") + p.itens.length + (p.itens.length === 1 ? " aviso" : " avisos") + "</small></span>" +
       (nv ? '<span class="nb">' + nv + "</span>" : '<span class="ct">›</span>') + "</button>";
   }
   var vista = { t: "raiz" }; /* raiz | antigas | mes (v.mes) | pedido (v.k, v.volta) */
@@ -148,6 +151,7 @@
       l.innerHTML = voltar("antigas") + '<div class="bb-seq-t">🗓️ ' + nomeMes(vista.mes) + "</div>" + G.velhas.filter(function (p) { return chaveMes(p) === vista.mes; }).map(pasta).join("");
       return;
     }
+    if (window.BBPastas && window.BBPastas.carregarMini) window.BBPastas.carregarMini(G.rec.map(function (p) { return p.k; }), pintar);
     html = G.rec.map(pasta).join("");
     if (G.velhas.length) html += '<button type="button" class="bb-seq-p" data-a="1"><span class="ic">🗂️</span><span class="tx"><b>Encomendas antigas</b><small>' + G.velhas.length + (G.velhas.length === 1 ? " encomenda" : " encomendas") + ' · por mês</small></span><span class="ct">›</span></button>';
     l.innerHTML = html || '<div class="bb-seq-v">Ainda não há avisos. 👍</div>';
@@ -164,14 +168,15 @@
     var v = e.target.closest("[data-v]"); if (v) { var al = v.getAttribute("data-v"); vista = al === "antigas" ? { t: "antigas" } : al === "mes" ? { t: "mes", mes: vista.mes } : { t: "raiz" }; pintar(); return; }
     if (e.target.closest("[data-a]")) { vista = { t: "antigas" }; pintar(); return; }
     var mb = e.target.closest("[data-m]"); if (mb) { vista = { t: "mes", mes: mb.getAttribute("data-m") }; pintar(); return; }
-    var pb = e.target.closest("[data-p]"); if (pb) { vista = { t: "pedido", k: pb.getAttribute("data-p"), volta: vista.t === "mes" ? "mes" : "raiz", mes: vista.mes }; pintar(); var j = d.getElementById("bb-seq-j"); if (j) j.scrollTop = 0; return; }
+    var pb = e.target.closest("[data-p]"); if (pb) {
+      vista = { t: "pedido", k: pb.getAttribute("data-p"), volta: vista.t === "mes" ? "mes" : "raiz", mes: vista.mes }; pintar(); var j = d.getElementById("bb-seq-j"); if (j) j.scrollTop = 0; return; }
     var x = e.target.closest("[data-i]"); if (!x) return;
     var a = L[Number(x.getAttribute("data-i"))]; f.style.display = "none";
     if (a && a.link) location.href = a.link;
   });
 
   /* cartão da encomenda (foto, preço, etapas): carrega o avisos-pastas.js */
-  function modulo() { if (window.BBPastas) { try { window.BBPastas.usar(window.sb); } catch (e) {} return; } var x = d.createElement("script"); x.src = "avisos-pastas.js?v=2"; x.onload = function () { try { window.BBPastas.usar(window.sb); } catch (e) {} }; (d.head || d.documentElement).appendChild(x); }
+  function modulo() { if (window.BBPastas) { try { window.BBPastas.usar(window.sb); } catch (e) {} return; } var x = d.createElement("script"); x.src = "avisos-pastas.js?v=5"; x.onload = function () { try { window.BBPastas.usar(window.sb); } catch (e) {} }; (d.head || d.documentElement).appendChild(x); }
   var n = 0;
   (function arrancar() {
     if (!window.sb || !window.sb.auth || !window.sb.from || !d.body) { if (++n < 100) setTimeout(arrancar, 150); return; }
