@@ -60,9 +60,10 @@
 })();
 
 /* ---- (21/11/2026) a loja pode ser de qualquer país do mundo ----
-   Moçambique, Tanzânia e África do Sul continuam com as listas de província e distrito.
-   Os outros países: província, distrito e bairro escritos à mão; telemóvel com o indicativo do país.
-   Só acrescenta: não altera o resto do loja-criar.html. */
+   Moçambique, Tanzânia e África do Sul continuam com as listas de província e distrito de sempre.
+   Os outros países: província e distrito vêm em lista (GeoNames, o mesmo serviço dos endereços de entrega
+   do cliente) com a opção "Outro (escrever)"; se o serviço não responder, escreve-se à mão.
+   Telemóvel com o indicativo do país. Só acrescenta: não altera o resto do loja-criar.html. */
 (function () {
   if (window.__bbMundo) return;
   if (typeof PAISES_LOJA === 'undefined' || typeof PAISES === 'undefined' || typeof CODES === 'undefined' ||
@@ -71,6 +72,8 @@
       typeof mostrarLocal !== 'function' || !document.getElementById('pais') || !document.getElementById('lPais')) return;
   window.__bbMundo = 1;
   var g = function (i) { return document.getElementById(i); };
+  var GN = 'JovencioFoguete';
+  function esc(t) { return String(t == null ? '' : t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
 
   /* todos os países */
   CODES.forEach(function (c) { if (PAISES_LOJA.indexOf(c) < 0) PAISES_LOJA.push(c); });
@@ -79,7 +82,25 @@
   }
   ['pais', 'lPais'].forEach(function (id) { var s = g(id), v = s.value; s.innerHTML = opcoes(); s.value = v; });
 
-  /* província escrita à mão (guarda o texto numa única opção, para o resto do código a ler como antes) */
+  /* GeoNames: províncias e distritos de qualquer país */
+  var cacheF = {}, cacheP = {};
+  function json(u) { return fetch(u).then(function (r) { return r.json(); }); }
+  function paisId(cc) {
+    if (cacheP[cc] !== undefined) return Promise.resolve(cacheP[cc]);
+    return json('https://secure.geonames.org/countryInfoJSON?country=' + encodeURIComponent(cc) + '&username=' + GN)
+      .then(function (j) { return (cacheP[cc] = (j.geonames && j.geonames[0] && j.geonames[0].geonameId) || ''); }, function () { return ''; });
+  }
+  function filhos(id) {
+    if (!id) return Promise.resolve([]);
+    if (cacheF[id]) return Promise.resolve(cacheF[id]);
+    return json('https://secure.geonames.org/childrenJSON?geonameId=' + id + '&maxRows=1000&username=' + GN).then(function (j) {
+      var l = (j.geonames || []).map(function (x) { return { id: x.geonameId, n: x.name }; }).sort(function (a, b) { return a.n.localeCompare(b.n); });
+      if (l.length) cacheF[id] = l;
+      return l;
+    }, function () { return []; });
+  }
+
+  /* campos escritos à mão (guardam o texto numa única opção, para o resto do código ler como antes) */
   function criarTexto(selId) {
     var s = g(selId); if (!s || g(selId + 'O')) return;
     var t = document.createElement('input');
@@ -93,30 +114,79 @@
   }
   criarTexto('prov'); criarTexto('lProv');
 
+  function distTexto(dSel, dOut, atual) {
+    dSel.innerHTML = '<option value="' + OUTRO + '">Outro (escrever)</option>';
+    dSel.value = OUTRO; dSel.classList.add('hide');
+    dOut.classList.remove('hide'); dOut.value = atual || '';
+  }
+  function provTexto(sel, atual) {
+    var t = g(sel.id + 'O'), dSel = g(sel.id === 'prov' ? 'dist' : 'lDist'), dOut = g(sel.id === 'prov' ? 'distO' : 'lDistO');
+    sel.classList.add('hide'); t.classList.remove('hide');
+    t.value = atual || ''; t.dispatchEvent(new Event('input'));
+    distTexto(dSel, dOut, salvoDist[dSel.id] || ''); salvoDist[dSel.id] = '';
+  }
+  var salvoDist = {};   // distrito já guardado (loja que já existe), para escolher depois de a lista chegar
+
   var oriProv = encherProv;
   window.encherProv = function (sel, pais, atual) {
     var t = g(sel.id + 'O');
-    if (t && pais && !PROV[pais]) {
-      sel.classList.add('hide'); t.classList.remove('hide');
-      t.value = atual || ''; t.dispatchEvent(new Event('input'));
-      return;
+    if (!t || !pais || PROV[pais]) {
+      sel._tok = (sel._tok || 0) + 1;
+      sel.classList.remove('hide');
+      if (t) { t.classList.add('hide'); t.value = ''; }
+      return oriProv(sel, pais, atual);
     }
-    sel.classList.remove('hide');
-    if (t) { t.classList.add('hide'); t.value = ''; }
-    return oriProv(sel, pais, atual);
+    var tok = sel._tok = (sel._tok || 0) + 1;
+    t.classList.add('hide'); t.value = ''; sel.classList.remove('hide');
+    sel.innerHTML = '<option value="">A carregar…</option>';
+    paisId(pais).then(filhos).then(function (l) {
+      if (sel._tok !== tok) return;
+      if (!l.length) { provTexto(sel, atual); return; }
+      sel.innerHTML = '<option value="">— Escolha a província —</option>' +
+        l.map(function (i) { return '<option value="' + esc(i.n) + '" data-id="' + i.id + '">' + esc(i.n) + '</option>'; }).join('') +
+        '<option value="' + OUTRO + '">✏️ Outra (escrever)</option>';
+      if (atual) {
+        var o = Array.prototype.filter.call(sel.options, function (x) { return x.value === atual; })[0];
+        if (o) { sel.value = atual; sel.dispatchEvent(new Event('change', { bubbles: true })); }
+        else provTexto(sel, atual);
+      }
+    });
   };
+  /* "Outra (escrever)" na província */
+  ['prov', 'lProv'].forEach(function (id) {
+    g(id).addEventListener('change', function () { if (this.value === OUTRO) provTexto(this, ''); });
+  });
 
   var oriDist = encherDist;
   window.encherDist = function (sel, outro, prov, atual) {
-    var pais = sel.id === 'dist' ? g('pais').value : ((typeof lojaPais !== 'undefined' && lojaPais) || g('lPais').value);
-    if (pais && !PROV[pais]) {
-      sel.innerHTML = '<option value="' + OUTRO + '">Outro (escrever)</option>';
-      sel.value = OUTRO; sel.classList.add('hide');
-      outro.classList.remove('hide'); outro.value = atual || '';
+    var isCriar = sel.id === 'dist';
+    var pais = isCriar ? g('pais').value : ((typeof lojaPais !== 'undefined' && lojaPais) || g('lPais').value);
+    if (!pais || PROV[pais]) { sel._tok = (sel._tok || 0) + 1; sel.classList.remove('hide'); return oriDist(sel, outro, prov, atual); }
+    var ps = g(isCriar ? 'prov' : 'lProv'), po = ps.options[ps.selectedIndex], id = po && po.getAttribute('data-id');
+    var tok = sel._tok = (sel._tok || 0) + 1;
+    outro.classList.add('hide'); outro.value = '';
+    if (!id) {
+      if (ps.classList.contains('hide')) { distTexto(sel, outro, atual); return; }
+      sel.classList.remove('hide');
+      sel.innerHTML = '<option value="">— Escolha primeiro a província —</option>';
       return;
     }
     sel.classList.remove('hide');
-    return oriDist(sel, outro, prov, atual);
+    sel.innerHTML = '<option value="">A carregar…</option>';
+    filhos(id).then(function (l) {
+      if (sel._tok !== tok) return;
+      if (!l.length) { distTexto(sel, outro, atual); return; }
+      sel.innerHTML = '<option value="">— Escolha o distrito —</option>' +
+        l.map(function (i) { return '<option value="' + esc(i.n) + '">' + esc(i.n) + '</option>'; }).join('') +
+        '<option value="' + OUTRO + '">Outro (escrever)</option>';
+      var a = atual || salvoDist[sel.id];
+      if (a) {
+        var o = Array.prototype.filter.call(sel.options, function (x) { return x.value === a; })[0];
+        if (o) sel.value = a;
+        else { sel.value = OUTRO; outro.value = a; outro.classList.remove('hide'); }
+        salvoDist[sel.id] = '';
+      }
+    });
   };
 
   /* telemóvel: fora de MZ, TZ e ZA escreve-se com o indicativo do país */
@@ -133,9 +203,11 @@
   g('pais').addEventListener('change', function () { indicativo('ind', 'tel', g('pais').value); });
   g('lPais').addEventListener('change', function () { indicativo('lInd', 'lTel', g('lPais').value); });
 
-  /* loja que já existe, de outro país: mostra o indicativo e o telemóvel certos */
+  /* loja que já existe, de outro país: província e distrito guardados e telemóvel certos */
   var oriLocal = mostrarLocal;
   window.mostrarLocal = function (l) {
+    var p0 = l && l.pais;
+    if (p0 && !PROV[p0]) salvoDist.lDist = l.distrito || '';
     oriLocal(l);
     var p = (typeof lojaPais !== 'undefined' && lojaPais) || g('lPais').value;
     indicativo('lInd', 'lTel', p);
