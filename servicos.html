@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Aluguer, serviços e diversos · BBabilônia</title>
+<meta name="color-scheme" content="light">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0}
+body{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:#f5f5f5;color:#222;line-height:1.4;color-scheme:light}
+a{color:inherit;text-decoration:none}button{font:inherit;cursor:pointer}
+.bar{position:sticky;top:0;z-index:5;background:linear-gradient(135deg,#ff6a00,#ff8c1a);color:#fff;box-shadow:0 3px 12px #0002}
+.bar .l{display:flex;align-items:center;gap:6px;padding:10px 8px 8px}
+.bar .vt{border:0;background:none;color:#fff;font-size:26px;width:44px;height:44px;border-radius:50%}
+.bar h1{font-size:17px;flex:1}
+main{max-width:760px;margin:0 auto;padding:12px 12px 90px}
+.box{background:#fff;border-radius:14px;padding:14px;margin-bottom:12px;box-shadow:0 2px 10px #0000000d}
+.box h2{font-size:16px;margin-bottom:6px}
+.sub{font-size:13.5px;color:#666}
+.bt{display:block;width:100%;border:0;border-radius:12px;padding:13px;font-weight:800;font-size:15px;color:#fff;background:#ff6a00;text-align:center;margin-top:10px}
+.bt.l{background:#fff;color:#ff6a00;border:2px solid #ff6a00}
+select,input{width:100%;padding:12px;border:2px solid #e8e8e8;border-radius:12px;font:inherit;font-size:16px;background:#fff;color:#222;margin-top:8px}
+select:focus,input:focus{outline:none;border-color:#ff6a00}
+.loc{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:700}
+.loc button{margin-left:auto;border:1.5px solid #ff6a00;background:#fff;color:#ff6a00;border-radius:999px;padding:5px 12px;font-size:13px;font-weight:700}
+.grupos{display:flex;gap:7px;overflow-x:auto;padding:4px 0 6px;scrollbar-width:none}.grupos::-webkit-scrollbar{display:none}
+.grupos button{flex:none;border:1.5px solid transparent;background:#f0f0f0;border-radius:999px;padding:7px 13px;font-size:13.5px;font-weight:600}
+.grupos button.on{background:#fff;border-color:#222}
+.an{background:#fff;border-radius:14px;overflow:hidden;margin-bottom:12px;box-shadow:0 2px 10px #0000000d}
+.an .fs{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none}.an .fs::-webkit-scrollbar{display:none}
+.an .fs img{height:180px;max-width:85%;object-fit:cover;flex:none}
+.an .i{padding:12px}
+.an h3{font-size:16px}
+.an .c{font-size:12.5px;color:#ff6a00;font-weight:700;margin-top:2px}
+.an .lc{font-size:13px;color:#666;margin-top:4px}
+.an .p{font-weight:800;margin-top:4px}
+.an .d{font-size:14px;color:#333;margin-top:6px;white-space:pre-line;word-break:break-word}
+.an .nm{font-size:13.5px;color:#333;margin-top:6px;background:#fff4ec;border-radius:10px;padding:8px 10px;line-height:1.5}
+.ct{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
+.ct a{flex:1;min-width:30%;text-align:center;border-radius:10px;padding:11px 6px;font-weight:800;font-size:14px;color:#fff}
+.ct .tel{background:#2563eb}.ct .wa{background:#16a34a}.ct .em{background:#ea4335}
+.vz{text-align:center;color:#777;padding:26px 10px;font-size:14.5px}
+.msg{color:#dc2626;font-size:14px;margin-top:8px;white-space:pre-line}
+.hide{display:none!important}
+.mais{position:fixed;left:50%;transform:translateX(-50%);bottom:18px;z-index:6;border:0;border-radius:999px;padding:13px 20px;font-weight:800;font-size:15px;color:#fff;background:#ff6a00;box-shadow:0 8px 20px #ff6a0066;white-space:nowrap}
+.esc{display:flex;flex-direction:column;align-items:center;gap:4px;width:100%;border:0;border-radius:18px;padding:24px 14px;margin-bottom:12px;color:#fff;text-align:center;box-shadow:0 6px 18px #0002}
+.esc span{font-size:40px}.esc b{font-size:19px}.esc small{font-size:13.5px;opacity:.92}
+.esc.pub{background:linear-gradient(135deg,#ff6a00,#ff8c1a)}.esc.pro{background:linear-gradient(135deg,#2563eb,#3b82f6)}
+.bar .pb{color:#fff;background:#ffffff33;border-radius:999px;padding:7px 12px;font-size:13px;font-weight:800;white-space:nowrap}
+.nf{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.nf select,.nf input{flex:1;min-width:30%;margin-top:0}
+.lupa{display:flex;align-items:center;gap:8px;border:2px solid #ff6a00;border-radius:999px;padding:2px 6px 2px 14px;margin-bottom:10px;background:#fff}
+.lupa span{font-size:20px}.lupa input{border:0;margin:0;padding:11px 6px;border-radius:999px}.lupa input:focus{outline:none}
+.ambito{display:flex;gap:6px;margin-bottom:10px}.ambito button{flex:1;border:2px solid #ff6a00;background:#fff;color:#ff6a00;border-radius:12px;padding:10px 6px;font-weight:800;font-size:14px}
+.ambito button.on{background:#ff6a00;color:#fff}
+.aviso18{background:#fff1f2;border:2px solid #fda4af;border-radius:14px;padding:14px;margin-bottom:12px}
+</style>
+</head>
+<body>
+<script>/* Botão voltar do telemóvel: volta à página inicial e nunca sai do site */
+(function(){var H='/';try{var r=document.referrer?new URL(document.referrer):null;if(r&&r.host===location.host&&history.length>1)return}catch(e){}
+var u=location.href;try{history.replaceState({bbBase:1},'',H);history.pushState({bbPag:1},'',u)}catch(e){return}
+addEventListener('popstate',function(e){if(e.state&&e.state.bbBase)location.replace(H)});})();</script>
+<div class="bar"><div class="l"><button class="vt" id="voltar" aria-label="Voltar">&#8592;</button><h1>🛠️ Aluguer, serviços e diversos</h1><a class="pb hide" id="pubBar" href="servicos-registar.html">📢 Publicar</a></div></div>
+<main>
+ <section id="vEntrar" class="box hide">
+  <h2>Entre na sua conta</h2>
+  <p class="sub">Para ver os serviços do seu país e da sua província.</p>
+  <input id="em" type="email" placeholder="Email" autocomplete="username">
+  <input id="pw" type="password" placeholder="Palavra-passe" autocomplete="current-password">
+  <button class="bt" id="ent">Entrar</button><p class="msg" id="eMsg"></p>
+  <a class="bt l" href="conta.html">Criar conta</a>
+ </section>
+ <section id="vPais" class="box hide">
+  <h2>🌍 Escolha o país da sua conta</h2>
+  <p class="sub">Só vê os serviços registados no país da sua conta.</p>
+  <a class="bt" href="pais.html">Escolher o meu país</a>
+ </section>
+ <section id="vProv" class="box hide">
+  <h2>📍 Em que província está?</h2>
+  <p class="sub" id="provTxt">Escolha a sua província para ver os serviços dela.</p>
+  <select id="provSel"></select><input id="provIn" class="hide" placeholder="Escreva a sua província">
+  <button class="bt" id="provOk">Ver serviços</button>
+  <button class="bt l hide" id="provTodo" type="button">🌍 Ver em todo o país</button><p class="msg" id="pMsg"></p>
+ </section>
+ <section id="vEsc" class="hide">
+  <div class="box"><div class="loc">📍 <span id="provEsc"></span><button id="provMudar2" type="button">Mudar</button></div></div>
+  <a class="esc pub" href="servicos-registar.html"><span>📢</span><b>Prestar serviços e aluguer</b><small>Publicar: serviços, aluguer, boladas (usados), escolas, namoro…</small></a>
+  <button class="esc pro" id="irProcurar" type="button"><span>🔍</span><b>Procurar serviços e aluguer</b><small>Ver o que há na sua província ou em todo o país</small></button>
+ </section>
+ <section id="vApp" class="hide">
+  <div class="box">
+   <div class="lupa"><span>🔍</span><input id="busca" type="search" placeholder="Pesquisar serviços e aluguer (ex.: mecânico, casa, celular)"></div>
+   <div class="ambito"><button type="button" id="abProv" class="on">📍 Na minha província</button><button type="button" id="abPais">🌍 Em todo o país</button></div>
+   <div class="loc">📍 <span id="provAtual"></span><button id="provMudar" type="button">Mudar</button></div>
+   <div class="grupos" id="grupos"></div>
+   <select id="catSel"></select>
+   <div class="nf hide" id="nmFiltro"><select id="nmProc"><option value="">Procuro: todos</option><option value="Homem">Procuro: homem</option><option value="Mulher">Procuro: mulher</option></select>
+    <input id="nmDe" type="number" inputmode="numeric" placeholder="Idade de"><input id="nmAte" type="number" inputmode="numeric" placeholder="até"></div>
+  </div>
+  <div id="aviso18" class="aviso18 hide"><b>❤️ Namoro — só para maiores de 18 anos</b><p class="sub" style="margin-top:4px">Confirme que tem 18 anos ou mais para ver.</p><button class="bt" id="ok18" type="button">Tenho 18 anos ou mais</button></div>
+  <div id="lista"><div class="box vz">A carregar…</div></div>
+ </section>
+</main>
+<script>
+var sb=supabase.createClient('https://dsfoqoeawvjafypycldz.supabase.co','sb_publishable_BN4NiVcDab9CqdTY_odgDA_uUOhjja0');
+function $(i){return document.getElementById(i)}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+var CODIGO={MZ:'258',TZ:'255',ZA:'27',AO:'244',MW:'265',ZW:'263',ZM:'260',PT:'351',BR:'55',CN:'86'};
+var INI=null,PROV='',GRUPO='',CAT='',L=[],T=[],espera=null,TODO=false;
+function num(v){var n=parseInt(String(v||'').replace(/\D/g,''),10);return isNaN(n)?null:n}
+function filtrar(){
+ var nm=adultoGrupo();$('nmFiltro').classList.toggle('hide',!nm);
+ if(!nm){L=T;return}
+ var pr=$('nmProc').value,de=num($('nmDe').value),ate=num($('nmAte').value);
+ L=T.filter(function(a){var d=a.detalhes||{},i=num(d.idade);
+  if(pr&&d.genero!==pr)return false;if(de!=null&&(i==null||i<de))return false;if(ate!=null&&(i==null||i>ate))return false;return true});
+}
+function vista(v){['vEntrar','vPais','vProv','vEsc','vApp'].forEach(function(x){$(x).classList.toggle('hide',x!==v)});$('pubBar').classList.toggle('hide',v!=='vApp');window.scrollTo(0,0)}
+function so(n){return String(n||'').replace(/[^\d+]/g,'')}
+function waNum(n){var d=String(n||'').replace(/\D/g,''),c=CODIGO[INI&&INI.pais]||'';if(!d)return'';if(c&&d.indexOf(c)!==0){d=d.replace(/^0+/,'');if(d.length<=10)d=c+d}return d}
+function din(v,m){if(v==null||v==='')return'';return Number(v).toLocaleString('pt-PT',{maximumFractionDigits:2})+' '+(m||'')}
+function chaveProv(){return 'bb-serv-prov-'+(INI&&INI.pais||'')}
+/* (21/11/2026) o país é o do menu geral (🌐 País / Idioma / Moeda): se mudou, a conta passa para esse país */
+async function sincPais(){
+ try{
+  var p=JSON.parse(localStorage.getItem('bb_prefs')||'null');
+  if(!p||!p.escolhido||!/^[A-Za-z]{2}$/.test(p.pais||''))return'';
+  var c=String(p.pais).toUpperCase(),a=await sb.rpc('meu_pais');
+  if(a.error)return'';
+  if(String(a.data||'').toUpperCase()!==c){var r=await sb.rpc('meu_pais_definir',{p_pais:c});if(r.error)return r.error.message||'Não foi possível mudar o país.'}
+ }catch(e){}
+ return'';
+}
+/* (21/11/2026) países sem lista própria: províncias do GeoNames (como na loja); "Outra (escrever)" para o que faltar */
+async function geoProv(cc){
+ cc=String(cc||'').toUpperCase();if(!/^[A-Z]{2}$/.test(cc))return[];
+ var k='bb-geo-prov-'+cc;try{var c=JSON.parse(localStorage.getItem(k)||'null');if(c&&c.l&&c.l.length&&Date.now()-c.t<30*864e5)return c.l}catch(e){}
+ var GN='JovencioFoguete';
+ function j(u){var ct=new AbortController(),t=setTimeout(function(){ct.abort()},7000);return fetch(u,{signal:ct.signal}).then(function(r){clearTimeout(t);return r.json()})}
+ try{
+  var a=await j('https://secure.geonames.org/countryInfoJSON?country='+cc+'&username='+GN),id=a.geonames&&a.geonames[0]&&a.geonames[0].geonameId;if(!id)return[];
+  var b=await j('https://secure.geonames.org/childrenJSON?geonameId='+id+'&maxRows=1000&username='+GN),seen={};
+  var l=(b.geonames||[]).map(function(x){return x.name}).filter(function(n){if(!n||seen[n])return false;seen[n]=1;return true}).sort(function(x,y){return x.localeCompare(y)});
+  if(l.length)try{localStorage.setItem(k,JSON.stringify({t:Date.now(),l:l}))}catch(e){}
+  return l;
+ }catch(e){return[]}
+}
+async function iniciar(){
+ PROV='';TODO=false;GRUPO='';CAT='';
+ var s=(await sb.auth.getSession()).data.session;
+ if(!s){vista('vEntrar');return}
+ var erPais=await sincPais();
+ var r=await sb.rpc('servicos_inicio');
+ if(r.error){vista('vProv');$('pMsg').textContent=/function|find|exist/i.test(r.error.message)?'Falta correr o SQL novo (PARTE 16) no Supabase.':r.error.message;return}
+ INI=r.data||{};
+ if(INI.entrar){vista('vEntrar');return}
+ if(!INI.pais){vista('vPais');return}
+ var p=INI.provincias||[],geo=false;
+ if(!p.length){p=await geoProv(INI.pais);geo=p.length>0}
+ $('provSel').innerHTML='<option value="">— Escolha a província —</option><option value="*">🌍 Ver em todo o país</option>'+p.map(function(x){return'<option>'+esc(x)+'</option>'}).join('')+(geo?'<option value="#">✍️ Outra (escrever)</option>':'');
+ $('provSel').classList.toggle('hide',!p.length);$('provIn').classList.toggle('hide',!!p.length||geo);if(geo)$('provIn').classList.add('hide');$('provTodo').classList.toggle('hide',!!p.length);
+ var nomes=null;try{nomes=new Intl.DisplayNames(['pt'],{type:'region'})}catch(e){}
+ $('provTxt').textContent='Só aparecem as províncias de '+((nomes&&nomes.of(INI.pais))||INI.pais)+' (o país escolhido no menu).';
+ var guardada='';try{guardada=localStorage.getItem(chaveProv())||''}catch(e){}
+ if(guardada==='*'){TODO=true;escolha()}
+ else if(guardada&&(!p.length||geo||p.indexOf(guardada)>-1)){PROV=guardada;escolha()}else{vista('vProv');if(erPais)$('pMsg').textContent=erPais}
+}
+function grupos(){
+ var gs=[];(INI.categorias||[]).forEach(function(c){if(gs.indexOf(c.grupo)<0)gs.push(c.grupo)});
+ $('grupos').innerHTML='<button data-g="" class="'+(GRUPO===''?'on':'')+'">Tudo</button>'+gs.map(function(g){return'<button data-g="'+esc(g)+'" class="'+(GRUPO===g?'on':'')+'">'+esc(g)+'</button>'}).join('');
+ var cs=(INI.categorias||[]).filter(function(c){return GRUPO?c.grupo===GRUPO:!c.adulto});
+ $('catSel').innerHTML='<option value="">'+(GRUPO?'Todas as categorias deste grupo':'Todas as categorias')+'</option>'+cs.map(function(c){return'<option value="'+c.id+'"'+(String(c.id)===String(CAT)?' selected':'')+'>'+esc(c.nome)+'</option>'}).join('');
+}
+function adultoGrupo(){return (INI.categorias||[]).some(function(c){return c.adulto&&c.grupo===GRUPO})}
+function maior18(){try{return localStorage.getItem('bb-serv-18')==='1'}catch(e){return false}}
+function nomePais(){var n=null;try{n=new Intl.DisplayNames(['pt'],{type:'region'}).of(INI.pais)}catch(e){}return n||INI.pais}
+function escolha(){$('provEsc').textContent=TODO?'Todo o país: '+nomePais():PROV;vista('vEsc')}
+function ambito(){$('abProv').classList.toggle('on',!TODO);$('abPais').classList.toggle('on',TODO);$('provAtual').textContent=TODO?'Todo o país: '+nomePais():PROV;$('provMudar').classList.toggle('hide',TODO)}
+function abrirApp(){vista('vApp');ambito();grupos();carregar()}
+async function carregar(){
+ var bloq=adultoGrupo()&&!maior18();
+ $('aviso18').classList.toggle('hide',!bloq);
+ if(bloq){$('lista').innerHTML='';return}
+ $('lista').innerHTML='<div class="box vz">A carregar…</div>';
+ var r=await sb.rpc('servicos_lista',{p_provincia:TODO?null:PROV,p_categoria:CAT?Number(CAT):null,p_busca:$('busca').value.trim()||null});
+ if(r.error){$('lista').innerHTML='<div class="box"><p class="msg">'+esc(r.error.message)+'</p></div>';return}
+ T=(r.data||[]).filter(function(a){
+  if(GRUPO)return a.grupo===GRUPO;
+  return !a.adulto;
+ });
+ filtrar();pintar();
+}
+function pintar(){
+ if(!L.length){$('lista').innerHTML='<div class="box vz">Ainda não há anúncios '+(TODO?'neste país':'aqui em '+esc(PROV))+'.<br>Seja o primeiro: toque em "📢 Publicar".</div>';return}
+ $('lista').innerHTML=L.map(function(a){
+  var fs=(a.fotos||[]).filter(Boolean),lc=[a.bairro,a.provincia].filter(Boolean).join(' · '),d=a.detalhes||{};
+  var nm=a.adulto?[d.genero&&('Sou: '+d.genero),d.idade&&('Idade: '+d.idade+' anos'),d.bairro&&('Bairro: '+d.bairro),d.estado_civil&&('Estado civil: '+d.estado_civil),
+   d.ocupacao&&('Ocupação: '+d.ocupacao),d.vicios&&('Vícios: '+d.vicios),d.filhos&&('Filhos: '+d.filhos),d.outros&&('Outros: '+d.outros),
+   d.procura&&('Procuro: '+d.procura+((d.idade_de||d.idade_ate)?' de '+(d.idade_de||'?')+' até '+(d.idade_ate||'?')+' anos':''))].filter(Boolean):[];
+  var wa=waNum(a.whatsapp);
+  return '<div class="an">'+(fs.length?'<div class="fs">'+fs.slice(0,6).map(function(u){return'<img src="'+esc(u)+'" alt="" loading="lazy">'}).join('')+'</div>':'')+
+   '<div class="i"><h3>'+esc(a.adulto?(d.nome||'❤️ Namoro'):a.titulo)+'</h3><div class="c">'+esc(a.grupo)+(a.adulto?'':' › '+esc(a.categoria))+'</div>'+(lc?'<div class="lc">📍 '+esc(lc)+'</div>':'')+
+   (a.preco!=null?'<div class="p">'+esc(din(a.preco,a.moeda))+'</div>':'')+(a.descricao?'<div class="d">'+esc(a.descricao)+'</div>':'')+
+   (nm.length?'<div class="nm">'+nm.map(esc).join('<br>')+'</div>':'')+
+   '<div class="ct">'+(a.telefone?'<a class="tel" href="tel:'+esc(so(a.telefone))+'">📞 Ligar</a>':'')+
+   (wa?'<a class="wa" href="https://wa.me/'+esc(wa)+'" target="_blank" rel="noopener">💬 WhatsApp</a>':'')+
+   (a.email?'<a class="em" href="mailto:'+esc(a.email)+'">✉️ Email</a>':'')+'</div></div></div>';
+ }).join('');
+}
+function verTodoPais(){TODO=true;PROV='';try{localStorage.setItem(chaveProv(),'*')}catch(e){}$('pMsg').textContent='';escolha()}
+$('provOk').onclick=function(){
+ var p=$('provSel').classList.contains('hide')?$('provIn').value.trim():$('provSel').value;
+ if(p==='*'){verTodoPais();return}
+ if(p==='#')p=$('provIn').value.trim();
+ if(!p){$('pMsg').textContent='Escolha a sua província.';return}
+ TODO=false;PROV=p;try{localStorage.setItem(chaveProv(),p)}catch(e){}$('pMsg').textContent='';escolha();
+};
+$('provTodo').onclick=verTodoPais;
+$('provSel').onchange=function(){$('provIn').classList.toggle('hide',$('provSel').value!=='#')};
+$('provMudar').onclick=$('provMudar2').onclick=function(){$('provSel').value=TODO?'*':PROV;vista('vProv')};
+$('irProcurar').onclick=abrirApp;
+$('abProv').onclick=function(){if(!PROV){$('provSel').value='';vista('vProv');return}TODO=false;ambito();carregar()};$('abPais').onclick=function(){TODO=true;ambito();carregar()};
+['nmProc','nmDe','nmAte'].forEach(function(i){$(i).oninput=$(i).onchange=function(){filtrar();pintar()}});
+$('grupos').addEventListener('click',function(e){var b=e.target.closest('[data-g]');if(!b)return;GRUPO=b.getAttribute('data-g');CAT='';grupos();carregar()});
+$('catSel').onchange=function(){CAT=this.value;carregar()};
+$('busca').oninput=function(){clearTimeout(espera);espera=setTimeout(carregar,350)};
+$('ok18').onclick=function(){try{localStorage.setItem('bb-serv-18','1')}catch(e){}carregar()};
+$('voltar').onclick=function(){if(history.state&&history.state.bbPag)history.back();else location.href='/'};
+$('ent').onclick=async function(){var r=await sb.auth.signInWithPassword({email:$('em').value.trim(),password:$('pw').value});if(r.error){$('eMsg').textContent='Email ou palavra-passe errados.';return}iniciar()};
+/* voltou do menu geral (página guardada pelo telemóvel): ler o país outra vez */
+addEventListener('pageshow',function(e){if(e.persisted)iniciar()});
+iniciar();
+</script>
+</body>
+</html>
