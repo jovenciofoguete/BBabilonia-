@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Publicar · Aluguer, serviços e diversos · BBabilônia</title>
+<meta name="color-scheme" content="light">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0}
+body{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:#f5f5f5;color:#222;line-height:1.4;color-scheme:light}
+a{color:inherit;text-decoration:none}button{font:inherit;cursor:pointer}
+.bar{position:sticky;top:0;z-index:5;background:linear-gradient(135deg,#ff6a00,#ff8c1a);color:#fff;box-shadow:0 3px 12px #0002}
+.bar .l{display:flex;align-items:center;gap:6px;padding:10px 8px 8px}
+.bar .vt{border:0;background:none;color:#fff;font-size:26px;width:44px;height:44px;border-radius:50%}
+.bar h1{font-size:17px;flex:1}
+main{max-width:640px;margin:0 auto;padding:12px 12px 60px}
+.box{background:#fff;border-radius:14px;padding:14px;margin-bottom:12px;box-shadow:0 2px 10px #0000000d}
+.box h2{font-size:16px;margin-bottom:6px}
+.sub{font-size:13.5px;color:#666}
+label{display:block;font-size:14px;font-weight:700;color:#333;margin:12px 0 0}
+label small{font-weight:400;color:#888}
+select,input,textarea{width:100%;padding:12px;border:2px solid #e8e8e8;border-radius:12px;font:inherit;font-size:16px;background:#fff;color:#222;margin-top:6px}
+textarea{min-height:90px;resize:vertical}
+select:focus,input:focus,textarea:focus{outline:none;border-color:#ff6a00}
+.dois{display:flex;gap:8px}.dois>*{flex:1}
+.bt{display:block;width:100%;border:0;border-radius:12px;padding:14px;font-weight:800;font-size:16px;color:#fff;background:#ff6a00;text-align:center;margin-top:14px}
+.bt:disabled{opacity:.55}.bt.l{background:#fff;color:#ff6a00;border:2px solid #ff6a00}
+.fotos{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.fotos div{position:relative}.fotos img{width:78px;height:78px;object-fit:cover;border-radius:12px}
+.fotos b{position:absolute;top:-6px;right:-6px;background:#ef4444;color:#fff;width:22px;height:22px;border-radius:50%;text-align:center;line-height:22px;font-size:14px}
+.add{width:78px;height:78px;border:2px dashed #bbb;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:28px;color:#888;background:#fafafa;margin:0}
+.chk{display:flex;gap:10px;align-items:flex-start;margin-top:12px;font-size:14.5px;font-weight:600}.chk input{width:22px;height:22px;margin:0;flex:none}
+.nm{border:2px solid #fda4af;background:#fff1f2;border-radius:14px;padding:12px;margin-top:12px}
+.msg{color:#dc2626;font-size:14px;margin-top:10px;white-space:pre-line}.msg.ok{color:#16a34a;font-weight:700}
+.meu{display:flex;gap:10px;align-items:center;border-top:1px solid #eee;padding:10px 0}.meu:first-of-type{border-top:0}
+.meu img,.meu .sf{width:52px;height:52px;border-radius:10px;object-fit:cover;background:#f0f0f0;flex:none}
+.meu .t{flex:1;min-width:0}.meu .t b{display:block;font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.meu .t span{font-size:12.5px;color:#777}
+.meu button{border:0;border-radius:999px;padding:7px 12px;font-size:13px;font-weight:700;background:#fee2e2;color:#b91c1c}
+.cq{font-size:17px;font-weight:800;margin-top:2px}.cq+small{display:block;font-size:12px;color:#888;margin-top:1px}
+.chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px}
+.chips button{border:1.5px solid #e5e5e5;background:#fff;border-radius:999px;padding:8px 12px;font-size:14px;font-weight:600;color:#333}
+.chips button i{font-style:normal;color:#ff6a00;font-size:12px;margin-left:4px}
+.gt{font-size:13px;font-weight:800;color:#666;margin-top:14px}
+.sel{display:flex;align-items:center;gap:8px;background:#fff4ec;border:2px solid #ff6a00;border-radius:14px;padding:12px;margin-top:6px}
+.sel b{flex:1}.sel button{border:0;background:#fff;color:#ff6a00;border-radius:999px;padding:6px 12px;font-weight:800}
+.tipos button{display:block;width:100%;text-align:left;border:2px solid #eee;background:#fff;border-radius:12px;padding:12px;margin-top:8px;font-size:15px;font-weight:700}
+.tipos button small{display:block;font-weight:400;color:#777}
+.pag{border:2px solid #10b981;background:#ecfdf5;border-radius:14px;padding:14px;margin-top:12px}
+.pag h3{font-size:16px}.pag .v{font-size:22px;font-weight:900;color:#065f46;margin:4px 0}
+.num{background:#fff;border-radius:12px;padding:10px;margin-top:8px;font-size:14.5px}.num b{font-size:17px;letter-spacing:.5px}
+.meios{display:flex;gap:8px;margin-top:8px}.meios label{flex:1;margin:0;border:2px solid #d1fae5;background:#fff;border-radius:12px;padding:10px;text-align:center}
+.meios input{width:auto;margin:0 6px 0 0}
+.est{display:inline-block;font-size:12.5px;font-weight:800;padding:3px 9px;border-radius:20px;margin-top:4px}
+.est.ok{background:#d1fae5;color:#065f46}.est.esp{background:#fef3c7;color:#92400e}.est.no{background:#ffe4e6;color:#9f1239}
+.cob{border-top:1px solid #eee;padding:10px 0}.cob:first-of-type{border-top:0}
+.cob .bp{border:0;border-radius:10px;padding:9px 12px;font-weight:800;color:#fff;background:#10b981;margin-top:6px}
+.hide{display:none!important}
+</style>
+</head>
+<body>
+<script>/* Botão voltar do telemóvel: volta aos serviços e nunca sai do site */
+(function(){var H='servicos.html';try{var r=document.referrer?new URL(document.referrer):null;if(r&&r.host===location.host&&history.length>1)return}catch(e){}
+var u=location.href;try{history.replaceState({bbBase:1},'',H);history.pushState({bbPag:1},'',u)}catch(e){return}
+addEventListener('popstate',function(e){if(e.state&&e.state.bbBase)location.replace(H)});})();</script>
+<div class="bar"><div class="l"><button class="vt" id="voltar" aria-label="Voltar">&#8592;</button><h1>📢 Painel de publicador</h1></div></div>
+<main>
+ <section id="vEntrar" class="box hide">
+  <h2>Entre na sua conta</h2>
+  <input id="em" type="email" placeholder="Email" autocomplete="username">
+  <input id="pw" type="password" placeholder="Palavra-passe" autocomplete="current-password">
+  <button class="bt" id="ent">Entrar</button><p class="msg" id="eMsg"></p>
+  <a class="bt l" href="conta.html">Criar conta</a>
+ </section>
+ <section id="vPais" class="box hide">
+  <h2>🌍 Escolha o país da sua conta</h2>
+  <p class="sub">O que publicar aparece só no país da sua conta.</p>
+  <a class="bt" href="pais.html">Escolher o meu país</a>
+ </section>
+ <section id="vForm" class="hide">
+  <div class="box" id="cobBox"><h2>💵 As minhas mensalidades</h2><div id="cob"></div></div>
+  <div class="box">
+   <label for="prov" style="margin-top:0">📍 Província</label>
+   <select id="prov"></select><input id="provIn" class="hide" placeholder="Escreva a sua província">
+  </div>
+  <div class="box" id="catBox">
+   <div class="cq">O que vendes ou que serviço fazes?</div><small>categoria</small>
+   <input id="cBusca" type="search" placeholder="🔍 Pesquisar categoria (ex.: mecânico, carro, casa)">
+   <div class="chips" id="rapidas"></div>
+   <div id="cLista"></div>
+   <div id="cNova" class="hide">
+    <p class="sub" style="margin-top:12px">Não encontrou? Acrescente <b id="cNovaNome"></b> como categoria nova. É:</p>
+    <div class="tipos" id="cTipos"></div>
+   </div>
+  </div>
+  <div class="box hide" id="formBox">
+   <div class="sel"><b id="selNome"></b><button type="button" id="selMudar">Mudar</button></div>
+   <p class="sub" id="selTaxa" style="margin-top:6px"></p>
+   <label>📷 Fotos <small id="fotosMax">(até 6)</small></label>
+   <div class="fotos" id="fotos"><label class="add" for="fIn">＋</label></div>
+   <input id="fIn" type="file" accept="image/*" multiple class="hide">
+   <label for="tel">📞 Número de celular</label>
+   <input id="tel" type="tel" inputmode="tel" placeholder="Ex.: 84 123 4567">
+   <label for="desc" id="descL">📝 Descrição</label>
+   <textarea id="desc" placeholder="Explique o que faz ou o que vende"></textarea>
+   <label for="preco" id="precoL">💰 Preço <small>(opcional)</small></label>
+   <input id="preco" inputmode="decimal" placeholder="Ex.: 500">
+   <div class="nm hide" id="nm">
+    <b>❤️ Namoro — só para maiores de 18 anos</b>
+    <div class="dois"><div><label for="n_genero">Sou</label><select id="n_genero"><option value="">—</option><option>Homem</option><option>Mulher</option></select></div>
+     <div><label for="n_idade">Idade</label><input id="n_idade" type="number" inputmode="numeric" min="18" placeholder="Ex.: 25"></div></div>
+    <label for="n_bairro">Bairro</label><input id="n_bairro" placeholder="Ex.: Polana Caniço">
+    <div class="dois"><div><label for="n_estado">Estado civil</label><select id="n_estado"><option value="">—</option><option>Solteiro(a)</option><option>Divorciado(a)</option><option>Viúvo(a)</option><option>Separado(a)</option></select></div>
+     <div><label for="n_filhos">Filhos</label><select id="n_filhos"><option value="">—</option><option>Não tenho</option><option>Tenho</option></select></div></div>
+    <label for="n_vicios">Vícios</label><input id="n_vicios" placeholder="Ex.: Não fumo, bebo pouco">
+    <label for="n_ocupacao">Ocupação</label><input id="n_ocupacao" placeholder="Ex.: Professor(a)">
+    <label for="n_outros">Outros <small>(altura, religião, gostos…)</small></label><input id="n_outros">
+    <div class="dois"><div><label for="n_procura">Procuro</label><select id="n_procura"><option value="">—</option><option>Homem</option><option>Mulher</option></select></div>
+     <div><label>Idade de… até…</label><div class="dois"><input id="n_de" type="number" inputmode="numeric" placeholder="de"><input id="n_ate" type="number" inputmode="numeric" placeholder="até"></div></div></div>
+    <label for="n_wa">💬 WhatsApp</label><input id="n_wa" type="tel" inputmode="tel" placeholder="Pode ser outro número">
+    <label for="n_mail">✉️ Email</label><input id="n_mail" type="email">
+    <label class="chk"><input type="checkbox" id="n_18"> Confirmo que tenho 18 anos ou mais</label>
+   </div>
+   <button class="bt" id="gravar" type="button">Publicar</button>
+   <p class="msg" id="fMsg"></p>
+   <div id="pagAqui"></div>
+  </div>
+  <div class="box"><h2>📋 Os meus anúncios</h2><div id="meus"><p class="sub">A carregar…</p></div></div>
+ </section>
+</main>
+<script>
+var sb=supabase.createClient('https://dsfoqoeawvjafypycldz.supabase.co','sb_publishable_BN4NiVcDab9CqdTY_odgDA_uUOhjja0');
+function $(i){return document.getElementById(i)}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function sem(s){return String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'')}
+/* taxa (em MT) na moeda do país da conta: câmbio escrito pelo dono, arredondado para cima */
+function pgInfo(){return(MEUS&&MEUS.pagamento)||(INI&&INI.pagamento)||{}}
+function num(v){return Number(v||0).toLocaleString('pt-PT',{maximumFractionDigits:2})}
+function cent(m){return /^(USD|USDC|USDT|EUR|GBP)$/i.test(m||'')}
+function valor(t,cb,m){var x=Number(t||0)*Number(cb);return cent(m)?Math.ceil(Math.round(x*1e6)/1e4)/100:Math.ceil(Math.round(x*1e6)/1e6)}
+function fmt(v,m){return (m==='MZN'?num(v)+' MTS':Number(v).toLocaleString('pt-PT',{minimumFractionDigits:cent(m)?2:0,maximumFractionDigits:2})+' '+m)}
+function mts(v){var p=pgInfo(),ms=p.meios||[];if(p.moeda&&p.cambio)return fmt(valor(v,p.cambio,p.moeda),p.moeda);if(ms.length)return fmt(valor(v,ms[0].cambio,ms[0].moeda),ms[0].moeda);return num(v)+' MT (equivalente)'}
+/* categoria grátis (taxa 0): mostra "Grátis" em vez do preço */
+function gratis(c){return c&&Number(c.taxa)===0}
+function tx(c){return gratis(c)?'Grátis':mts(c.taxa)}
+function dia(d){try{return new Date(d).toLocaleDateString('pt-PT')}catch(e){return''}}
+var MOEDA={MZ:'MZN',TZ:'TZS',ZA:'ZAR'};
+var RAPIDAS=['Motorizada','Carro','Casa','Celular','Laptop','Computador','Bateria','Mesa','Congelador','Sofá','Fogão'];
+var EU=null,INI=null,CAT=null,FOTOS=[],MEUS=null;
+function vista(v){['vEntrar','vPais','vForm'].forEach(function(x){$(x).classList.toggle('hide',x!==v)})}
+function msg(t,ok){var m=$('fMsg');m.className='msg'+(ok?' ok':'');m.textContent=t||''}
+function taxaTxt(c){return INI&&INI.cobra?tx(c)+(gratis(c)?'':'/mês'):''}
+/* (21/11/2026) o país é o do menu geral (🌐 País / Idioma / Moeda): se mudou, a conta passa para esse país */
+async function sincPais(){
+ try{
+  var p=JSON.parse(localStorage.getItem('bb_prefs')||'null');
+  if(!p||!p.escolhido||!/^[A-Za-z]{2}$/.test(p.pais||''))return;
+  var c=String(p.pais).toUpperCase(),a=await sb.rpc('meu_pais');
+  if(a.error)return;
+  if(String(a.data||'').toUpperCase()!==c)await sb.rpc('meu_pais_definir',{p_pais:c});
+ }catch(e){}
+}
+async function iniciar(){
+ var s=(await sb.auth.getSession()).data.session;
+ if(!s){vista('vEntrar');return}
+ EU=s.user;
+ await sincPais();
+ var r=await sb.rpc('servicos_inicio');
+ if(r.error){vista('vForm');msg(/function|find|exist/i.test(r.error.message)?'Falta correr o SQL novo (PARTE 16) no Supabase.':r.error.message);return}
+ INI=r.data||{};
+ if(INI.entrar){vista('vEntrar');return}
+ if(!INI.pais){vista('vPais');return}
+ var p=INI.provincias||[],g='';try{g=localStorage.getItem('bb-serv-prov-'+INI.pais)||''}catch(e){}
+ if(g==='*')g='';
+ $('prov').innerHTML='<option value="">— Escolha a província —</option>'+p.map(function(x){return'<option'+(x===g?' selected':'')+'>'+esc(x)+'</option>'}).join('');
+ $('prov').classList.toggle('hide',!p.length);$('provIn').classList.toggle('hide',!!p.length);if(!p.length)$('provIn').value=g;
+ $('cobBox').classList.toggle('hide',!INI.cobra);
+ vista('vForm');pintarCats();meus();
+}
+function cats(){return INI&&INI.categorias||[]}
+function pintarCats(){
+ var q=sem($('cBusca').value.trim());
+ var rp=RAPIDAS.map(function(n){return cats().filter(function(c){return c.nome===n})[0]}).filter(Boolean);
+ $('rapidas').innerHTML=q?'':rp.map(function(c){return'<button type="button" data-c="'+c.id+'">'+esc(c.nome)+(INI.cobra?'<i>'+esc(tx(c))+'</i>':'')+'</button>'}).join('');
+ var l=cats().filter(function(c){return!q||sem(c.nome+' '+c.grupo).indexOf(q)>-1}),gs={},ord=[];
+ l.forEach(function(c){if(!gs[c.grupo]){gs[c.grupo]=[];ord.push(c.grupo)}gs[c.grupo].push(c)});
+ $('cLista').innerHTML=ord.map(function(g){return'<div class="gt">'+esc(g)+'</div><div class="chips">'+gs[g].map(function(c){return'<button type="button" data-c="'+c.id+'">'+esc(c.nome)+(INI.cobra?'<i>'+esc(tx(c))+'</i>':'')+'</button>'}).join('')+'</div>'}).join('')||(q?'<p class="sub" style="margin-top:10px">Nenhuma categoria com esse nome.</p>':'');
+ var exato=cats().some(function(c){return sem(c.nome)===q});
+ $('cNova').classList.toggle('hide',!q||q.length<3||exato);
+ $('cNovaNome').textContent='"'+$('cBusca').value.trim()+'"';
+ $('cTipos').innerHTML=(INI.tipos||[]).map(function(t){return'<button type="button" data-t="'+esc(t.tipo)+'">'+esc(t.nome)+(INI.cobra?'<small>Mensalidade: '+esc(mts(t.taxa))+'</small>':'')+'</button>'}).join('');
+}
+function escolher(c){
+ CAT=c;$('catBox').classList.add('hide');$('formBox').classList.remove('hide');$('pagAqui').innerHTML='';msg('');
+ $('selNome').textContent=c.grupo+' › '+c.nome;
+ $('selTaxa').textContent=!INI.cobra?'':gratis(c)?'Esta categoria é grátis: não paga mensalidade e pode publicar quantas coisas quiser.':'Mensalidade desta categoria: '+mts(c.taxa)+' (30 dias). Com o mês pago pode publicar quantas coisas quiser nesta categoria.';
+ var nm=!!c.adulto;$('nm').classList.toggle('hide',!nm);$('precoL').classList.toggle('hide',nm);$('preco').classList.toggle('hide',nm);
+ $('descL').textContent=nm?'📝 Descrição da pessoa':'📝 Descrição';$('fotosMax').textContent=nm?'(até 5 fotos suas)':'(até 6)';
+ if(nm&&!$('n_mail').value)$('n_mail').value=INI.email||'';
+ if(FOTOS.length>maxF()){FOTOS=FOTOS.slice(0,maxF());pintarFotos()}
+ window.scrollTo(0,$('formBox').offsetTop-70);
+}
+function maxF(){return CAT&&CAT.adulto?5:6}
+$('cBusca').oninput=pintarCats;
+document.addEventListener('click',async function(e){
+ var b=e.target.closest('[data-c]');if(b&&b.closest('#catBox')){var c=cats().filter(function(x){return String(x.id)===b.getAttribute('data-c')})[0];if(c)escolher(c);return}
+ var t=e.target.closest('#cTipos [data-t]');
+ if(t){t.disabled=true;var r=await sb.rpc('servicos_categoria_nova',{p_nome:$('cBusca').value.trim(),p_tipo:t.getAttribute('data-t')});t.disabled=false;
+  if(r.error){alert(r.error.message);return}
+  var i2=await sb.rpc('servicos_inicio');if(!i2.error)INI=i2.data;
+  var c=cats().filter(function(x){return x.id===r.data})[0];$('cBusca').value='';pintarCats();if(c)escolher(c);return}
+});
+$('selMudar').onclick=function(){CAT=null;$('formBox').classList.add('hide');$('catBox').classList.remove('hide');pintarCats()};
+function pintarFotos(){
+ $('fotos').innerHTML=FOTOS.map(function(f,i){return'<div><img src="'+f.url+'" alt=""><b data-rm="'+i+'">×</b></div>'}).join('')+(FOTOS.length<maxF()?'<label class="add" for="fIn">＋</label>':'');
+}
+$('fIn').onchange=function(){Array.prototype.slice.call(this.files).forEach(function(f){if(FOTOS.length<maxF()&&/^image\//.test(f.type))FOTOS.push({file:f,url:URL.createObjectURL(f)})});this.value='';pintarFotos()};
+$('fotos').addEventListener('click',function(e){var b=e.target.closest('[data-rm]');if(!b)return;FOTOS.splice(Number(b.getAttribute('data-rm')),1);pintarFotos()});
+function reduzir(file){return new Promise(function(ok){
+ var img=new Image(),u=URL.createObjectURL(file);
+ img.onload=function(){var m=1280,w=img.width,h=img.height,k=Math.min(1,m/Math.max(w,h));var c=document.createElement('canvas');c.width=Math.round(w*k);c.height=Math.round(h*k);
+  c.getContext('2d').drawImage(img,0,0,c.width,c.height);c.toBlob(function(b){URL.revokeObjectURL(u);ok(b||file)},'image/jpeg',0.82)};
+ img.onerror=function(){ok(file)};img.src=u})}
+function provAtual(){return $('prov').classList.contains('hide')?$('provIn').value.trim():$('prov').value}
+$('gravar').onclick=async function(){
+ var b=this;msg('');$('pagAqui').innerHTML='';
+ var prov=provAtual(),nm=!!(CAT&&CAT.adulto);
+ if(!CAT)return msg('Escolha a categoria.');
+ if(!prov)return msg('Escolha a província (no topo).');
+ if($('tel').value.replace(/\D/g,'').length<7)return msg('Escreva o número de celular.');
+ if($('desc').value.trim().length<5)return msg('Escreva a descrição.');
+ if(nm&&!$('n_18').checked)return msg('Confirme que tem 18 anos ou mais.');
+ if(nm&&!(Number($('n_idade').value)>=18))return msg('Escreva a sua idade (18 anos ou mais).');
+ b.disabled=true;
+ try{
+  var urls=[];
+  for(var i=0;i<FOTOS.length;i++){
+   b.textContent='A enviar foto '+(i+1)+' de '+FOTOS.length+'…';
+   var bl=await reduzir(FOTOS[i].file),cam=EU.id+'/servico-'+Date.now()+'-'+i+'.jpg';
+   var up=await sb.storage.from('produtos').upload(cam,bl,{contentType:'image/jpeg'});
+   if(up.error)throw new Error('A foto '+(i+1)+' não foi enviada: '+up.error.message);
+   urls.push(sb.storage.from('produtos').getPublicUrl(cam).data.publicUrl);
+  }
+  b.textContent='A publicar…';
+  var det={},d={categoria_id:CAT.id,provincia:prov,descricao:$('desc').value.trim(),telefone:$('tel').value.trim(),fotos:urls,moeda:MOEDA[INI.pais]||''};
+  if(nm){det={maior18:true,genero:$('n_genero').value,idade:$('n_idade').value.trim(),bairro:$('n_bairro').value.trim(),estado_civil:$('n_estado').value,filhos:$('n_filhos').value,
+    vicios:$('n_vicios').value.trim(),ocupacao:$('n_ocupacao').value.trim(),outros:$('n_outros').value.trim(),procura:$('n_procura').value,idade_de:$('n_de').value.trim(),idade_ate:$('n_ate').value.trim()};
+   d.whatsapp=$('n_wa').value.trim();d.email=$('n_mail').value.trim();d.bairro=det.bairro}
+  else d.preco=$('preco').value.trim().replace(',','.')||null;
+  d.detalhes=det;
+  var r=await sb.rpc('servicos_criar',{d:d});
+  if(r.error)throw new Error(r.error.message);
+  try{localStorage.setItem('bb-serv-prov-'+INI.pais,prov)}catch(e){}
+  FOTOS=[];pintarFotos();['desc','preco'].forEach(function(x){$(x).value=''});
+  var x=r.data||{};
+  if(x.visivel)msg('✅ Publicado. Já aparece em "Aluguer, serviços e diversos" ('+prov+'). Pode publicar mais.',true);
+  else if(x.pendente)msg('✅ Guardado. Fica visível quando a BBabilônia aprovar o pagamento que já enviou para '+x.categoria+'.',true);
+  else{msg('✅ Guardado. Para ficar visível, pague a mensalidade de '+x.categoria+':',true);$('pagAqui').innerHTML=caixaPagar(x.categoria_id,x.categoria,x.taxa)}
+  meus();
+ }catch(e){msg(e.message||String(e))}
+ b.disabled=false;b.textContent='Publicar';
+};
+/* 💵 caixa para pagar a mensalidade de uma categoria (levantamento M-Pesa / e-Mola + provas) */
+function caixaPagar(id,nome,taxa){
+ var p=pgInfo(),ms=p.meios||[];
+ if(!ms.length)return'<div class="pag"><h3>💵 Mensalidade · '+esc(nome)+'</h3><div class="v">'+esc(mts(taxa))+'</div><p class="msg">O pagamento ainda não está disponível no seu país. A BBabilônia vai pôr os números de pagamento.</p></div>';
+ var cripto=function(m){return /USDC|USDT/i.test(m.moeda||'')};
+ /* (15/11/2026) M-Pesa e e-Mola (só Moçambique): pagamento por levantamento no agente → Agente M-Pesa · Código do agente · Nome do agente */
+ var agente=function(m){return m.id==='mpesa'||m.id==='emola'};
+ var nomeM=function(m){return m.id==='mpesa'?'Agente M-Pesa':m.id==='emola'?'Agente e-Mola':(m.nome||'Pagamento')};
+ var nums=ms.map(function(m){return'<div class="num" data-mnum="'+esc(m.id)+'">'+(m.id==='mpesa'?'🟥 ':m.id==='emola'?'🟧 ':'📱 ')+esc(nomeM(m))+' · <b>'+esc(fmt(valor(taxa,m.cambio,m.moeda),m.moeda))+'</b><br>'+(agente(m)?'Código do agente: <b>'+esc(m.numero)+'</b><br>Nome do agente: <b>'+esc(m.recetor||'')+'</b><br><small style="color:#555">Menu '+(m.id==='mpesa'?'M-Pesa':'e-Mola')+' → Levantar dinheiro → Agente → código do agente, valor e PIN.</small>':cripto(m)?'Carteira: <b style="word-break:break-all">'+esc(m.numero)+'</b><br>Rede: '+esc(m.recetor||''):'Número / conta: <b>'+esc(m.numero)+'</b><br>Nome: '+esc(m.recetor||''))+'</div>'}).join('');
+ return'<div class="pag" data-pag="'+esc(id)+'" data-taxa="'+esc(taxa)+'"><h3>💵 Mensalidade · '+esc(nome)+'</h3><div class="v" data-pv>'+esc(fmt(valor(taxa,ms[0].cambio,ms[0].moeda),ms[0].moeda))+'</div>'+
+  '<p class="sub">Escolha como paga, faça a transferência e depois carregue a foto do comprovativo e cole o texto (ou o código da transação).</p>'+
+  '<div class="meios" style="flex-wrap:wrap">'+ms.map(function(m,i){return'<label><input type="radio" name="m'+id+'" value="'+esc(m.id)+'" data-v="'+esc(fmt(valor(taxa,m.cambio,m.moeda),m.moeda))+'"'+(i?'':' checked')+'>'+esc(nomeM(m))+'</label>'}).join('')+'</div>'+nums+
+  '<label>📷 Foto do comprovativo</label><input type="file" accept="image/*" multiple data-pf>'+
+  '<label>📝 Texto da transferência</label><textarea rows="3" data-pr placeholder="Cole aqui a mensagem que recebeu (SMS) ou o código da transação"></textarea>'+
+  '<button class="bt" type="button" data-penv style="background:#10b981">Enviar provas</button><p class="msg" data-pm></p></div>';
+}
+document.addEventListener('change',function(e){var r=e.target;if(!r.matches||!r.matches('[data-pag] input[type=radio]'))return;var bx=r.closest('[data-pag]');bx.querySelector('[data-pv]').textContent=r.getAttribute('data-v')});
+document.addEventListener('click',async function(e){
+ var b=e.target.closest('[data-penv]');if(!b)return;
+ var box=b.closest('[data-pag]'),id=Number(box.getAttribute('data-pag')),m=box.querySelector('[data-pm]'),fs=box.querySelector('[data-pf]').files,meio=(box.querySelector('input[type=radio]:checked')||{}).value;
+ m.className='msg';m.textContent='';
+ if(!fs.length){m.textContent='Carregue a foto do comprovativo.';return}
+ if(box.querySelector('[data-pr]').value.trim().length<10){m.textContent='Cole o texto da transferência (a mensagem que recebeu).';return}
+ b.disabled=true;
+ try{
+  var cams=[];
+  for(var i=0;i<fs.length&&i<5;i++){b.textContent='A enviar foto '+(i+1)+'…';var bl=await reduzir(fs[i]),cam=EU.id+'/servicos/'+Date.now()+'-'+i+'.jpg';
+   var up=await sb.storage.from('provas-envio').upload(cam,bl,{contentType:'image/jpeg'});if(up.error)throw new Error('A foto não foi enviada: '+up.error.message);cams.push(cam)}
+  var r=await sb.rpc('servicos_pagar',{p_categoria:id,p_meio:meio,p_ref:box.querySelector('[data-pr]').value.trim(),p_fotos:cams});
+  if(r.error)throw new Error(r.error.message);
+  box.innerHTML='<p class="msg ok">✅ Provas enviadas. A BBabilônia vai verificar e aprovar. Recebe um aviso 🔔.</p>';meus();
+ }catch(x){m.textContent=x.message||String(x);b.disabled=false;b.textContent='Enviar provas'}
+});
+async function meus(){
+ var r=await sb.rpc('servicos_meus');
+ if(r.error){$('meus').innerHTML='<p class="msg">'+esc(r.error.message)+'</p>';return}
+ MEUS=r.data||{};var l=MEUS.anuncios||[],cs=(MEUS.categorias||[]).filter(function(c){return!gratis(c)}),ag=Date.now();
+ $('cobBox').classList.toggle('hide',!MEUS.cobra);
+ $('cob').innerHTML=!cs.length?'<p class="sub">Não tem mensalidades a pagar. Escolha a categoria abaixo.</p>':cs.map(function(c){
+  var ok=c.valido_ate&&new Date(c.valido_ate).getTime()>ag,acabou=c.valido_ate&&!ok;
+  var est=ok?'<span class="est ok">✅ Paga até '+esc(dia(c.valido_ate))+'</span>':c.pendente?'<span class="est esp">⏳ Pagamento por verificar</span>':
+   c.recusado?'<span class="est no">❌ Não aprovado: '+esc(c.recusado)+'</span>':acabou?'<span class="est no">⏰ O mês acabou: anúncios escondidos</span>':'<span class="est no">💵 Por pagar: anúncios escondidos</span>';
+  return'<div class="cob"><b>'+esc(c.categoria)+'</b> · '+esc(mts(c.taxa))+'/mês<br>'+est+
+   ((!c.pendente&&!(ok&&(new Date(c.valido_ate).getTime()-ag)>5*864e5))?'<br><button class="bp" type="button" data-abre="'+c.categoria_id+'">'+(ok?'Pagar o próximo mês':'Pagar agora')+'</button><div data-caixa="'+c.categoria_id+'"></div>':'')+'</div>';
+ }).join('');
+ $('meus').innerHTML=l.length?l.map(function(a){var f=(a.fotos||[])[0];
+  return'<div class="meu">'+(f?'<img src="'+esc(f)+'" alt="">':'<div class="sf"></div>')+'<div class="t"><b>'+esc(a.categoria)+'</b><span>'+esc(a.provincia)+' · '+esc(String(a.descricao||'').slice(0,50))+'</span><br>'+
+   (a.visivel?'<span class="est ok">👁️ Visível</span>':'<span class="est no">🙈 Escondido (mensalidade)</span>')+'</div><button data-ap="'+esc(a.id)+'" type="button">Apagar</button></div>'}).join(''):'<p class="sub">Ainda não tem anúncios.</p>';
+}
+$('cob').addEventListener('click',function(e){var b=e.target.closest('[data-abre]');if(!b)return;var id=b.getAttribute('data-abre'),c=(MEUS.categorias||[]).filter(function(x){return String(x.categoria_id)===id})[0];
+ var cx=$('cob').querySelector('[data-caixa="'+id+'"]');cx.innerHTML=cx.innerHTML?'':caixaPagar(c.categoria_id,c.categoria,c.taxa)});
+$('meus').addEventListener('click',async function(e){var b=e.target.closest('[data-ap]');if(!b)return;if(!confirm('Apagar este anúncio?'))return;b.disabled=true;
+ var r=await sb.rpc('servicos_apagar',{p_id:b.getAttribute('data-ap')});if(r.error){alert(r.error.message);b.disabled=false;return}meus()});
+$('voltar').onclick=function(){if(history.state&&history.state.bbPag)history.back();else location.href='servicos.html'};
+$('ent').onclick=async function(){var r=await sb.auth.signInWithPassword({email:$('em').value.trim(),password:$('pw').value});if(r.error){$('eMsg').textContent='Email ou palavra-passe errados.';return}iniciar()};
+addEventListener('pageshow',function(e){if(e.persisted)iniciar()});
+iniciar();
+</script>
+</body>
+</html>
