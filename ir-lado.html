@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="pt"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>BBabilônia</title>
+<style>body{margin:0;font-family:system-ui,sans-serif;background:#fff;color:#475569;display:flex;align-items:center;justify-content:center;min-height:100vh;text-align:center;padding:20px;box-sizing:border-box}
+a{display:inline-block;margin-top:14px;background:#FF6A00;color:#fff;text-decoration:none;font-weight:800;padding:12px 22px;border-radius:999px}</style>
+</head><body>
+<div id="c"><p>A abrir…</p></div>
+<script src="/lados.js?v=1"></script>
+<script>
+/* ir-lado.html — página aberta no domínio errado.
+   21/11/2026: NUNCA salta para outro domínio (cliente, fornecedor, dono e agentes ficam cada um no seu).
+   Só mostra um aviso e leva ao início do próprio domínio. Única exceção, no mesmo domínio do fornecedor:
+   avisos → avisos-vendedor e produto-bbabilonia → produto-vendedor (o fornecedor vê o produto só para ver). */
+(function () {
+  var L = window.BBLado, aqui = L ? L.ladoDoHost() : 'cliente', p = L ? L.pagina(location.pathname) : '', resto = location.search + location.hash, alvo = null;
+  if (aqui === 'vendedor') {
+    if (p === 'avisos') alvo = '/avisos-vendedor.html' + location.hash;
+    else if (p === 'produto-bbabilonia') {
+      var s = null; try { s = JSON.parse(localStorage.getItem('sb-dsfoqoeawvjafypycldz-auth-token') || 'null'); } catch (e) {}
+      if (s && s.access_token) alvo = '/produto-vendedor.html' + resto;
+    }
+  }
+  if (alvo) { location.replace(alvo); return; }
+  document.getElementById('c').innerHTML = '<p>Esta página não está disponível neste endereço.</p><a href="/">Ir para o início</a>';
+})();
+</script>
+</body></html>
