@@ -7,7 +7,7 @@
    - ao abrir a página de uma encomenda (…?pedido=XXXXXXXX) os avisos dessa encomenda ficam lidos.
    - Encomendas antigas: só depois de ENTREGUE ao cliente e passados 30 dias, por mês; passado 1 ano é eliminada (avisos_limpar()).
    - (22/11/2026) Avisos sem encomenda: SEM "📋 Outros avisos". Cada aviso fica no seu lugar: número vermelho no cartão/botão
-     que abre a página do aviso (ex.: "🔐 Pedido de entrada" → cartão Agentes ou Atendimento). Ao tocar, ficam lidos e abre a página.
+     que abre a página do aviso (ex.: "🔐 Pedido de entrada" → cartão Agentes). Ao tocar, ficam lidos e abre a página.
      Avisos da própria página onde está (ex.: "✅ Entrada aprovada" no atendimento) ficam lidos sozinhos.
    Cada domínio só mostra os seus avisos (lados.js). Carregado pelo atd-sessao.js e pelo painel-admin-rececao.js. */
 (function () {
@@ -119,12 +119,15 @@
 
   /* ---------- (22/11/2026) avisos sem encomenda: cada um no seu lugar ---------- */
   function pag(u) { var B = window.BBLado; if (B) return B.pagina(u || ""); var p = String(u || "").split(/[?#]/)[0].split("/").pop() || "index.html"; return p.replace(/\.html$/i, "").toLowerCase(); }
+  /* (22/11/2026) no painel do dono os pedidos de entrada dos agentes aprovam-se em 👥 Agentes (admin-agentes.html):
+     o aviso que aponta para o atendimento fica no cartão Agentes (o atendimento no painel do dono pede outra entrada) */
+  function lugarDe(a) { var p = pag(a.link); if (DONO && p === "atendimento" && d.querySelector('a[href^="admin-agentes"]')) return "admin-agentes"; return p; }
   function distribuir() {
     css();
     var nl = (L || []).filter(function (a) { return a.lido !== true && !pedidoDe(a); });
     OUTROS = nl;
     var aqui = pag(location.pathname), porPag = {};
-    nl.forEach(function (a) { var p = pag(a.link); (porPag[p] = porPag[p] || []).push(a); });
+    nl.forEach(function (a) { var p = lugarDe(a); (porPag[p] = porPag[p] || []).push(a); });
     /* links desta página que abrem a página de cada aviso */
     var lugares = {};
     Array.prototype.forEach.call(d.querySelectorAll("a[href]"), function (el) {
@@ -154,7 +157,7 @@
   d.addEventListener("click", function (e) {
     var el = e.target.closest && e.target.closest("a[href]"); if (!el) return;
     var b = el.querySelector(":scope > .bbs-n"); if (!b) return;
-    var p = b.getAttribute("data-p"), itens = OUTROS.filter(function (a) { return pag(a.link) === p; });
+    var p = b.getAttribute("data-p"), itens = OUTROS.filter(function (a) { return lugarDe(a) === p; });
     if (!itens.length) return;
     if (e.defaultPrevented) { lerItens(itens); b.remove(); return; }
     e.preventDefault();

@@ -46,6 +46,13 @@ main{flex:1;max-width:760px;width:100%;margin:0 auto;display:flex;flex-direction
 .cx #env{background:#2563eb;color:#fff}.cx #gr.on{background:#dc2626;color:#fff;animation:pisca 1s infinite}
 @keyframes pisca{50%{opacity:.6}}
 .est{font-size:13px;color:#dc2626;padding:4px 12px;background:#fff}.est.ok{color:#059669}
+.m.eu{cursor:pointer}.m.sel{outline:3px solid #f87171}
+.apg{display:block;margin-top:6px;width:100%;border:0;border-radius:10px;padding:8px;background:#dc2626;color:#fff;font:800 13.5px system-ui,sans-serif}
+.menu{position:fixed;left:0;right:0;bottom:0;z-index:20;background:#fff;border-radius:18px 18px 0 0;box-shadow:0 -6px 24px #0f172a40;padding:10px 12px 16px}
+.menu b{display:block;text-align:center;font-size:14px;color:#64748b;margin:4px 0 8px}
+.menu label,.menu button{display:flex;align-items:center;gap:10px;width:100%;border:0;border-radius:12px;background:#f1f5f9;padding:14px;margin-top:8px;font:800 16px system-ui,sans-serif;color:#0f172a;cursor:pointer}
+.menu label input{display:none}.menu .x{justify-content:center;background:#e2e8f0;color:#475569}
+.fundo{position:fixed;inset:0;z-index:19;background:#0f172a66}
 </style>
 </head>
 <body>
@@ -62,14 +69,23 @@ main{flex:1;max-width:760px;width:100%;margin:0 auto;display:flex;flex-direction
   <div id="msgs"><div class="vz">A carregar…</div></div>
   <div class="est hide" id="est"></div>
   <div class="cx">
-   <label title="Foto">📷<input id="fFoto" type="file" accept="image/*"></label>
-   <label title="Vídeo">🎥<input id="fVideo" type="file" accept="video/*"></label>
+   <button id="bFoto" type="button" title="Foto">📷</button>
+   <button id="bVideo" type="button" title="Vídeo">🎥</button>
    <button id="gr" type="button" title="Gravar áudio">🎤</button>
    <textarea id="tx" rows="1" maxlength="2000" placeholder="Escreva a mensagem"></textarea>
    <button id="env" type="button" title="Enviar">➤</button>
   </div>
  </section>
 </main>
+<div id="fundo" class="fundo hide"></div>
+<div id="mFoto" class="menu hide"><b>📷 Foto</b>
+ <label>📸 Tirar foto com a câmara<input id="fFotoCam" type="file" accept="image/*" capture="environment"></label>
+ <label>🖼️ Escolher da galeria<input id="fFoto" type="file" accept="image/*"></label>
+ <button type="button" class="x" data-fechar="1">Cancelar</button></div>
+<div id="mVideo" class="menu hide"><b>🎥 Vídeo</b>
+ <label>🎬 Filmar vídeo com a câmara<input id="fVideoCam" type="file" accept="video/*" capture="environment"></label>
+ <label>🎞️ Escolher da galeria<input id="fVideo" type="file" accept="video/*"></label>
+ <button type="button" class="x" data-fechar="1">Cancelar</button></div>
 <script>
 var AG=/^(service|atendimento)\./i.test(location.hostname);
 var sb=supabase.createClient('https://dsfoqoeawvjafypycldz.supabase.co','sb_publishable_BN4NiVcDab9CqdTY_odgDA_uUOhjja0',AG?(window.ATD_AUTH||{}):{});
@@ -78,7 +94,7 @@ function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){retur
 function hora(t){try{return new Date(t).toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit'})}catch(e){return''}}
 function dia(t){try{return new Date(t).toLocaleDateString('pt-PT',{day:'2-digit',month:'long',year:'numeric'})}catch(e){return''}}
 function foto(u,emoji){return u?'<img src="'+esc(u)+'" alt="">':'<span class="sf">'+(emoji||'👤')+'</span>'}
-var DONO=false,LISTA=[],FILTRO='todos',CONV='',INFO=null,ULT='',URLS={},timer=null,aEnviar=false;
+var DONO=false,LISTA=[],FILTRO='todos',CONV='',INFO=null,ULT='',URLS={},timer=null,aEnviar=false,SEL=0;
 var Q=new URLSearchParams(location.search);
 function sub(o){if(!o)return'';if(o.tipo==='dono')return o.titulo||'Fundador e CEO da BBabilônia';if(o.tipo==='fornecedor')return'🏪 Fornecedor'+(o.pais?' · '+o.pais:'');
  var e=o.equipas||[];return e.indexOf('atendimento')>-1&&e.indexOf('verificacao')>-1?'🎧🛡️ Atendimento e busca':e.indexOf('verificacao')>-1?'🛡️ Busca e verificação':'🎧 Atendimento'}
@@ -129,7 +145,7 @@ async function carregar(primeira){
  if(r.error){$('msgs').innerHTML='<div class="vz">'+esc(r.error.message)+'</div>';return}
  var d=r.data||{};INFO=d;topo(d.outro);
  $('den').classList.toggle('hide',!(AG&&!d.eu_dono));
- var M=d.mensagens||[],chave=M.length+':'+(M.length?M[M.length-1].id+':'+M[M.length-1].lido:'');
+ var M=d.mensagens||[],chave=SEL+'|'+M.length+':'+(M.length?M[M.length-1].id+':'+M[M.length-1].lido:'');
  if(chave===ULT)return;ULT=chave;
  var baixo=primeira||($('msgs').scrollHeight-$('msgs').scrollTop-$('msgs').clientHeight<80);
  var h='',ud='';
@@ -141,7 +157,8 @@ async function carregar(primeira){
   else if(m.tipo==='video')corpo='<video data-f="'+esc(m.ficheiro)+'"'+(cu?' src="'+cu+'"':'')+' controls playsinline preload="metadata"></video>';
   else if(m.tipo==='audio')corpo='<audio data-f="'+esc(m.ficheiro)+'"'+(cu?' src="'+cu+'"':'')+' controls preload="metadata"></audio>';
   if(m.texto)corpo+=(corpo?'<div style="margin-top:4px">':'<div>')+esc(m.texto)+'</div>';
-  h+='<div class="m '+(eu?'eu':'ele')+'">'+corpo+'<small>'+esc(hora(m.criado_em))+(eu?(m.lido?' ✓✓':' ✓'):'')+'</small></div>';
+  h+='<div class="m '+(eu?'eu':'ele')+(eu&&m.id===SEL?' sel':'')+'"'+(eu?' data-id="'+m.id+'"':'')+'>'+corpo+'<small>'+esc(hora(m.criado_em))+(eu?(m.lido?' ✓✓':' ✓'):'')+'</small>'+
+   (eu&&m.id===SEL?'<button class="apg" type="button" data-apg="'+m.id+'" data-fich="'+esc(m.ficheiro||'')+'">🗑️ Apagar esta mensagem</button>':'')+'</div>';
  }
  $('msgs').innerHTML=h||'<div class="vz">'+(d.eu_dono?'Escreva a primeira mensagem.':AG?'Escreva aqui a sua denúncia ou mensagem ao Fundador e CEO. Só ele vê esta conversa.':'Escreva aqui a sua mensagem à BBabilônia.')+'</div>';
  $('msgs').querySelectorAll('[data-f]').forEach(async function(el){if(el.getAttribute(el.tagName==='A'?'href':'src'))return;var u=await urlDe(el.getAttribute('data-f'));if(!u)return;if(el.tagName==='A')el.href=u;else el.src=u});
@@ -154,7 +171,9 @@ async function enviar(tipo,texto,ficheiro){
  if(r.error){estado(r.error.message);return false}
  estado('');ULT='';await carregar(true);return true;
 }
-$('env').onclick=async function(){var t=$('tx').value.trim();if(!t)return;if(await enviar('texto',t)){$('tx').value='';$('tx').style.height=''}};
+$('env').onclick=async function(){
+ if(rec&&rec.state==='recording'){rec.stop();return} /* a gravar: ➤ para a gravação e envia o áudio */
+ var t=$('tx').value.trim();if(!t)return;if(await enviar('texto',t)){$('tx').value='';$('tx').style.height=''}};
 $('tx').addEventListener('input',function(){this.style.height='';this.style.height=Math.min(this.scrollHeight,140)+'px'});
 async function subir(file,tipo,ext){
  if(!INFO||!INFO.pasta)return;
@@ -167,8 +186,26 @@ async function subir(file,tipo,ext){
  var t=$('tx').value.trim();
  if(await enviar(tipo,t,c))$('tx').value='';
 }
-$('fFoto').onchange=function(){var f=this.files[0];this.value='';if(f)subir(f,'foto')};
-$('fVideo').onchange=function(){var f=this.files[0];this.value='';if(f)subir(f,'video')};
+var MENU='';
+function menu(id){MENU=id||'';$('fundo').classList.toggle('hide',!id);$('mFoto').classList.toggle('hide',id!=='mFoto');$('mVideo').classList.toggle('hide',id!=='mVideo')}
+/* o menu abre como um passo: o botão voltar do telemóvel só fecha o menu */
+function abrirMenu(id){menu(id);try{history.pushState(Object.assign({},history.state||{},{bbMenu:1}),'',location.href)}catch(e){}}
+function fecharMenu(){if(history.state&&history.state.bbMenu){history.back();return}menu('')}
+$('bFoto').onclick=function(){abrirMenu('mFoto')};$('bVideo').onclick=function(){abrirMenu('mVideo')};
+$('fundo').onclick=fecharMenu;document.querySelectorAll('[data-fechar]').forEach(function(b){b.onclick=fecharMenu});
+['fFoto','fFotoCam'].forEach(function(i){$(i).onchange=function(){var f=this.files[0];this.value='';fecharMenu();if(f)subir(f,'foto')}});
+['fVideo','fVideoCam'].forEach(function(i){$(i).onchange=function(){var f=this.files[0];this.value='';fecharMenu();if(f)subir(f,'video')}});
+/* tocar numa mensagem que enviou: aparece "🗑️ Apagar esta mensagem" */
+$('msgs').addEventListener('click',async function(e){
+ var a=e.target.closest('[data-apg]');
+ if(a){if(!confirm('Apagar esta mensagem? Desaparece para os dois lados.'))return;a.disabled=true;
+  var r=await sb.rpc('equipa_chat_apagar',{p_id:+a.getAttribute('data-apg')});
+  if(r.error){a.disabled=false;estado(/function|exist|find/i.test(r.error.message)?'Falta correr o SQL novo no Supabase (PARTE C).':r.error.message);return}
+  SEL=0;ULT='';estado('');carregar(false);return}
+ if(e.target.closest('video,audio,a'))return;
+ var m=e.target.closest('.m.eu[data-id]');if(!m)return;
+ var id=+m.getAttribute('data-id');SEL=SEL===id?0:id;ULT='';carregar(false);
+});
 /* 🎤 gravar áudio: toque para começar, toque outra vez para parar e enviar */
 var rec=null,partes=[];
 $('gr').onclick=async function(){
@@ -183,7 +220,7 @@ $('gr').onclick=async function(){
   rec.onstop=function(){st.getTracks().forEach(function(t){t.stop()});b.classList.remove('on');b.textContent='🎤';
    var mt=rec.mimeType||tipo||'audio/webm',blob=new Blob(partes,{type:mt});if(blob.size<1500){estado('Áudio muito curto.');return}
    subir(blob,'audio',/mp4/.test(mt)?'m4a':'webm')};
-  rec.start();b.classList.add('on');b.textContent='⏹';estado('🎤 A gravar… toque em ⏹ para parar e enviar.',true);
+  rec.start();b.classList.add('on');b.textContent='⏹';estado('🎤 A gravar… toque em ➤ (ou ⏹) para parar e enviar.',true);
  }catch(e){estado('Sem acesso ao microfone. Permita o microfone para este site.')}
 };
 /* ← e botão voltar do telemóvel */
@@ -193,7 +230,7 @@ function sair(){
  location.href=AG?'atendimento.html':'/';
 }
 $('voltar').onclick=sair;
-window.addEventListener('popstate',function(e){e.stopImmediatePropagation();if(DONO){var c=e.state&&e.state.bbChat;if(c)abrir(c,false);else{mostrarLista();iniciarLista()}}},true);
+window.addEventListener('popstate',function(e){e.stopImmediatePropagation();if(MENU){menu('');return}if(DONO){var c=e.state&&e.state.bbChat;if(c)abrir(c,false);else{mostrarLista();iniciarLista()}}},true);
 async function iniciarLista(){var r=await sb.rpc('equipa_chat_lista');if(!r.error){LISTA=r.data||[];pintarLista()}}
 iniciar();
 </script>
