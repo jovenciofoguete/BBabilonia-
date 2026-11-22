@@ -2,7 +2,7 @@
    Só acrescenta 3 cartões ao Início; não muda os outros.
    - 👥 Os meus agentes: todos os agentes de atendimento e de busca com foto, nome, telemóvel, província, cidade, bairro e documentos;
      cada um com "💬 Conversar" (chat individual).
-   - 💬 Mensagens: todas as conversas individuais (agentes e fornecedores) → equipa-chat.html.
+   - 🚨 Denúncias e mensagens: as denúncias de cada agente e as conversas individuais (agentes e fornecedores) → equipa-chat.html.
    - 🏪 Lojas na plataforma: quantas lojas há (por estado e por país) e a lista, cada uma com "💬 Conversar" com o fornecedor.
    Seta ← e botão voltar do telemóvel: voltam um passo de cada vez (lista ← vista ← Início).
    Ecrã firme: sem deslizar para os lados. Carregado pelo painel-admin-rececao.js. */
@@ -43,7 +43,7 @@
     Array.prototype.forEach.call(ini.querySelectorAll("h2"), function (h) { if (/agentes/i.test(h.textContent) && h.nextElementSibling && h.nextElementSibling.classList.contains("grid")) gAg = h.nextElementSibling; });
     if (gAg) gAg.insertAdjacentHTML("afterbegin",
       '<a id="pe-c-ag" class="c k7" href="#" data-pe="agentes"><span class="i">👥</span><b>Os meus agentes</b><span>Atendimento e busca: perfil completo, documentos e conversa</span><em id="pe-n-ag" class="hide"></em></a>' +
-      '<a id="pe-c-msg" class="c k5" href="equipa-chat.html"><span class="i">💬</span><b>Mensagens</b><span>Conversas individuais com agentes e fornecedores</span><em id="pe-n-msg" class="hide"></em></a>');
+      '<a id="pe-c-msg" class="c k5" href="equipa-chat.html"><span class="i">🚨</span><b>Denúncias e mensagens</b><span>Denúncias de cada agente e conversas com agentes e fornecedores</span><em id="pe-n-msg" class="hide"></em></a>');
     if (gLj) gLj.insertAdjacentHTML("beforeend",
       '<a id="pe-c-lj" class="c k3" href="#" data-pe="lojas"><span class="i">🏬</span><b>Lojas na plataforma</b><span id="pe-lj-sub">Quantas lojas há e conversar com cada fornecedor</span></a>');
     contar();

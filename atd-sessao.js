@@ -4,6 +4,8 @@
    - fica separada da sessão de cliente da loja;
    - 15 minutos sem mexer: sai sozinho. */
 window.ATD_AUTH={auth:{storage:window.sessionStorage,storageKey:'bb-atd',persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}};
+/* (22/11/2026) no domínio do dono (administrator) o atendimento usa a sessão do dono: nunca pede para entrar como agente */
+if(/^(admin|administrator)\./i.test(location.hostname))window.ATD_AUTH={};
 (function(){
  var ativo=!/disputa\.html$/.test(location.pathname)||new URLSearchParams(location.search).get('como')==='admin';
  if(!ativo)return;

@@ -100,7 +100,7 @@ var DONO=false,LISTA=[],FILTRO='todos',CONV='',INFO=null,ULT='',URLS={},timer=nu
 var Q=new URLSearchParams(location.search);
 function sub(o){if(!o)return'';if(o.tipo==='dono')return o.titulo||'Fundador e CEO da BBabilônia';if(o.tipo==='fornecedor')return'🏪 Fornecedor'+(o.pais?' · '+o.pais:'');
  var e=o.equipas||[];return e.indexOf('atendimento')>-1&&e.indexOf('verificacao')>-1?'🎧🛡️ Atendimento e busca':e.indexOf('verificacao')>-1?'🛡️ Busca e verificação':'🎧 Atendimento'}
-function topo(o){$('topo').innerHTML=o?foto(o.foto_url,o.tipo==='fornecedor'?'🏪':o.tipo==='dono'?'👑':'👤')+'<div><b>'+esc(o.nome||'')+'</b><small>'+esc(sub(o))+'</small></div>':'<span class="sf">💬</span><div><b>Mensagens</b><small>Agentes e fornecedores</small></div>'}
+function topo(o){$('topo').innerHTML=o?foto(o.foto_url,o.tipo==='fornecedor'?'🏪':o.tipo==='dono'?'👑':'👤')+'<div><b>'+esc(o.nome||'')+'</b><small>'+esc(sub(o))+'</small></div>':'<span class="sf">🚨</span><div><b>Denúncias e mensagens</b><small>Cada agente e cada fornecedor</small></div>'}
 function vista(v){['vSem','vLista','vChat'].forEach(function(x){$(x).classList.toggle('hide',x!==v)})}
 function estado(t,ok){var e=$('est');e.textContent=t||'';e.className='est'+(ok?' ok':'')+(t?'':' hide')}
 
