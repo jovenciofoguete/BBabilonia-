@@ -47,7 +47,8 @@ main{flex:1;max-width:760px;width:100%;margin:0 auto;display:flex;flex-direction
 @keyframes pisca{50%{opacity:.6}}
 .est{font-size:13px;color:#dc2626;padding:4px 12px;background:#fff}.est.ok{color:#059669}
 .m.eu{cursor:pointer}.m.sel{outline:3px solid #f87171}
-.apg{display:block;margin-top:6px;width:100%;border:0;border-radius:10px;padding:8px;background:#dc2626;color:#fff;font:800 13.5px system-ui,sans-serif}
+.acs{display:flex;gap:6px;margin-top:6px}.acs button{flex:1;border:0;border-radius:10px;padding:9px 6px;font:800 13.5px system-ui,sans-serif}
+.apg{background:#dc2626;color:#fff}.cnc{background:#e2e8f0;color:#0f172a}
 .m small .lx{border:0;background:none;padding:0 2px 0 0;margin-right:6px;font-size:15px;line-height:1;cursor:pointer;vertical-align:middle}
 .menu{position:fixed;left:0;right:0;bottom:0;z-index:20;background:#fff;border-radius:18px 18px 0 0;box-shadow:0 -6px 24px #0f172a40;padding:10px 12px 16px}
 .menu b{display:block;text-align:center;font-size:14px;color:#64748b;margin:4px 0 8px}
@@ -95,7 +96,7 @@ function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){retur
 function hora(t){try{return new Date(t).toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit'})}catch(e){return''}}
 function dia(t){try{return new Date(t).toLocaleDateString('pt-PT',{day:'2-digit',month:'long',year:'numeric'})}catch(e){return''}}
 function foto(u,emoji){return u?'<img src="'+esc(u)+'" alt="">':'<span class="sf">'+(emoji||'👤')+'</span>'}
-var DONO=false,LISTA=[],FILTRO='todos',CONV='',INFO=null,ULT='',URLS={},timer=null,aEnviar=false,SEL=0;
+var DONO=false,LISTA=[],FILTRO='todos',CONV='',INFO=null,ULT='',URLS={},timer=null,aEnviar=false,SEL=0,IGN=false;
 var Q=new URLSearchParams(location.search);
 function sub(o){if(!o)return'';if(o.tipo==='dono')return o.titulo||'Fundador e CEO da BBabilônia';if(o.tipo==='fornecedor')return'🏪 Fornecedor'+(o.pais?' · '+o.pais:'');
  var e=o.equipas||[];return e.indexOf('atendimento')>-1&&e.indexOf('verificacao')>-1?'🎧🛡️ Atendimento e busca':e.indexOf('verificacao')>-1?'🛡️ Busca e verificação':'🎧 Atendimento'}
@@ -159,7 +160,7 @@ async function carregar(primeira){
   else if(m.tipo==='audio')corpo='<audio data-f="'+esc(m.ficheiro)+'"'+(cu?' src="'+cu+'"':'')+' controls preload="metadata"></audio>';
   if(m.texto)corpo+=(corpo?'<div style="margin-top:4px">':'<div>')+esc(m.texto)+'</div>';
   h+='<div class="m '+(eu?'eu':'ele')+(eu&&m.id===SEL?' sel':'')+'"'+(eu?' data-id="'+m.id+'"':'')+'>'+corpo+'<small>'+(eu?'<button class="lx" type="button" data-sel="'+m.id+'" aria-label="Apagar">🗑️</button>':'')+esc(hora(m.criado_em))+(eu?(m.lido?' ✓✓':' ✓'):'')+'</small>'+
-   (eu&&m.id===SEL?'<button class="apg" type="button" data-apg="'+m.id+'" data-fich="'+esc(m.ficheiro||'')+'">🗑️ Apagar esta mensagem</button>':'')+'</div>';
+   (eu&&m.id===SEL?'<div class="acs"><button class="cnc" type="button" data-cnc="1">Cancelar</button><button class="apg" type="button" data-apg="'+m.id+'">🗑️ Apagar</button></div>':'')+'</div>';
  }
  $('msgs').innerHTML=h||'<div class="vz">'+(d.eu_dono?'Escreva a primeira mensagem.':AG?'Escreva aqui a sua denúncia ou mensagem ao Fundador e CEO. Só ele vê esta conversa.':'Escreva aqui a sua mensagem à BBabilônia.')+'</div>';
  $('msgs').querySelectorAll('[data-f]').forEach(async function(el){if(el.getAttribute(el.tagName==='A'?'href':'src'))return;var u=await urlDe(el.getAttribute('data-f'));if(!u)return;if(el.tagName==='A')el.href=u;else el.src=u});
@@ -197,16 +198,21 @@ $('fundo').onclick=fecharMenu;document.querySelectorAll('[data-fechar]').forEach
 ['fFoto','fFotoCam'].forEach(function(i){$(i).onchange=function(){var f=this.files[0];this.value='';fecharMenu();if(f)subir(f,'foto')}});
 ['fVideo','fVideoCam'].forEach(function(i){$(i).onchange=function(){var f=this.files[0];this.value='';fecharMenu();if(f)subir(f,'video')}});
 /* tocar numa mensagem que enviou (ou no 🗑️ junto da hora, também em fotos, vídeos e áudios): aparece "🗑️ Apagar esta mensagem" */
+/* marcar como um passo: Cancelar, tocar fora ou o botão voltar do telemóvel tiram a marca */
+function marcar(id){var tinha=!!SEL;SEL=id;ULT='';carregar(false);if(id&&!tinha){try{history.pushState(Object.assign({},history.state||{},{bbSel:1}),'',location.href)}catch(e){}}}
+function desmarcar(){if(!SEL)return;if(history.state&&history.state.bbSel){history.back();return}SEL=0;ULT='';carregar(false)}
 $('msgs').addEventListener('click',async function(e){
+ if(e.target.closest('[data-cnc]')){desmarcar();return}
+ if(SEL&&!e.target.closest('.m.eu[data-id]')){desmarcar();return}
  var a=e.target.closest('[data-apg]');
  if(a){if(!confirm('Apagar esta mensagem? Desaparece para os dois lados.'))return;a.disabled=true;
   var r=await sb.rpc('equipa_chat_apagar',{p_id:+a.getAttribute('data-apg')});
   if(r.error){a.disabled=false;estado(/function|exist|find/i.test(r.error.message)?'Falta correr o SQL novo no Supabase (PARTE C).':r.error.message);return}
-  SEL=0;ULT='';estado('');carregar(false);return}
+  estado('');SEL=0;ULT='';carregar(false);if(history.state&&history.state.bbSel){IGN=true;history.back()}return}
  var sl=e.target.closest('[data-sel]');
  if(!sl&&e.target.closest('video,audio,a'))return;
  var m=e.target.closest('.m.eu[data-id]');if(!m)return;
- var id=+m.getAttribute('data-id');SEL=SEL===id?0:id;ULT='';carregar(false);
+ var id=+m.getAttribute('data-id');if(SEL===id)desmarcar();else marcar(id);
 });
 /* 🎤 gravar áudio: toque para começar, toque outra vez para parar e enviar */
 var rec=null,partes=[];
@@ -227,12 +233,15 @@ $('gr').onclick=async function(){
 };
 /* ← e botão voltar do telemóvel */
 function sair(){
- if(DONO&&CONV){if(history.state&&history.state.bbChat){history.back();return}mostrarLista();try{history.replaceState({},'',location.pathname)}catch(e){}return}
+ if(DONO&&CONV){if(history.state&&history.state.bbChat){history.back();return}
+  /* entrou direto numa conversa (ex.: 💬 Conversar em 👥 Os meus agentes): a seta volta para lá */
+  try{var r0=new URL(document.referrer);if(Q.get('c')&&r0.host===location.host&&!/equipa-chat/.test(r0.pathname)){history.back();return}}catch(e){}
+  mostrarLista();try{history.replaceState({},'',location.pathname)}catch(e){}return}
  try{var u=new URL(document.referrer);if(u.host===location.host&&!/equipa-chat/.test(u.pathname)){location.href=document.referrer;return}}catch(e){}
  location.href=AG?'atendimento.html':'/';
 }
 $('voltar').onclick=sair;
-window.addEventListener('popstate',function(e){e.stopImmediatePropagation();if(MENU){menu('');return}if(DONO){var c=e.state&&e.state.bbChat;if(c)abrir(c,false);else{mostrarLista();iniciarLista()}}},true);
+window.addEventListener('popstate',function(e){e.stopImmediatePropagation();if(IGN){IGN=false;return}if(MENU){menu('');return}if(SEL){SEL=0;ULT='';carregar(false);return}if(DONO){var c=e.state&&e.state.bbChat;if(c)abrir(c,false);else{mostrarLista();iniciarLista()}}},true);
 async function iniciarLista(){var r=await sb.rpc('equipa_chat_lista');if(!r.error){LISTA=r.data||[];pintarLista()}}
 iniciar();
 </script>
