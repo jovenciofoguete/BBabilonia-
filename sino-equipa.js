@@ -6,7 +6,9 @@
    - toque numa encomenda: os avisos dela ficam lidos e abre a página da encomenda (etapas e trabalho).
    - ao abrir a página de uma encomenda (…?pedido=XXXXXXXX) os avisos dessa encomenda ficam lidos.
    - Encomendas antigas: só depois de ENTREGUE ao cliente e passados 30 dias, por mês; passado 1 ano é eliminada (avisos_limpar()).
-   - Avisos sem encomenda: botão "📋 Outros avisos" no fundo do quadro.
+   - (22/11/2026) Avisos sem encomenda: SEM "📋 Outros avisos". Cada aviso fica no seu lugar: número vermelho no cartão/botão
+     que abre a página do aviso (ex.: "🔐 Pedido de entrada" → cartão Agentes ou Atendimento). Ao tocar, ficam lidos e abre a página.
+     Avisos da própria página onde está (ex.: "✅ Entrada aprovada" no atendimento) ficam lidos sozinhos.
    Cada domínio só mostra os seus avisos (lados.js). Carregado pelo atd-sessao.js e pelo painel-admin-rececao.js. */
 (function () {
   if (window.__bbSinoEq) return; window.__bbSinoEq = 1;
@@ -18,7 +20,6 @@
   var NA_BUSCA = /^confirmar-produto/.test(PG);
   function $(i) { return d.getElementById(i); }
   function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
-  function quando(a) { var t = a.criado_em || a.created_at; try { return t ? new Date(t).toLocaleString("pt-PT", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) : ""; } catch (e) { return ""; } }
   function tempo(a) { return new Date(a.criado_em || a.created_at || 0).getTime() || 0; }
   function carregarScript(f, teste) { return new Promise(function (ok) { if (teste()) return ok(); var x = d.querySelector('script[src*="' + f + '"]'); if (!x) { x = d.createElement("script"); x.src = f + "?v=1"; (d.head || d.documentElement).appendChild(x); } x.addEventListener("load", ok); x.addEventListener("error", ok); setTimeout(ok, 5000); }); }
   function lados() { return carregarScript("lados.js", function () { return !!window.BBLado; }); }
@@ -51,13 +52,13 @@
     return null;
   }
 
-  var L = [], eu = null, ENT = {}, ultimoEnt = 0, vista = "quadro", mesSel = "";
+  var L = [], eu = null, ENT = {}, ultimoEnt = 0, vista = "quadro", mesSel = "", OUTROS = [];
   var FIM = { entregue: 1, liberado: 1, reembolsado: 1, entregue_ao_cliente: 1, concluido: 1, "concluído": 1, delivered: 1, completed: 1 };
   var MESES = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
   async function sessao() { try { var r = await window.sb.auth.getSession(); return r && r.data && r.data.session; } catch (e) { return null; } }
   async function carregar() {
     var s = await sessao();
-    if (!s) { L = []; pintar(); return; }
+    if (!s) { L = []; pintar(); distribuir(); return; }
     eu = s.user.id;
     var r = null, cols = ["created_at", "criado_em", null];
     for (var k = 0; k < cols.length; k++) {
@@ -71,6 +72,7 @@
     if (SOLO) { lerItens(L.filter(function (a) { return pedidoDe(a) === SOLO; })); return; }
     carregarEntregues();
     pintar();
+    distribuir();
   }
   async function carregarEntregues() {
     if (Date.now() - ultimoEnt < 300000) return;
@@ -101,21 +103,64 @@
     return { rec: rec, velhas: velhas, outros: outros };
   }
   function destino(k) { return (NA_BUSCA ? "confirmar-produto.html" : "atd-verificacoes.html") + "?pedido=" + encodeURIComponent(k); }
-  function linhaAviso(a, i) {
-    return '<button type="button" class="bbs-a' + (a.lido !== true ? " nv" : "") + '" data-bbs-i="' + i + '"><b>' + esc(a.titulo) + "</b>" + (a.texto ? "<span>" + esc(a.texto) + "</span>" : "") + "<small>" + esc(quando(a)) + (a.link ? " · <em>Abrir ›</em>" : "") + "</small></button>";
-  }
   function css() {
     if ($("bbs-css")) return;
     var s = d.createElement("style"); s.id = "bbs-css";
     s.textContent = ".bbs-sub{background:#fff;color:#0f172a;border-radius:16px;box-shadow:0 4px 14px #0f172a1a;margin:0 0 12px;padding:12px;font-family:system-ui,sans-serif}" +
       ".bbs-v{border:0;background:#f1f5f9;border-radius:20px;padding:9px 14px;font:700 14px system-ui,sans-serif;margin:0 0 8px;cursor:pointer}.bbs-t{font-weight:800;font-size:15px;margin:4px 2px 8px}" +
-      ".bbs-a{display:block;width:100%;text-align:left;border:0;border-top:1px solid #e2e8f0;background:#fff;padding:11px 4px;font:inherit;color:inherit;cursor:pointer}.bbs-a.nv{background:#fff7ed}" +
-      ".bbs-a b{display:block;font-size:14.5px}.bbs-a span{display:block;font-size:13.5px;color:#334155;margin-top:2px}.bbs-a small{display:block;font-size:12px;color:#64748b;margin-top:3px}.bbs-a em{font-style:normal;color:#2563eb;font-weight:700}" +
-      ".bbs-m{display:flex;justify-content:space-between;width:100%;border:1px solid #e2e8f0;border-radius:12px;background:#f8fafc;padding:12px;margin:0 0 8px;font:700 14.5px system-ui,sans-serif;cursor:pointer}";
+      ".bbs-m{display:flex;justify-content:space-between;width:100%;border:1px solid #e2e8f0;border-radius:12px;background:#f8fafc;padding:12px;margin:0 0 8px;font:700 14.5px system-ui,sans-serif;cursor:pointer}" +
+      /* número vermelho do aviso no seu lugar (cartão ou botão) */
+      ".bbs-pos{position:relative}.bbs-n{position:absolute;top:-7px;left:-7px;z-index:2;min-width:24px;height:24px;border-radius:12px;background:#dc2626;color:#fff;border:2px solid #fff;" +
+      "font:800 12.5px/20px system-ui,sans-serif;text-align:center;padding:0 6px;box-shadow:0 2px 6px #0004;pointer-events:none;font-style:normal}";
     d.head.appendChild(s);
   }
   function chaveMes(p) { var t = new Date(tempo(p.itens[0])); return t.getFullYear() + "-" + ("0" + (t.getMonth() + 1)).slice(-2); }
   function nomeMes(c) { var x = c.split("-"); return MESES[Number(x[1]) - 1] + " " + x[0]; }
+
+  /* ---------- (22/11/2026) avisos sem encomenda: cada um no seu lugar ---------- */
+  function pag(u) { var B = window.BBLado; if (B) return B.pagina(u || ""); var p = String(u || "").split(/[?#]/)[0].split("/").pop() || "index.html"; return p.replace(/\.html$/i, "").toLowerCase(); }
+  function distribuir() {
+    css();
+    var nl = (L || []).filter(function (a) { return a.lido !== true && !pedidoDe(a); });
+    OUTROS = nl;
+    var aqui = pag(location.pathname), porPag = {};
+    nl.forEach(function (a) { var p = pag(a.link); (porPag[p] = porPag[p] || []).push(a); });
+    /* links desta página que abrem a página de cada aviso */
+    var lugares = {};
+    Array.prototype.forEach.call(d.querySelectorAll("a[href]"), function (el) {
+      if (el.closest("#bb-enc")) return;
+      var hr = el.getAttribute("href") || ""; if (!hr || hr.charAt(0) === "#" || /^(tel|mailto|javascript):/i.test(hr)) return;
+      if (/^https?:/i.test(hr)) { try { if (new URL(hr).host !== location.host) return; } catch (e) { return; } }
+      var p = pag(hr); (lugares[p] = lugares[p] || []).push(el);
+    });
+    /* tirar os números antigos */
+    Array.prototype.forEach.call(d.querySelectorAll(".bbs-n"), function (x) { var p = x.getAttribute("data-p"); if (!porPag[p] || !lugares[p] || lugares[p].indexOf(x.parentNode) < 0) x.remove(); });
+    var lerJa = [];
+    Object.keys(porPag).forEach(function (p) {
+      var itens = porPag[p], els = lugares[p];
+      if (p === aqui || (AG && p === "atendimento" && !els)) { lerJa = lerJa.concat(itens); return; } /* já está no lugar do aviso */
+      if (!els) return;
+      els.forEach(function (el) {
+        if (getComputedStyle(el).position === "static") el.classList.add("bbs-pos");
+        var b = el.querySelector(":scope > .bbs-n");
+        if (!b) { b = d.createElement("i"); b.className = "bbs-n"; b.setAttribute("data-p", p); el.appendChild(b); }
+        b.textContent = itens.length > 99 ? "99+" : String(itens.length);
+        b.title = itens.map(function (a) { return a.titulo || ""; }).join(" · ");
+      });
+    });
+    if (lerJa.length) lerItens(lerJa);
+  }
+  /* tocar no cartão/botão com o número: os avisos dessa página ficam lidos e abre a página */
+  d.addEventListener("click", function (e) {
+    var el = e.target.closest && e.target.closest("a[href]"); if (!el) return;
+    var b = el.querySelector(":scope > .bbs-n"); if (!b) return;
+    var p = b.getAttribute("data-p"), itens = OUTROS.filter(function (a) { return pag(a.link) === p; });
+    if (!itens.length) return;
+    if (e.defaultPrevented) { lerItens(itens); b.remove(); return; }
+    e.preventDefault();
+    var hr = el.href; b.remove();
+    Promise.race([lerItens(itens), new Promise(function (ok) { setTimeout(ok, 900); })]).then(function () { location.href = hr; });
+  });
 
   function pintar() {
     var A = alvo(), el = $("bb-enc");
@@ -124,11 +169,6 @@
     css();
     if (!el || el.parentNode !== A.pai) { if (el) el.remove(); el = d.createElement("div"); el.id = "bb-enc"; A.pai.insertBefore(el, A.antes); }
     var G = grupos();
-    if (vista === "outros") {
-      el.className = "bbs-sub";
-      el.innerHTML = '<button type="button" class="bbs-v" data-bbs-v="1">‹ Voltar</button><div class="bbs-t">📋 Outros avisos</div>' + (G.outros.itens.length ? G.outros.itens.slice(0, 100).map(function (a) { return linhaAviso(a, L.indexOf(a)); }).join("") : '<div class="bbe-vz">Sem avisos.</div>');
-      return;
-    }
     if (vista === "antigas" || vista === "mes") {
       el.className = "bbs-sub";
       var meses = {}, ordem = [];
@@ -147,8 +187,7 @@
     }
     window.BBEnc.montar(el, {
       id: "equipa", sb: window.sb, grupos: G.rec, destino: destino, ler: lerItens,
-      antigas: G.velhas.length, abrirAntigas: function () { vista = "antigas"; pintar(); },
-      outros: G.outros, abrirOutros: function () { vista = "outros"; pintar(); }
+      antigas: G.velhas.length, abrirAntigas: function () { vista = "antigas"; pintar(); }
     });
   }
   d.addEventListener("click", function (e) {
@@ -156,7 +195,6 @@
     var x;
     if ((x = e.target.closest("[data-bbs-v]"))) { vista = x.getAttribute("data-bbs-v") === "antigas" ? "antigas" : "quadro"; pintar(); return; }
     if ((x = e.target.closest("[data-bbs-m]"))) { mesSel = x.getAttribute("data-bbs-m"); vista = "mes"; pintar(); return; }
-    if ((x = e.target.closest("[data-bbs-i]"))) { var a = L[Number(x.getAttribute("data-bbs-i"))]; if (a) lerItens([a]).then(function () { if (a.link) location.href = a.link; else pintar(); }); }
   });
 
   /* (21/11/2026) página de UMA encomenda (…?pedido=XXXXXXXX): a seta ← e o botão Voltar do telemóvel
@@ -184,11 +222,11 @@
     setInterval(function () { if (!d.hidden) carregar(); }, 30000);
     d.addEventListener("visibilitychange", function () { if (!d.hidden) carregar(); });
     try { window.sb.auth.onAuthStateChange(function () { setTimeout(carregar, 400); }); } catch (e) {}
-    /* a área de trabalho aparece depois de entrar (ou some ao voltar ao início): pôr/tirar o quadro */
+    /* a área de trabalho aparece depois de entrar (ou some ao voltar ao início): pôr/tirar o quadro e os números */
     var t = null;
     new MutationObserver(function (ms) {
-      if (ms.every(function (m) { var el = $("bb-enc"); return el && (el === m.target || el.contains(m.target)); })) return;
-      clearTimeout(t); t = setTimeout(function () { var A = alvo(), el = $("bb-enc"); if (!!A !== !!el || (A && el && el.parentNode !== A.pai)) pintar(); }, 120);
+      if (ms.every(function (m) { var el = $("bb-enc"); var x = m.target; return (el && (el === x || el.contains(x))) || (x.classList && x.classList.contains("bbs-n")) || (x.parentNode && x.parentNode.nodeType === 1 && m.addedNodes.length === 1 && m.addedNodes[0].classList && m.addedNodes[0].classList.contains("bbs-n")); })) return;
+      clearTimeout(t); t = setTimeout(function () { var A = alvo(), el = $("bb-enc"); if (!!A !== !!el || (A && el && el.parentNode !== A.pai)) pintar(); distribuir(); }, 150);
     }).observe(d.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["class"] });
   })();
   window.BBSinoEquipa = { recarregar: carregar };
