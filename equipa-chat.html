@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Mensagens · BBabilônia</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script>if(/^(service|atendimento)\./i.test(location.hostname))document.write('<script src="atd-sessao.js?v=1"><\/script>');</script>
+<style>
+:root{--fundo:#eef2f7;--texto:#0f172a;--suave:#64748b;--linha:#e2e8f0;--az:#1e3a8a}
+*{box-sizing:border-box;margin:0}
+html,body{height:100%}
+body{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--fundo);color:var(--texto);line-height:1.4;color-scheme:light;display:flex;flex-direction:column;overflow-x:hidden;overscroll-behavior:none}
+main,#msgs{touch-action:pan-y}
+.bar{position:sticky;top:0;z-index:5;background:linear-gradient(135deg,#0f172a,#1e3a8a 60%,#2563eb);color:#fff;padding:10px 12px;display:flex;align-items:center;gap:10px;box-shadow:0 4px 14px #0003}
+.bar button.v{flex:none;width:40px;height:40px;border:0;border-radius:50%;background:#ffffff2e;color:#fff;font:900 22px/40px system-ui,sans-serif;text-align:center;cursor:pointer}
+.bar .q{display:flex;align-items:center;gap:10px;flex:1;min-width:0}
+.bar .q img,.bar .q .sf{width:40px;height:40px;border-radius:50%;object-fit:cover;background:#ffffff40;flex:none;display:flex;align-items:center;justify-content:center;font-size:20px;border:2px solid #fff}
+.bar .q b{display:block;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.bar .q small{display:block;font-size:12px;opacity:.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+main{flex:1;max-width:760px;width:100%;margin:0 auto;display:flex;flex-direction:column;min-height:0}
+.vz{text-align:center;color:var(--suave);padding:36px 12px}
+.hide{display:none!important}
+/* lista (dono) */
+#vLista{padding:12px}
+.fl{display:flex;gap:6px;margin-bottom:10px}.fl button{flex:1;border:0;border-radius:12px;padding:10px 4px;font:800 13.5px system-ui,sans-serif;background:#fff;color:#475569}.fl button.on{background:var(--az);color:#fff}
+#pq{width:100%;padding:12px;border:2px solid var(--linha);border-radius:12px;font:inherit;font-size:16px;margin-bottom:10px;background:#fff}
+.it{display:flex;gap:12px;align-items:center;width:100%;text-align:left;border:0;border-radius:14px;background:#fff;padding:10px 12px;margin-bottom:8px;box-shadow:0 2px 8px #0f172a12;font:inherit;color:inherit;cursor:pointer}
+.it img,.it .sf{width:52px;height:52px;border-radius:50%;object-fit:cover;background:#e2e8f0;flex:none;display:flex;align-items:center;justify-content:center;font-size:24px}
+.it .tx{flex:1;min-width:0}.it b{display:block;font-size:15px}.it small{display:block;font-size:12.5px;color:var(--suave);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.it .nb{min-width:24px;height:24px;border-radius:12px;background:#dc2626;color:#fff;font:800 12.5px system-ui,sans-serif;display:flex;align-items:center;justify-content:center;padding:0 7px;flex:none}
+/* conversa */
+#vChat{flex:1;display:flex;flex-direction:column;min-height:0}
+.den{background:#fef2f2;color:#991b1b;border-bottom:1px solid #fecaca;padding:10px 14px;font-size:13.5px;font-weight:700}
+.den b{display:block;font-size:15px;margin-bottom:2px}
+#msgs{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:6px}
+.m{max-width:82%;padding:8px 11px;border-radius:14px;font-size:15px;white-space:pre-wrap;word-wrap:break-word;box-shadow:0 1px 3px #0f172a1a}
+.m.eu{align-self:flex-end;background:#dbeafe;border-bottom-right-radius:4px}.m.ele{align-self:flex-start;background:#fff;border-bottom-left-radius:4px}
+.m img{display:block;width:220px;max-width:100%;height:220px;object-fit:cover;border-radius:10px;background:#cbd5e1}.m video{display:block;width:240px;max-width:100%;height:180px;border-radius:10px;background:#0f172a}.m audio{display:block;width:240px;max-width:100%}
+.m small{display:block;text-align:right;font-size:11px;color:var(--suave);margin-top:3px}
+.dia{align-self:center;font-size:12px;color:var(--suave);background:#fff;border-radius:10px;padding:2px 10px;margin:6px 0}
+.cx{display:flex;align-items:flex-end;gap:6px;padding:8px;background:#fff;border-top:1px solid var(--linha)}
+.cx textarea{flex:1;min-height:44px;max-height:140px;resize:none;padding:11px 12px;border:2px solid var(--linha);border-radius:22px;font:inherit;font-size:16px}
+.cx label,.cx button{flex:none;width:44px;height:44px;border:0;border-radius:50%;background:#f1f5f9;font-size:20px;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.cx label input{display:none}
+.cx #env{background:#2563eb;color:#fff}.cx #gr.on{background:#dc2626;color:#fff;animation:pisca 1s infinite}
+@keyframes pisca{50%{opacity:.6}}
+.est{font-size:13px;color:#dc2626;padding:4px 12px;background:#fff}.est.ok{color:#059669}
+</style>
+</head>
+<body>
+<div class="bar"><button class="v" id="voltar" type="button" aria-label="Voltar">←</button><div class="q" id="topo"><span class="sf">💬</span><div><b>Mensagens</b><small>BBabilônia</small></div></div></div>
+<main>
+ <div id="vSem" class="vz hide">Entre primeiro na sua conta (agente, fornecedor ou dono) e volte a esta página.</div>
+ <section id="vLista" class="hide">
+  <div class="fl"><button data-f="todos" class="on">Todos</button><button data-f="agente">👥 Agentes</button><button data-f="fornecedor">🏪 Fornecedores</button></div>
+  <input id="pq" placeholder="🔍 Procurar pelo nome">
+  <div id="lista"><div class="vz">A carregar…</div></div>
+ </section>
+ <section id="vChat" class="hide">
+  <div id="den" class="den hide"><b>🚨 Denúncia</b>Denuncie maus tratos pelos colegas, agressões, relacionamento forçado, ameaças e outros.</div>
+  <div id="msgs"><div class="vz">A carregar…</div></div>
+  <div class="est hide" id="est"></div>
+  <div class="cx">
+   <label title="Foto">📷<input id="fFoto" type="file" accept="image/*"></label>
+   <label title="Vídeo">🎥<input id="fVideo" type="file" accept="video/*"></label>
+   <button id="gr" type="button" title="Gravar áudio">🎤</button>
+   <textarea id="tx" rows="1" maxlength="2000" placeholder="Escreva a mensagem"></textarea>
+   <button id="env" type="button" title="Enviar">➤</button>
+  </div>
+ </section>
+</main>
+<script>
+var AG=/^(service|atendimento)\./i.test(location.hostname);
+var sb=supabase.createClient('https://dsfoqoeawvjafypycldz.supabase.co','sb_publishable_BN4NiVcDab9CqdTY_odgDA_uUOhjja0',AG?(window.ATD_AUTH||{}):{});
+function $(i){return document.getElementById(i)}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function hora(t){try{return new Date(t).toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit'})}catch(e){return''}}
+function dia(t){try{return new Date(t).toLocaleDateString('pt-PT',{day:'2-digit',month:'long',year:'numeric'})}catch(e){return''}}
+function foto(u,emoji){return u?'<img src="'+esc(u)+'" alt="">':'<span class="sf">'+(emoji||'👤')+'</span>'}
+var DONO=false,LISTA=[],FILTRO='todos',CONV='',INFO=null,ULT='',URLS={},timer=null,aEnviar=false;
+var Q=new URLSearchParams(location.search);
+function sub(o){if(!o)return'';if(o.tipo==='dono')return o.titulo||'Fundador e CEO da BBabilônia';if(o.tipo==='fornecedor')return'🏪 Fornecedor'+(o.pais?' · '+o.pais:'');
+ var e=o.equipas||[];return e.indexOf('atendimento')>-1&&e.indexOf('verificacao')>-1?'🎧🛡️ Atendimento e busca':e.indexOf('verificacao')>-1?'🛡️ Busca e verificação':'🎧 Atendimento'}
+function topo(o){$('topo').innerHTML=o?foto(o.foto_url,o.tipo==='fornecedor'?'🏪':o.tipo==='dono'?'👑':'👤')+'<div><b>'+esc(o.nome||'')+'</b><small>'+esc(sub(o))+'</small></div>':'<span class="sf">💬</span><div><b>Mensagens</b><small>Agentes e fornecedores</small></div>'}
+function vista(v){['vSem','vLista','vChat'].forEach(function(x){$(x).classList.toggle('hide',x!==v)})}
+function estado(t,ok){var e=$('est');e.textContent=t||'';e.className='est'+(ok?' ok':'')+(t?'':' hide')}
+
+async function iniciar(){
+ var s=(await sb.auth.getSession()).data.session;
+ if(!s){vista('vSem');return}
+ var r=await sb.rpc('equipa_chat_lista');
+ if(r.error){vista('vSem');$('vSem').textContent=/function|exist|find/i.test(r.error.message)?'Falta correr o SQL novo no Supabase.':'Esta página é só para a equipa BBabilônia e para os fornecedores.';return}
+ LISTA=r.data||[];
+ DONO=!(LISTA[0]&&LISTA[0].tipo==='dono');
+ if(!DONO){abrir(LISTA[0].conversa,false);return}
+ var c=Q.get('c');if(c){abrir(c,false);return}
+ mostrarLista();
+}
+/* ---------- lista (só o dono) ---------- */
+function mostrarLista(){
+ CONV='';INFO=null;clearInterval(timer);topo(null);vista('vLista');pintarLista();
+}
+function pintarLista(){
+ var q=$('pq').value.trim().toLowerCase();
+ var l=LISTA.filter(function(x){return(FILTRO==='todos'||x.tipo===FILTRO)&&(!q||String(x.nome||'').toLowerCase().indexOf(q)>-1)});
+ $('lista').innerHTML=l.length?l.map(function(x){var n=+x.nao_lidos||0;
+  return'<button class="it" type="button" data-c="'+esc(x.conversa)+'">'+foto(x.foto_url,x.tipo==='fornecedor'?'🏪':'👤')+'<span class="tx"><b>'+esc(x.nome||'')+'</b><small>'+esc(sub(x))+'</small>'+
+   (x.ultima?'<small>'+esc(x.ultima)+'</small>':'<small>Ainda sem mensagens</small>')+'</span>'+(n?'<span class="nb">'+n+'</span>':'')+'</button>'}).join(''):'<div class="vz">Sem conversas.</div>';
+}
+document.querySelectorAll('.fl button').forEach(function(b){b.onclick=function(){FILTRO=b.getAttribute('data-f');document.querySelectorAll('.fl button').forEach(function(x){x.classList.toggle('on',x===b)});pintarLista()}});
+$('pq').oninput=pintarLista;
+$('lista').onclick=function(e){var b=e.target.closest('[data-c]');if(b)abrir(b.getAttribute('data-c'),true)};
+
+/* ---------- conversa ---------- */
+async function abrir(c,empurrar){
+ CONV=c;ULT='';vista('vChat');$('msgs').innerHTML='<div class="vz">A carregar…</div>';
+ if(DONO&&empurrar){try{history.pushState({bbChat:c},'',location.pathname+'?c='+encodeURIComponent(c))}catch(e){}}
+ await carregar(true);
+ clearInterval(timer);timer=setInterval(function(){if(!document.hidden)carregar(false)},6000);
+}
+async function urlDe(p){
+ if(!p)return'';if(URLS[p])return URLS[p];
+ try{var s=await sb.storage.from('equipa-chat').createSignedUrl(p,3600);if(s.data&&s.data.signedUrl)return URLS[p]=s.data.signedUrl}catch(e){}
+ return'';
+}
+async function carregar(primeira){
+ var r=await sb.rpc('equipa_chat_ver',{p_conversa:CONV});
+ if(r.error){$('msgs').innerHTML='<div class="vz">'+esc(r.error.message)+'</div>';return}
+ var d=r.data||{};INFO=d;topo(d.outro);
+ $('den').classList.toggle('hide',!(AG&&!d.eu_dono));
+ var M=d.mensagens||[],chave=M.length+':'+(M.length?M[M.length-1].id+':'+M[M.length-1].lido:'');
+ if(chave===ULT)return;ULT=chave;
+ var baixo=primeira||($('msgs').scrollHeight-$('msgs').scrollTop-$('msgs').clientHeight<80);
+ var h='',ud='';
+ for(var i=0;i<M.length;i++){var m=M[i],eu=m.de_dono===!!d.eu_dono,dd=dia(m.criado_em);
+  if(dd!==ud){h+='<div class="dia">'+esc(dd)+'</div>';ud=dd}
+  var corpo='';
+  var cu=URLS[m.ficheiro]?esc(URLS[m.ficheiro]):'';
+  if(m.tipo==='foto')corpo='<a data-f="'+esc(m.ficheiro)+'" target="_blank" rel="noopener"'+(cu?' href="'+cu+'"':'')+'><img data-f="'+esc(m.ficheiro)+'"'+(cu?' src="'+cu+'"':'')+' alt="Foto"></a>';
+  else if(m.tipo==='video')corpo='<video data-f="'+esc(m.ficheiro)+'"'+(cu?' src="'+cu+'"':'')+' controls playsinline preload="metadata"></video>';
+  else if(m.tipo==='audio')corpo='<audio data-f="'+esc(m.ficheiro)+'"'+(cu?' src="'+cu+'"':'')+' controls preload="metadata"></audio>';
+  if(m.texto)corpo+=(corpo?'<div style="margin-top:4px">':'<div>')+esc(m.texto)+'</div>';
+  h+='<div class="m '+(eu?'eu':'ele')+'">'+corpo+'<small>'+esc(hora(m.criado_em))+(eu?(m.lido?' ✓✓':' ✓'):'')+'</small></div>';
+ }
+ $('msgs').innerHTML=h||'<div class="vz">'+(d.eu_dono?'Escreva a primeira mensagem.':AG?'Escreva aqui a sua denúncia ou mensagem ao Fundador e CEO. Só ele vê esta conversa.':'Escreva aqui a sua mensagem à BBabilônia.')+'</div>';
+ $('msgs').querySelectorAll('[data-f]').forEach(async function(el){if(el.getAttribute(el.tagName==='A'?'href':'src'))return;var u=await urlDe(el.getAttribute('data-f'));if(!u)return;if(el.tagName==='A')el.href=u;else el.src=u});
+ if(baixo)$('msgs').scrollTop=$('msgs').scrollHeight;
+}
+async function enviar(tipo,texto,ficheiro){
+ if(aEnviar)return;aEnviar=true;$('env').disabled=true;
+ var r=await sb.rpc('equipa_chat_enviar',{p_conversa:CONV,p_tipo:tipo,p_texto:texto||null,p_ficheiro:ficheiro||null});
+ aEnviar=false;$('env').disabled=false;
+ if(r.error){estado(r.error.message);return false}
+ estado('');ULT='';await carregar(true);return true;
+}
+$('env').onclick=async function(){var t=$('tx').value.trim();if(!t)return;if(await enviar('texto',t)){$('tx').value='';$('tx').style.height=''}};
+$('tx').addEventListener('input',function(){this.style.height='';this.style.height=Math.min(this.scrollHeight,140)+'px'});
+async function subir(file,tipo,ext){
+ if(!INFO||!INFO.pasta)return;
+ if(file.size>50*1024*1024){estado('O ficheiro tem mais de 50 MB.');return}
+ estado(tipo==='video'?'A enviar o vídeo… pode demorar.':'A enviar…',true);
+ var e=ext||((file.name||'').split('.').pop()||'bin').toLowerCase().replace(/[^a-z0-9]/g,'')||'bin';
+ var c=INFO.pasta+'/'+Date.now()+'-'+Math.random().toString(36).slice(2,8)+'.'+e;
+ var r=await sb.storage.from('equipa-chat').upload(c,file,{contentType:file.type||undefined,upsert:false});
+ if(r.error){estado('Não foi enviado: '+r.error.message);return}
+ var t=$('tx').value.trim();
+ if(await enviar(tipo,t,c))$('tx').value='';
+}
+$('fFoto').onchange=function(){var f=this.files[0];this.value='';if(f)subir(f,'foto')};
+$('fVideo').onchange=function(){var f=this.files[0];this.value='';if(f)subir(f,'video')};
+/* 🎤 gravar áudio: toque para começar, toque outra vez para parar e enviar */
+var rec=null,partes=[];
+$('gr').onclick=async function(){
+ var b=this;
+ if(rec&&rec.state==='recording'){rec.stop();return}
+ if(!navigator.mediaDevices||!window.MediaRecorder){estado('Este telemóvel não deixa gravar áudio aqui.');return}
+ try{
+  var st=await navigator.mediaDevices.getUserMedia({audio:true});
+  var tipo=MediaRecorder.isTypeSupported&&MediaRecorder.isTypeSupported('audio/webm')?'audio/webm':(MediaRecorder.isTypeSupported&&MediaRecorder.isTypeSupported('audio/mp4')?'audio/mp4':'');
+  rec=tipo?new MediaRecorder(st,{mimeType:tipo}):new MediaRecorder(st);partes=[];
+  rec.ondataavailable=function(e){if(e.data&&e.data.size)partes.push(e.data)};
+  rec.onstop=function(){st.getTracks().forEach(function(t){t.stop()});b.classList.remove('on');b.textContent='🎤';
+   var mt=rec.mimeType||tipo||'audio/webm',blob=new Blob(partes,{type:mt});if(blob.size<1500){estado('Áudio muito curto.');return}
+   subir(blob,'audio',/mp4/.test(mt)?'m4a':'webm')};
+  rec.start();b.classList.add('on');b.textContent='⏹';estado('🎤 A gravar… toque em ⏹ para parar e enviar.',true);
+ }catch(e){estado('Sem acesso ao microfone. Permita o microfone para este site.')}
+};
+/* ← e botão voltar do telemóvel */
+function sair(){
+ if(DONO&&CONV){if(history.state&&history.state.bbChat){history.back();return}mostrarLista();try{history.replaceState({},'',location.pathname)}catch(e){}return}
+ try{var u=new URL(document.referrer);if(u.host===location.host&&!/equipa-chat/.test(u.pathname)){location.href=document.referrer;return}}catch(e){}
+ location.href=AG?'atendimento.html':'/';
+}
+$('voltar').onclick=sair;
+window.addEventListener('popstate',function(e){e.stopImmediatePropagation();if(DONO){var c=e.state&&e.state.bbChat;if(c)abrir(c,false);else{mostrarLista();iniciarLista()}}},true);
+async function iniciarLista(){var r=await sb.rpc('equipa_chat_lista');if(!r.error){LISTA=r.data||[];pintarLista()}}
+iniciar();
+</script>
+</body>
+</html>

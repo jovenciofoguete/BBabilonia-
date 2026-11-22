@@ -60,5 +60,6 @@
    (14/11/2026) 🔔 sino dos avisos do dono (sino-equipa.js)
    (14/11/2026) 🔒 endereço de entrega das encomendas de Moçambique (endereco-privado.js)
    (14/11/2026) 🛠️ Aluguer, serviços e diversos: ver e remover anúncios (admin-servicos.js)
-   (21/11/2026) 🔒 o painel do dono nunca abre páginas de outro domínio (admin-so-dominio.js) */
-(function(){["admin-so-dominio.js","painel-admin-extras.js","esqueci.js","admin-extra-v2.js","painel-admin-apagar.js","admin-levantamento.js","sino-equipa.js","endereco-privado.js","admin-servicos.js"].forEach(function(f){if(document.querySelector("script[src*=\""+f+"\"]"))return;var s=document.createElement("script");s.src=f+"?v=1";(document.head||document.documentElement).appendChild(s)})})();
+   (21/11/2026) 🔒 o painel do dono nunca abre páginas de outro domínio (admin-so-dominio.js)
+   (22/11/2026) 👥 Os meus agentes, 💬 Mensagens (chat individual) e 🏬 Lojas na plataforma (painel-equipa.js) */
+(function(){["admin-so-dominio.js","painel-admin-extras.js","esqueci.js","admin-extra-v2.js","painel-admin-apagar.js","admin-levantamento.js","sino-equipa.js","endereco-privado.js","admin-servicos.js","painel-equipa.js"].forEach(function(f){if(document.querySelector("script[src*=\""+f+"\"]"))return;var s=document.createElement("script");s.src=f+"?v=1";(document.head||document.documentElement).appendChild(s)})})();
