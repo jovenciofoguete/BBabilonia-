@@ -2,7 +2,7 @@
    Só acrescenta 3 cartões ao Início; não muda os outros.
    - 👥 Os meus agentes: todos os agentes de atendimento e de busca com foto, nome, telemóvel, província, cidade, bairro e documentos;
      cada um com "💬 Conversar" (chat individual).
-   - 🚨 Denúncias e mensagens: as denúncias de cada agente e as conversas individuais (agentes e fornecedores) → equipa-chat.html.
+   - 🚨 Denúncias: só as denúncias dos agentes → equipa-chat.html (as conversas com fornecedores abrem em 🏬 Lojas).
    - 🏪 Lojas na plataforma: quantas lojas há (por estado e por país) e a lista, cada uma com "💬 Conversar" com o fornecedor.
    Seta ← e botão voltar do telemóvel: voltam um passo de cada vez (lista ← vista ← Início).
    Ecrã firme: sem deslizar para os lados. Carregado pelo painel-admin-rececao.js. */
@@ -43,16 +43,19 @@
     Array.prototype.forEach.call(ini.querySelectorAll("h2"), function (h) { if (/agentes/i.test(h.textContent) && h.nextElementSibling && h.nextElementSibling.classList.contains("grid")) gAg = h.nextElementSibling; });
     if (gAg) gAg.insertAdjacentHTML("afterbegin",
       '<a id="pe-c-ag" class="c k7" href="#" data-pe="agentes"><span class="i">👥</span><b>Os meus agentes</b><span>Atendimento e busca: perfil completo, documentos e conversa</span><em id="pe-n-ag" class="hide"></em></a>' +
-      '<a id="pe-c-msg" class="c k5" href="equipa-chat.html"><span class="i">🚨</span><b>Denúncias e mensagens</b><span>Denúncias de cada agente e conversas com agentes e fornecedores</span><em id="pe-n-msg" class="hide"></em></a>');
+      '<a id="pe-c-msg" class="c k5" href="equipa-chat.html"><span class="i">🚨</span><b>Denúncias</b><span>Denúncias dos agentes</span><em id="pe-n-msg" class="hide"></em></a>');
     if (gLj) gLj.insertAdjacentHTML("beforeend",
-      '<a id="pe-c-lj" class="c k3" href="#" data-pe="lojas"><span class="i">🏬</span><b>Lojas na plataforma</b><span id="pe-lj-sub">Quantas lojas há e conversar com cada fornecedor</span></a>');
+      '<a id="pe-c-lj" class="c k3" href="#" data-pe="lojas"><span class="i">🏬</span><b>Lojas na plataforma</b><span id="pe-lj-sub">Quantas lojas há e conversar com cada fornecedor</span><em id="pe-n-lj" class="hide"></em></a>');
     contar();
   }
   async function contar() {
+    /* mensagens por ler: as denúncias dos agentes no cartão 🚨 Denúncias; as dos fornecedores no cartão 🏬 Lojas */
     try {
-      var r = await window.sb.rpc("equipa_chat_nao_lidos");
-      var n = r.error ? 0 : Number(r.data || 0), e = $("pe-n-msg");
-      if (e) { e.textContent = n; e.classList.toggle("hide", !n); }
+      var r = await window.sb.rpc("equipa_chat_lista");
+      var na = 0, nf = 0;
+      (r.error ? [] : (r.data || [])).forEach(function (x) { var k = Number(x.nao_lidos || 0); if (x.tipo === "fornecedor") nf += k; else if (x.tipo === "agente") na += k; });
+      var e = $("pe-n-msg"); if (e) { e.textContent = na; e.classList.toggle("hide", !na); }
+      var e2 = $("pe-n-lj"); if (e2) { e2.textContent = nf; e2.classList.toggle("hide", !nf); }
     } catch (e) {}
     try {
       var l = await window.sb.rpc("dono_lojas_lista");

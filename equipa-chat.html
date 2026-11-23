@@ -62,8 +62,6 @@ main{flex:1;max-width:760px;width:100%;margin:0 auto;display:flex;flex-direction
 <main>
  <div id="vSem" class="vz hide">Entre primeiro na sua conta (agente, fornecedor ou dono) e volte a esta página.</div>
  <section id="vLista" class="hide">
-  <div class="fl"><button data-f="todos" class="on">Todos</button><button data-f="agente">👥 Agentes</button><button data-f="fornecedor">🏪 Fornecedores</button></div>
-  <input id="pq" placeholder="🔍 Procurar pelo nome">
   <div id="lista"><div class="vz">A carregar…</div></div>
  </section>
  <section id="vChat" class="hide">
@@ -100,7 +98,7 @@ var DONO=false,LISTA=[],FILTRO='todos',CONV='',INFO=null,ULT='',URLS={},timer=nu
 var Q=new URLSearchParams(location.search);
 function sub(o){if(!o)return'';if(o.tipo==='dono')return o.titulo||'Fundador e CEO da BBabilônia';if(o.tipo==='fornecedor')return'🏪 Fornecedor'+(o.pais?' · '+o.pais:'');
  var e=o.equipas||[];return e.indexOf('atendimento')>-1&&e.indexOf('verificacao')>-1?'🎧🛡️ Atendimento e busca':e.indexOf('verificacao')>-1?'🛡️ Busca e verificação':'🎧 Atendimento'}
-function topo(o){$('topo').innerHTML=o?foto(o.foto_url,o.tipo==='fornecedor'?'🏪':o.tipo==='dono'?'👑':'👤')+'<div><b>'+esc(o.nome||'')+'</b><small>'+esc(sub(o))+'</small></div>':'<span class="sf">🚨</span><div><b>Denúncias e mensagens</b><small>Cada agente e cada fornecedor</small></div>'}
+function topo(o){$('topo').innerHTML=o?foto(o.foto_url,o.tipo==='fornecedor'?'🏪':o.tipo==='dono'?'👑':'👤')+'<div><b>'+esc(o.nome||'')+'</b><small>'+esc(sub(o))+'</small></div>':'<span class="sf">🚨</span><div><b>Denúncias</b><small>Denúncias dos agentes</small></div>'}
 function vista(v){['vSem','vLista','vChat'].forEach(function(x){$(x).classList.toggle('hide',x!==v)})}
 function estado(t,ok){var e=$('est');e.textContent=t||'';e.className='est'+(ok?' ok':'')+(t?'':' hide')}
 
@@ -119,15 +117,13 @@ async function iniciar(){
 function mostrarLista(){
  CONV='';INFO=null;clearInterval(timer);topo(null);vista('vLista');pintarLista();
 }
+/* (22/11/2026) a lista do dono é só das denúncias: agentes que escreveram (os fornecedores abrem-se em 🏬 Lojas) */
 function pintarLista(){
- var q=$('pq').value.trim().toLowerCase();
- var l=LISTA.filter(function(x){return(FILTRO==='todos'||x.tipo===FILTRO)&&(!q||String(x.nome||'').toLowerCase().indexOf(q)>-1)});
+ var l=LISTA.filter(function(x){return x.tipo==='agente'&&x.ultima});
  $('lista').innerHTML=l.length?l.map(function(x){var n=+x.nao_lidos||0;
   return'<button class="it" type="button" data-c="'+esc(x.conversa)+'">'+foto(x.foto_url,x.tipo==='fornecedor'?'🏪':'👤')+'<span class="tx"><b>'+esc(x.nome||'')+'</b><small>'+esc(sub(x))+'</small>'+
-   (x.ultima?'<small>'+esc(x.ultima)+'</small>':'<small>Ainda sem mensagens</small>')+'</span>'+(n?'<span class="nb">'+n+'</span>':'')+'</button>'}).join(''):'<div class="vz">Sem conversas.</div>';
+   (x.ultima?'<small>'+esc(x.ultima)+'</small>':'<small>Ainda sem mensagens</small>')+'</span>'+(n?'<span class="nb">'+n+'</span>':'')+'</button>'}).join(''):'<div class="vz">Não há denúncias. 👍</div>';
 }
-document.querySelectorAll('.fl button').forEach(function(b){b.onclick=function(){FILTRO=b.getAttribute('data-f');document.querySelectorAll('.fl button').forEach(function(x){x.classList.toggle('on',x===b)});pintarLista()}});
-$('pq').oninput=pintarLista;
 $('lista').onclick=function(e){var b=e.target.closest('[data-c]');if(b)abrir(b.getAttribute('data-c'),true)};
 
 /* ---------- conversa ---------- */
