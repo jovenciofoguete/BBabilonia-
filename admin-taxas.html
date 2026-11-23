@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Taxas e planos · BBabilônia</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#f1f5f9;color:#0f172a}
+header{background:linear-gradient(135deg,#0f172a,#1e3a8a);color:#fff;padding:16px;display:flex;align-items:center;gap:12px}
+header a{color:#fff;text-decoration:none;font-size:22px;padding:0 6px}
+header b{font-size:18px}
+main{max-width:620px;margin:0 auto;padding:12px}
+.box{background:#fff;border-radius:16px;padding:14px;margin-bottom:12px;box-shadow:0 2px 10px #0f172a14}
+.box h2{font-size:16px;margin:0 0 4px}
+.box p.s{font-size:13px;color:#64748b;margin:0 0 12px;line-height:1.45}
+.lin{display:flex;gap:10px}
+.lin>div{flex:1;min-width:0}
+label{display:block;font-size:13px;font-weight:700;color:#334155;margin:8px 0 4px}
+input,select{width:100%;padding:12px;border:1.5px solid #cbd5e1;border-radius:10px;font-size:16px;background:#fff}
+.pct{position:relative}.pct input{padding-right:34px}.pct span{position:absolute;right:12px;top:12px;color:#64748b;font-weight:700}
+.ex{font-size:13px;color:#0f766e;background:#f0fdfa;border-radius:10px;padding:8px 10px;margin-top:8px;line-height:1.5}
+.sw{display:flex;align-items:center;gap:10px;background:#f8fafc;border-radius:12px;padding:12px;margin:6px 0}
+.sw input{width:22px;height:22px;flex:none}
+.sw b{font-size:14.5px}
+.n{font-size:12.5px;color:#64748b;margin-top:6px}
+button.g{width:100%;padding:14px;border:0;border-radius:12px;background:#1e3a8a;color:#fff;font-size:16px;font-weight:800;margin-top:12px}
+button.g:disabled{opacity:.5}
+.msg{font-size:14px;font-weight:700;margin-top:8px;min-height:18px}
+.msg.ok{color:#047857}.msg.er{color:#b91c1c}
+</style>
+</head>
+<body>
+<header><a href="painel-admin.html" id="voltar" aria-label="Voltar">&larr;</a><b>💲 Taxas e planos</b></header>
+<main>
+  <div class="box">
+    <h2>💲 Taxa da plataforma no preço</h2>
+    <p class="s">Somada sozinha ao preço que o fornecedor escreve (também nos preços por quantidade). O cliente vê só o preço final. Ao guardar, todos os preços da loja são recalculados com a taxa nova.</p>
+    <div class="lin">
+      <div><label for="tmz">🇲🇿 Fornecedores de Moçambique</label><div class="pct"><input id="tmz" type="number" min="0" max="50" step="0.1" inputmode="decimal"><span>%</span></div></div>
+      <div><label for="tint">🌍 Fornecedores internacionais</label><div class="pct"><input id="tint" type="number" min="0" max="50" step="0.1" inputmode="decimal"><span>%</span></div></div>
+    </div>
+    <div class="ex" id="ex"></div>
+    <p class="n">Pagamento por cartão (Stripe) e M-Pesa: o cliente paga o preço com a taxa. Gateway sem divisas: o cliente recebe o "Cupão BBabilônia" com o desconto da taxa em vigor.</p>
+    <button class="g" id="gt">Guardar taxas</button>
+    <div class="msg" id="mt"></div>
+  </div>
+
+  <div class="box">
+    <h2>🏪 Mensalidade ou anuidade das lojas</h2>
+    <p class="s">Para todas as lojas básicas e normais. As lojas Pro não entram: pagam a anuidade Pro.</p>
+    <label class="sw"><input type="checkbox" id="la"><b>Todas as lojas pagam</b></label>
+    <label for="lp">Cobrar</label>
+    <select id="lp"><option value="mes">Mensalidade (todos os meses)</option><option value="ano">Anuidade (uma vez por ano)</option></select>
+    <div class="lin">
+      <div><label for="lmz">🇲🇿 Lojas de Moçambique (MZN)</label><input id="lmz" type="number" min="0" step="1" inputmode="decimal"></div>
+      <div><label for="lint">🌍 Lojas internacionais (MZN)</label><input id="lint" type="number" min="0" step="1" inputmode="decimal"></div>
+    </div>
+    <p class="n">Lojas internacionais pagam o equivalente em dólares (USD).</p>
+    <label for="li">A partir da data</label>
+    <input id="li" type="date">
+    <p class="n" id="nl"></p>
+  </div>
+
+  <div class="box">
+    <h2>⭐ Anuidade Pro</h2>
+    <p class="s">Preço por ano das lojas Pro (substitui os 6% por venda).</p>
+    <div class="lin">
+      <div><label for="pmz">🇲🇿 Moçambique (MZN)</label><input id="pmz" type="number" min="0" step="1" inputmode="decimal"></div>
+      <div><label for="pint">🌍 Internacional (MZN)</label><input id="pint" type="number" min="0" step="1" inputmode="decimal"></div>
+    </div>
+    <p class="n">Lojas internacionais pagam o equivalente em dólares (USD).</p>
+    <button class="g" id="gp">Guardar planos</button>
+    <div class="msg" id="mp"></div>
+  </div>
+</main>
+<script>
+(function () {
+  if (!/^(admin|administrator)\./i.test(location.hostname) && !/^(localhost|loja\.test)$/i.test(location.hostname)) {
+    location.replace("https://administrator.bbabilonia.com/admin-taxas.html"); return;
+  }
+  var sb = supabase.createClient("https://dsfoqoeawvjafypycldz.supabase.co", "sb_publishable_BN4NiVcDab9CqdTY_odgDA_uUOhjja0");
+  window.sb = sb;
+  var $ = function (i) { return document.getElementById(i); };
+  function num(v) { return Number(v || 0).toLocaleString("pt-PT", { maximumFractionDigits: 2 }); }
+  function erro(e) { var t = String(e && e.message || e); return /function|find|exist|relation/i.test(t) ? "Falta correr o SQL das taxas (TAXA.sql) no Supabase." : t; }
+  function msg(el, t, ok) { el.textContent = t; el.className = "msg " + (ok ? "ok" : "er"); }
+  function exemplo() {
+    var a = Number($("tmz").value) || 0, b = Number($("tint").value) || 0;
+    $("ex").innerHTML = "Exemplo: o fornecedor escreve <b>1 000</b> → o cliente vê <b>" + num(1000 * (1 + a / 100)) + " MZN</b> (Moçambique) · <b>" + num(1000 * (1 + b / 100)) + "</b> (internacional)";
+  }
+  ["tmz", "tint"].forEach(function (i) { $(i).addEventListener("input", exemplo); });
+
+  async function carregar() {
+    var t = await sb.rpc("bb_taxas_ver"), p = await sb.rpc("bb_planos_ver");
+    if (t.error) { msg($("mt"), erro(t.error)); return; }
+    $("tmz").value = Number(t.data.mz); $("tint").value = Number(t.data.internacional); exemplo();
+    if (p.error) { msg($("mp"), erro(p.error)); return; }
+    var x = p.data;
+    $("la").checked = !!x.lojas_ativo; $("lp").value = x.lojas_periodo || "mes";
+    $("lmz").value = Number(x.lojas_preco_mz || 0); $("lint").value = Number(x.lojas_preco_int || 0);
+    $("li").value = x.lojas_inicio || "";
+    $("pmz").value = Number(x.pro_preco_mz); $("pint").value = Number(x.pro_preco_int);
+    $("nl").textContent = "Lojas aprovadas que pagam: " + (x.lojas_mz || 0) + " de Moçambique · " + (x.lojas_int || 0) + " internacionais (" + (x.lojas_pro || 0) + " Pro ficam de fora).";
+  }
+  $("gt").onclick = async function () {
+    var b = this; b.disabled = true; msg($("mt"), "A guardar e a recalcular os preços…", true);
+    var r = await sb.rpc("bb_taxas_definir", { p_mz: Number($("tmz").value), p_int: Number($("tint").value) });
+    b.disabled = false;
+    if (r.error) { msg($("mt"), erro(r.error)); return; }
+    msg($("mt"), "✅ Taxas guardadas. " + (r.data.recalculados || 0) + " preços recalculados.", true);
+  };
+  $("gp").onclick = async function () {
+    var b = this; b.disabled = true; msg($("mp"), "A guardar…", true);
+    var r = await sb.rpc("bb_planos_definir", { p_ativo: $("la").checked, p_periodo: $("lp").value,
+      p_preco_mz: Number($("lmz").value) || 0, p_preco_int: Number($("lint").value) || 0, p_inicio: $("li").value || null,
+      p_pro_mz: Number($("pmz").value) || 0, p_pro_int: Number($("pint").value) || 0 });
+    b.disabled = false;
+    if (r.error) { msg($("mp"), erro(r.error)); return; }
+    msg($("mp"), "✅ Planos guardados.", true); carregar();
+  };
+  $("voltar").onclick = function (e) { if (history.length > 1 && document.referrer.indexOf(location.host) > -1) { e.preventDefault(); history.back(); } };
+  carregar();
+})();
+</script>
+</body>
+</html>
