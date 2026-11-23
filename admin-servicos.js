@@ -62,7 +62,7 @@
     document.querySelectorAll("#tabs button").forEach(function (b) { b.classList.remove("on"); });
     ex.innerHTML = '<button class="voltar" data-x="voltar">← Voltar ao início</button>' +
       '<div class="box"><b>🛠️ Aluguer, serviços e diversos</b><p style="font-size:13px;color:#64748b;margin:6px 0 0">Cada anúncio só é visto no país da conta de quem o publicou. Fica escondido até a mensalidade da categoria ser aprovada (todos os países).</p>' +
-      '<div style="display:flex;gap:6px;margin-top:10px"><a class="bt" href="atd-servicos.html" style="flex:1;text-align:center;text-decoration:none;background:#059669">💵 Mensalidades por aprovar</a><button class="bt" type="button" id="serv-tx" style="flex:1;background:#7c3aed">🏷️ Taxas</button></div><div id="serv-taxas"></div>' +
+      '<div style="display:flex;gap:6px;margin-top:10px"><a class="bt" href="atd-servicos.html" style="flex:1;text-align:center;text-decoration:none;background:#059669">💵 Mensalidades e destaques pagos</a><button class="bt" type="button" id="serv-tx" style="flex:1;background:#7c3aed">🏷️ Taxas</button></div><div id="serv-taxas"></div>' +
       '<input id="serv-q" placeholder="Pesquisar (título, conta, província, telefone…)" style="margin-top:10px">' +
       '<div class="row" style="display:flex;gap:6px;margin-top:8px"><button class="bt" type="button" data-f="ativo">Ativos</button><button class="bt" type="button" data-f="removido">Removidos</button><button class="bt" type="button" data-f="">Todos</button></div>' +
       '<p style="font-size:13px;margin:8px 0 0" id="serv-t"></p><div class="msg" id="serv-m"></div></div><div id="serv-l"><div class="box">A carregar…</div></div>';
