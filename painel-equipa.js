@@ -1,7 +1,7 @@
 /* painel-equipa.js — BBabilônia (22/11/2026) · painel do dono (administrator.bbabilonia.com)
-   Só acrescenta 3 cartões ao Início; não muda os outros.
-   - 👥 Os meus agentes: todos os agentes de atendimento e de busca com foto, nome, telemóvel, província, cidade, bairro e documentos;
-     cada um com "💬 Conversar" (chat individual).
+   Só acrescenta 2 cartões ao Início; não muda os outros.
+   (23/11/2026) "👥 Os meus agentes" saiu: os agentes ficam numa só pasta, 👥 Agentes (admin-agentes.html),
+     com foto, nome, dados, documentos e "💬 Conversar".
    - 🚨 Denúncias: só as denúncias dos agentes → equipa-chat.html (as conversas com fornecedores abrem em 🏬 Lojas).
    - 🏪 Lojas na plataforma: quantas lojas há (por estado e por país) e a lista, cada uma com "💬 Conversar" com o fornecedor.
    Seta ← e botão voltar do telemóvel: voltam um passo de cada vez (lista ← vista ← Início).
@@ -17,7 +17,7 @@
   function erro(e) { var t = String(e && e.message || e); return /function|find|relation|exist/i.test(t) ? "Falta correr o SQL novo no Supabase (PARTE A)." : t; }
   function equipa(l) { l = l || []; return l.indexOf("atendimento") > -1 && l.indexOf("verificacao") > -1 ? "🎧🛡️ Atendimento e busca" : l.indexOf("verificacao") > -1 ? "🛡️ Busca e verificação" : "🎧 Atendimento"; }
   var EST = { aprovada: ["✅ Aprovada", "v"], pendente: ["⏳ Pendente", ""], suspensa: ["⛔ Suspensa", "r"], rejeitada: ["❌ Rejeitada", "r"], fechada: ["Fechada", "r"] };
-  var VISTA = "", AG = [], LJ = null, FA = "todos", FL = "todas";
+  var VISTA = "", LJ = null, FL = "todas";
 
   var css = d.createElement("style");
   css.textContent =
@@ -37,12 +37,11 @@
   d.head.appendChild(css);
 
   function cartoes() {
-    var ini = $("t-inicio"); if (!ini || $("pe-c-ag")) return;
+    var ini = $("t-inicio"); if (!ini || $("pe-c-msg")) return;
     var grids = ini.querySelectorAll(".grid");
     var gAg = null, gLj = grids[0] || null;
     Array.prototype.forEach.call(ini.querySelectorAll("h2"), function (h) { if (/agentes/i.test(h.textContent) && h.nextElementSibling && h.nextElementSibling.classList.contains("grid")) gAg = h.nextElementSibling; });
     if (gAg) gAg.insertAdjacentHTML("afterbegin",
-      '<a id="pe-c-ag" class="c k7" href="#" data-pe="agentes"><span class="i">👥</span><b>Os meus agentes</b><span>Atendimento e busca: perfil completo, documentos e conversa</span><em id="pe-n-ag" class="hide"></em></a>' +
       '<a id="pe-c-msg" class="c k5" href="equipa-chat.html"><span class="i">🚨</span><b>Denúncias</b><span>Denúncias dos agentes</span><em id="pe-n-msg" class="hide"></em></a>');
     if (gLj) gLj.insertAdjacentHTML("beforeend",
       '<a id="pe-c-lj" class="c k3" href="#" data-pe="lojas"><span class="i">🏬</span><b>Lojas na plataforma</b><span id="pe-lj-sub">Quantas lojas há e conversar com cada fornecedor</span><em id="pe-n-lj" class="hide"></em></a>');
@@ -72,14 +71,15 @@
   function esconderOutros(sim) {
     ["t-inicio", "t-produtos", "t-pedidos", "t-extra"].forEach(function (x) { var e = $(x); if (e && sim) e.classList.add("hide"); });
     if (!sim) { var i = $("t-inicio"); if (i) i.classList.remove("hide"); }
-    var tb = $("tabs"); if (tb) tb.querySelectorAll("button").forEach(function (b) { b.classList.toggle("on", !sim && b.getAttribute("data-t") === "inicio"); });
+    var tb = $("tabs"); if (tb) tb.classList.toggle("hide", !!sim);
+    if (tb) tb.querySelectorAll("button").forEach(function (b) { b.classList.toggle("on", !sim && b.getAttribute("data-t") === "inicio"); });
   }
   function abrir(v, empurrar) {
     VISTA = v;
     if (empurrar) { try { history.pushState({ pe: v }, "", location.pathname + location.search + "#pe-" + v); } catch (e) {} }
     esconderOutros(true);
     var c = contentor(); c.classList.remove("hide"); window.scrollTo(0, 0);
-    if (v === "agentes") agentes(); else lojas();
+    lojas();
   }
   function fechar() {
     VISTA = ""; var c = $("pe-v"); if (c) { c.classList.add("hide"); c.innerHTML = ""; }
@@ -87,42 +87,9 @@
   }
   function voltar() { if (history.state && history.state.pe) history.back(); else { fechar(); try { history.replaceState(null, "", location.pathname + location.search); } catch (e) {} } }
   window.addEventListener("popstate", function (e) {
-    var v = e.state && e.state.pe;
+    var v = e.state && e.state.pe; if (v !== "lojas") v = "";
     if (v) abrir(v, false); else if (VISTA) fechar();
   });
-
-  /* ---------- 👥 Os meus agentes ---------- */
-  async function agentes() {
-    var c = contentor();
-    c.innerHTML = '<button class="voltar" data-pe-v="1">← Voltar ao início</button><div class="box"><b>👥 Os meus agentes</b>' +
-      '<div class="pe-f" style="margin-top:10px"><button data-pe-fa="todos">Todos</button><button data-pe-fa="atendimento">🎧 Atendimento</button><button data-pe-fa="verificacao">🛡️ Busca</button></div>' +
-      '<input class="pe-q" id="pe-qa" placeholder="🔍 Procurar pelo nome"></div><div id="pe-la"><div class="vz">A carregar…</div></div>';
-    var r = await window.sb.rpc("dono_agentes_lista");
-    if (VISTA !== "agentes") return;
-    if (r.error) { $("pe-la").innerHTML = '<div class="box vz">' + esc(erro(r.error)) + "</div>"; return; }
-    AG = r.data || []; pintarAgentes();
-    $("pe-qa").oninput = pintarAgentes;
-  }
-  function pintarAgentes() {
-    var el = $("pe-la"); if (!el) return;
-    var q = ($("pe-qa").value || "").trim().toLowerCase();
-    d.querySelectorAll("[data-pe-fa]").forEach(function (b) { b.classList.toggle("on", b.getAttribute("data-pe-fa") === FA); });
-    var L = AG.filter(function (a) { return (FA === "todos" || (a.equipas || []).indexOf(FA) > -1) && (!q || String(a.nome || "").toLowerCase().indexOf(q) > -1); });
-    el.innerHTML = L.length ? L.map(function (a) {
-      var tel = String(a.telefone || "").replace(/[^\d+]/g, ""), n = Number(a.nao_lidos || 0);
-      return '<div class="box"><div class="pe-a">' + foto(a.foto_url) + '<div class="t"><b>' + esc(a.nome) + "</b><small>" + esc(equipa(a.equipas)) + (a.ativo === false ? " · desligado" : "") + "</small><small>" + esc(a.email) + "</small></div></div>" +
-        '<div class="pe-d">📞 ' + (tel ? '<a href="tel:' + esc(tel) + '">' + esc(a.telefone) + "</a>" : "não registado") +
-        "<br>📍 Província: <b>" + esc(a.provincia || "—") + "</b> · Cidade: <b>" + esc(a.cidade || "—") + "</b><br>🏠 Bairro: <b>" + esc(a.bairro || "—") + "</b>" +
-        "<br>🪪 Documento: <b>" + esc(a.bi_numero || "—") + "</b> · validade " + esc(a.bi_validade ? dt(a.bi_validade) : "—") + (a.nuit ? "<br>🧾 NUIT: <b>" + esc(a.nuit) + "</b>" : "") + "</div>" +
-        (a.bi_url ? '<div data-pe-bi="' + esc(a.bi_url) + '" style="min-height:188px"></div>' : "") +
-        '<a class="pe-c" href="equipa-chat.html?c=' + encodeURIComponent(a.conversa) + '">💬 Conversar' + (n ? "<i>" + n + "</i>" : "") + "</a></div>";
-    }).join("") : '<div class="box vz">Nenhum agente.</div>';
-    el.querySelectorAll("[data-pe-bi]").forEach(async function (bx) {
-      var v = bx.getAttribute("data-pe-bi"), u = v;
-      if (!/^https?:/i.test(v)) { try { var s = await window.sb.storage.from("identidades").createSignedUrl(v, 600); u = s.data && s.data.signedUrl || ""; } catch (e) { u = ""; } }
-      bx.innerHTML = u ? '<a href="' + esc(u) + '" target="_blank" rel="noopener"><img class="pe-bi" src="' + esc(u) + '" alt="Documento"></a>' : '<div class="vz" style="padding:10px">(foto do documento não disponível)</div>';
-    });
-  }
 
   /* ---------- 🏬 Lojas na plataforma ---------- */
   async function lojas() {
@@ -154,10 +121,9 @@
   }
 
   d.addEventListener("click", function (e) {
-    var x = e.target.closest && e.target.closest("[data-pe],[data-pe-v],[data-pe-fa],[data-pe-fl]"); if (!x) return;
+    var x = e.target.closest && e.target.closest("[data-pe],[data-pe-v],[data-pe-fl]"); if (!x) return;
     if (x.hasAttribute("data-pe")) { e.preventDefault(); e.stopImmediatePropagation(); abrir(x.getAttribute("data-pe"), true); return; }
     if (x.hasAttribute("data-pe-v")) { e.preventDefault(); voltar(); return; }
-    if (x.hasAttribute("data-pe-fa")) { FA = x.getAttribute("data-pe-fa"); pintarAgentes(); return; }
     if (x.hasAttribute("data-pe-fl")) { FL = x.getAttribute("data-pe-fl"); pintarLojas(); }
   }, true);
   /* tocar num separador (Início, Produtos, Pedidos) fecha a vista */
@@ -169,7 +135,8 @@
     if (!window.sb || !window.sb.rpc || !$("t-inicio") || !app || app.classList.contains("hide")) { if (++n < 400) setTimeout(arrancar, 150); return; }
     cartoes();
     /* ao voltar de uma conversa, reabre a vista de onde veio (um passo de cada vez) */
-    var m = /#pe-(agentes|lojas)$/.exec(location.hash);
+    if (/#pe-agentes$/.test(location.hash)) { try { history.replaceState(null, "", location.pathname + location.search); } catch (e) {} }
+    var m = /#pe-(lojas)$/.exec(location.hash);
     if (m) { try { if (!(history.state && history.state.pe)) history.replaceState({ pe: m[1] }, "", location.href); } catch (e) {} abrir(m[1], false); }
     setInterval(function () { if (!d.hidden) contar(); }, 30000);
   })();

@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Agentes · BBabilônia</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<style>
+:root{--fundo:#eef2f7;--papel:#fff;--texto:#0f172a;--suave:#64748b;--linha:#e2e8f0;--az:#2563eb}
+*{box-sizing:border-box;margin:0}
+html,body{overflow-x:hidden;overscroll-behavior-x:none}
+body{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--fundo);color:var(--texto);line-height:1.45;color-scheme:light}
+.bar{position:sticky;top:0;z-index:5;background:linear-gradient(135deg,#1e3a8a,#2563eb);color:#fff;padding:12px 14px;display:flex;align-items:center;gap:8px;box-shadow:0 4px 14px #0003}
+.bar h1{font-size:17px;flex:1}.bar a{color:#fff;background:#ffffff2e;border-radius:999px;padding:7px 12px;font-size:13px;font-weight:700;text-decoration:none}
+main{max-width:760px;margin:0 auto;padding:14px 12px 60px;touch-action:pan-y}
+.tabs{display:flex;gap:6px;margin-bottom:12px}.tabs button{flex:1;border:0;border-radius:12px;padding:12px 8px;font:inherit;font-weight:800;background:#fff;color:#475569}
+.tabs button.on{background:var(--az);color:#fff}
+.tabs i{font-style:normal;background:#ef4444;color:#fff;border-radius:999px;padding:0 7px;font-size:12px;margin-left:4px}
+.box{background:var(--papel);border-radius:16px;padding:14px;box-shadow:0 4px 14px #0001;margin-bottom:12px}
+.box h2{font-size:15px;margin-bottom:6px}
+.dica{font-size:13px;color:var(--suave)}
+input{width:100%;padding:12px;border:2px solid var(--linha);border-radius:12px;font:inherit;font-size:16px;margin-top:8px}
+.bt{border:0;border-radius:12px;padding:12px;font:inherit;font-size:15px;font-weight:800;color:#fff;background:var(--az);width:100%;margin-top:10px}
+.bt:disabled{opacity:.5}
+.msg{font-size:13px;margin-top:6px;color:#dc2626;white-space:pre-line}.msg.ok{color:#059669}.msg:empty{display:none}
+.vz{text-align:center;color:var(--suave);padding:18px 10px;font-size:14px}
+.hide{display:none}
+.ent{border:3px solid #f59e0b}.ent.vz2{border-color:transparent}
+/* agente: foto e nome, por baixo botões pequenos */
+.ag{padding:10px 0;border-top:1px solid var(--linha)}.ag:first-of-type{border-top:0}
+.ag .cab{display:flex;gap:10px;align-items:center}
+.ag .ft{width:42px;height:42px;border-radius:50%;object-fit:cover;background:#e2e8f0;flex:none;display:flex;align-items:center;justify-content:center;font-size:20px}
+.ag .nm{flex:1;min-width:0}.ag .nm b{display:block;font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ag .nm small{display:block;color:var(--suave);font-size:12px}
+.ag .dd{font-size:12.5px;color:#334155;margin:6px 0 0 52px;line-height:1.55;word-break:break-word}
+.ag .dd a{color:#1d4ed8;font-weight:700;text-decoration:none}
+.bs{display:flex;flex-wrap:wrap;gap:6px;margin:7px 0 0 52px}
+.bs button,.bs a{border:0;border-radius:8px;padding:5px 8px;font:inherit;font-size:12px;font-weight:700;background:#f1f5f9;color:#334155;text-decoration:none;line-height:1.4}
+.bs button:disabled{opacity:.5}
+.bs .ap{background:#d1fae5;color:#065f46}.bs .rc{background:#fee2e2;color:#991b1b}.bs .rm{background:#fff7ed;color:#9a3412}.bs .bl{background:#1f2937;color:#fff}.bs .v{background:#dbeafe;color:#1e40af}
+.bs i{font-style:normal;background:#dc2626;color:#fff;border-radius:10px;padding:0 6px;font-size:11px;margin-left:3px}
+.est{display:inline-block;font-size:11.5px;font-weight:800;padding:1px 8px;border-radius:20px;background:#fef3c7;color:#92400e}
+.est.ok{background:#d1fae5;color:#065f46}.est.no{background:#fee2e2;color:#991b1b}
+.ag .msg{margin-left:52px}
+#entBox .bs,#entBox .msg{margin-left:0}#entBox .bs{flex-wrap:nowrap}#entBox .bs button{flex:1;padding:6px 2px;white-space:nowrap}
+</style>
+</head>
+<body>
+<div class="bar"><h1>👥 Agentes</h1><a href="/">← Painel</a></div>
+<main>
+ <section id="vEntrar" class="box hide">
+  <h2>Entrar (dono da plataforma)</h2>
+  <input id="em" type="email" placeholder="Email" autocomplete="username">
+  <input id="pw" type="password" placeholder="Palavra-passe" autocomplete="current-password">
+  <button class="bt" id="ent">Entrar</button><p class="msg" id="eMsg"></p>
+ </section>
+ <section id="vApp" class="hide">
+  <div class="tabs"><button id="tA" class="on">🎧 Atendimento</button><button id="tV">🛡️ Busca e verificação</button></div>
+  <div class="box">
+   <h2 id="tit">Adicionar agente de atendimento</h2>
+   <p class="dica" id="exp"></p>
+   <input id="novo" type="email" placeholder="Email do agente" autocomplete="off">
+   <button class="bt" id="add">➕ Adicionar</button><p class="msg" id="aMsg"></p>
+  </div>
+  <div class="box ent vz2" id="entBox"><div class="vz">A carregar…</div></div>
+  <div class="box"><h2 id="lt">Agentes</h2><div id="lista"><div class="vz">A carregar…</div></div></div>
+ </section>
+</main>
+<script>
+var sb=supabase.createClient('https://dsfoqoeawvjafypycldz.supabase.co','sb_publishable_BN4NiVcDab9CqdTY_odgDA_uUOhjja0');
+function $(i){return document.getElementById(i)}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function dt(d){try{return d?new Date(d).toLocaleDateString('pt-PT'):'—'}catch(e){return'—'}}
+function low(s){return String(s||'').toLowerCase()}
+function sqlErr(t){t=String(t&&t.message||t);return /function|exist|find/i.test(t)?'Falta correr o SQL novo no Supabase.':t}
+var EQ='atendimento',L=[],P={},ENT=[],entErro='';
+var TXT={
+ atendimento:['Adicionar agente de atendimento','Atendem os clientes e fornecedores e confirmam se os produtos verificados são iguais ao pedido. Entram em service.bbabilonia.com. Não têm acesso ao lado da busca e verificação.'],
+ verificacao:['Adicionar agente de busca e verificação','Vão às lojas confirmar os produtos com fotos e vídeos e recolhem os produtos. Entram em service.bbabilonia.com/confirmar-produto.html. Não têm acesso ao lado do atendimento.']
+};
+function vista(v){['vEntrar','vApp'].forEach(function(x){$(x).classList.toggle('hide',x!==v)})}
+function aba(e){EQ=e;$('tA').classList.toggle('on',e==='atendimento');$('tV').classList.toggle('on',e==='verificacao');$('tit').textContent=TXT[e][0];$('exp').textContent=TXT[e][1];$('aMsg').textContent='';pintar();pintarEnt()}
+$('tA').onclick=function(){aba('atendimento')};$('tV').onclick=function(){aba('verificacao')};
+async function iniciar(){
+ var s=(await sb.auth.getSession()).data.session;
+ if(!s){vista('vEntrar');return}
+ vista('vApp');aba(EQ);await carregar();carregarEnt();
+}
+$('ent').onclick=async function(){var r=await sb.auth.signInWithPassword({email:$('em').value.trim(),password:$('pw').value});if(r.error){$('eMsg').textContent='Email ou palavra-passe errados.';return}iniciar()};
+
+/* perfil (foto, nome, província, cidade, bairro, conversa) de cada agente, por email */
+function perfil(e){return P[low(e)]||{}}
+function nomeDe(e,a){var p=perfil(e);return p.nome&&low(p.nome)!==low(e)?p.nome:(a&&a.nome)||p.nome||e}
+function fotoDe(e,a){var p=perfil(e),u=p.foto_url||(a&&/^https?:/i.test(a.foto_url||'')?a.foto_url:'');return u?'<img class="ft" src="'+esc(u)+'" alt="">':'<span class="ft">👤</span>'}
+async function carregar(){
+ var r=await sb.rpc('admin_agentes_lista'),p=null;
+ try{p=await sb.rpc('dono_agentes_lista')}catch(e){}
+ P={};if(p&&!p.error)(p.data||[]).forEach(function(x){P[low(x.email)]=x});
+ if(r.error){$('lista').innerHTML='<p class="msg">'+esc(sqlErr(r.error))+'</p>';return}
+ L=r.data||[];pintar();pintarEnt();
+}
+function biEst(v){if(!v)return'';var hoje=new Date();hoje.setHours(0,0,0,0);var dias=Math.round((new Date(v)-hoje)/864e5);
+ return dias<0?'<span class="est no">BI expirado a '+dt(v)+'</span>':dias<=30?'<span class="est">BI expira a '+dt(v)+'</span>':'<span class="est ok">BI válido até '+dt(v)+'</span>'}
+function pintar(){
+ var l=L.filter(function(a){return a.equipa===EQ});
+ titulos();
+ $('lt').textContent=(EQ==='atendimento'?'🎧 Agentes de atendimento':'🛡️ Agentes de busca e verificação')+' ('+l.length+')';
+ if(!l.length){$('lista').innerHTML='<div class="vz">Ainda não há agentes nesta equipa.</div>';return}
+ $('lista').innerHTML=l.map(function(a){
+  var p=perfil(a.email),tel=p.telefone||a.telefone||'',tl=String(tel).replace(/[^\d+]/g,''),n=Number(p.nao_lidos||0),val=p.bi_validade||a.bi_validade;
+  var lugar=[p.provincia,p.cidade,p.bairro||a.morada].filter(Boolean).join(' · ');
+  var preenchido=a.nome||p.telefone||p.provincia;
+  return'<div class="ag" data-id="'+esc(a.id)+'"><div class="cab">'+fotoDe(a.email,a)+'<div class="nm"><b>'+esc(nomeDe(a.email,a))+'</b>'+(low(nomeDe(a.email,a))!==low(a.email)?'<small>'+esc(a.email)+'</small>':'')+'</div></div>'+
+   '<div class="dd">'+(preenchido?'📞 '+(tl?'<a href="tel:'+esc(tl)+'">'+esc(tel)+'</a>':'—')+'<br>📍 '+esc(lugar||'—')+'<br>🪪 BI '+esc(p.bi_numero||a.bi_numero||'—')+' · NUIT '+esc(p.nuit||a.nuit||'—')+(val?'<br>'+biEst(val):''):'Ainda não preencheu os dados (pedidos quando entrar).')+'</div>'+
+   '<div class="bs">'+(a.foto_url?'<button class="v" data-f="'+esc(a.foto_url)+'">📷 Foto</button>':'')+((a.bi_url||p.bi_url)?'<button class="v" data-f="'+esc(a.bi_url||p.bi_url)+'"'+(a.bi_url?'':' data-bk="identidades"')+'>🪪 BI</button>':'')+
+   '<a class="v" href="equipa-chat.html?c='+encodeURIComponent('a:'+low(a.email))+'">💬 Conversar'+(n?'<i>'+n+'</i>':'')+'</a>'+
+   '<button class="rm" data-ac="remover" data-em="'+esc(a.email)+'">Remover</button><button class="bl" data-ac="bloquear" data-em="'+esc(a.email)+'">⛔ Bloquear</button></div><p class="msg"></p></div>';
+ }).join('');
+}
+function eqDe(x){return x.equipa==='verificacao'?'verificacao':'atendimento'}
+function titulos(){
+ var pa=ENT.filter(function(x){return x.estado==='pendente'&&eqDe(x)==='atendimento'}).length,pv=ENT.filter(function(x){return x.estado==='pendente'&&eqDe(x)==='verificacao'}).length;
+ $('tA').innerHTML='🎧 Atendimento ('+L.filter(function(a){return a.equipa==='atendimento'}).length+')'+(pa?'<i>'+pa+'</i>':'');
+ $('tV').innerHTML='🛡️ Busca e verificação ('+L.filter(function(a){return a.equipa==='verificacao'}).length+')'+(pv?'<i>'+pv+'</i>':'');
+}
+async function carregarEnt(){
+ var r=await sb.rpc('admin_entradas_lista');
+ entErro=r.error?sqlErr(r.error):'';
+ ENT=r.error?[]:(r.data||[]);titulos();pintarEnt();
+}
+/* 🔐 À espera de aprovação: só foto e nome; por baixo Aprovar · Recusar · Remover · Bloquear */
+function pintarEnt(){
+ var box=$('entBox');if(!box)return;
+ if(entErro){box.className='box ent vz2';box.innerHTML='<p class="msg">🔐 Entradas: '+esc(entErro)+'</p>';return}
+ var pd=ENT.filter(function(x){return eqDe(x)===EQ&&x.estado==='pendente'});
+ box.className='box ent'+(pd.length?'':' vz2');
+ box.innerHTML='<h2>🔐 À espera de aprovação'+(pd.length?' ('+pd.length+')':'')+'</h2>'+
+  (pd.length?pd.map(function(x){var a=L.filter(function(z){return low(z.email)===low(x.email)})[0];
+   return'<div class="ag"><div class="cab">'+fotoDe(x.email,a)+'<div class="nm"><b>'+esc(nomeDe(x.email,a))+'</b></div></div>'+
+   '<div class="bs"><button class="ap" data-ac="aprovar" data-es="'+esc(x.session_id)+'">✅ Aprovar</button><button class="rc" data-ac="recusar" data-es="'+esc(x.session_id)+'">❌ Recusar</button>'+
+   '<button class="rm" data-ac="remover" data-em="'+esc(x.email)+'">Remover</button><button class="bl" data-ac="bloquear" data-em="'+esc(x.email)+'">⛔ Bloquear</button></div><p class="msg"></p></div>'}).join(''):
+  '<p class="dica">Nenhum agente à espera. 👍</p>');
+}
+/* desliga as entradas (aparelhos) de um email, pendentes e aprovadas: só desta equipa (Remover) ou todas (Bloquear) */
+async function desligarTudo(email,eq){
+ var l=ENT.filter(function(x){return low(x.email)===low(email)&&(!eq||eqDe(x)===eq)&&(x.estado==='pendente'||x.estado==='aprovada')});
+ for(var i=0;i<l.length;i++){var r=await sb.rpc('admin_entrada_decidir',{p_sessao:l[i].session_id,p_aprovar:false});if(r.error)return r.error}
+ return null;
+}
+async function acao(b){
+ var ac=b.getAttribute('data-ac'),it=b.closest('.ag'),m=it.querySelector('.msg'),em=b.getAttribute('data-em')||'',es=b.getAttribute('data-es'),nome=em?nomeDe(em,null):'';
+ if(ac==='recusar'&&!confirm('Recusar esta entrada?'))return;
+ if(ac==='remover'&&!confirm('Remover '+nome+' da equipa '+(EQ==='atendimento'?'de atendimento':'de busca e verificação')+'?\nDeixa de ter acesso imediatamente.'))return;
+ if(ac==='bloquear'&&!confirm('Bloquear '+nome+'?\nSai de todas as equipas, perde o acesso e este email não pode voltar a ser adicionado.'))return;
+ it.querySelectorAll('button').forEach(function(z){z.disabled=true});m.className='msg';m.textContent='';
+ var er=null,r;
+ if(ac==='aprovar'||ac==='recusar'){r=await sb.rpc('admin_entrada_decidir',{p_sessao:es,p_aprovar:ac==='aprovar'});er=r.error}
+ else{
+  var rows=L.filter(function(z){return low(z.email)===low(em)&&(ac==='bloquear'||z.equipa===EQ)});
+  if(ac==='bloquear'){r=await sb.rpc('admin_agente_bloquear',{p_email:low(em)});er=r.error}
+  if(!er)er=await desligarTudo(em,ac==='bloquear'?'':EQ);
+  for(var i=0;!er&&i<rows.length;i++){r=await sb.rpc('admin_agente_remover',{p_id:rows[i].id});er=r.error}
+ }
+ if(er){it.querySelectorAll('button').forEach(function(z){z.disabled=false});m.textContent=sqlErr(er);return}
+ m.className='msg ok';m.textContent=ac==='aprovar'?'✅ Aprovado — o painel do agente abre sozinho.':ac==='bloquear'?'⛔ Bloqueado.':'Feito ✓';
+ setTimeout(function(){carregar();carregarEnt()},900);
+}
+document.addEventListener('click',async function(ev){
+ var b=ev.target.closest('[data-ac]');if(b){acao(b);return}
+ var f=ev.target.closest('[data-f]');if(!f)return;
+ var u=f.getAttribute('data-f');if(/^https?:/i.test(u)){window.open(u,'_blank');return}
+ var r=await sb.storage.from(f.getAttribute('data-bk')||'documentos-validade').createSignedUrl(u,600);if(r.error){alert(r.error.message);return}window.open(r.data.signedUrl,'_blank');
+});
+setInterval(function(){if(!document.hidden&&!$('vApp').classList.contains('hide'))carregarEnt()},15000);
+$('add').onclick=async function(){
+ var m=$('aMsg'),e=$('novo').value.trim().toLowerCase();m.className='msg';m.textContent='';
+ if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e)){m.textContent='Escreva um email válido.';return}
+ this.disabled=true;var r=await sb.rpc('admin_agente_adicionar',{p_email:e,p_equipa:EQ});this.disabled=false;
+ if(r.error){m.textContent=/function|exist/i.test(r.error.message)&&!/equipa|bloque/i.test(r.error.message)?'Falta correr o SQL novo no Supabase.':r.error.message;return}
+ m.className='msg ok';m.textContent='✅ '+e+' adicionado. A pessoa cria conta (ou entra) com este email.';$('novo').value='';carregar();
+};
+iniciar();
+</script>
+</body>
+</html>
