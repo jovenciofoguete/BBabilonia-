@@ -85,7 +85,8 @@ if(/^(admin|administrator)\./i.test(location.hostname))window.ATD_AUTH={};
   ['pointerdown','touchstart','keydown','click'].forEach(function(n){document.addEventListener(n,toque,true)});
   if(!(history.state&&history.state.bbArea))try{history.pushState({bbArea:1},'',location.href)}catch(e){}
   /* (23/11/2026) se uma vista da página estiver aberta (ex.: 👥 Clientes e lojas), o voltar só fecha essa vista */
-  window.addEventListener('popstate',function(){if(window.__bbVistaAberta)return;location.replace(URL_INICIO)});
+  /* (26/11/2026) se houver um separador para desfazer (voltar-equipa.js), o voltar só volta a esse separador */
+  window.addEventListener('popstate',function(e){if(window.__bbVistaAberta)return;if(e&&e.__bbTab)return;if(window.BBVoltarEq&&window.BBVoltarEq.tem())return;location.replace(URL_INICIO)});
  }
  function opcao(liga,cls,href,titulo,sub){
   return '<a class="'+cls+(liga?' on':'')+'" href="'+href+'">'+(liga?'<span class="bola">✓</span>':'')+titulo+'<small>'+sub+'</small>'+(liga?'<span class="esc">● Escolhida</span>':'')+'</a>';
@@ -140,3 +141,5 @@ if(/^(admin|administrator)\./i.test(location.hostname))window.ATD_AUTH={};
 (function(){if(typeof document==="undefined"||document.querySelector("script[src*=\"perfil-rosto.js\"]"))return;var s=document.createElement("script");s.src="perfil-rosto.js?v=1";(document.head||document.documentElement).appendChild(s)})();
 /* (23/11/2026) 👥 Clientes e lojas no atendimento, só para agentes superiores (atd-contas.js) */
 (function(){if(typeof document==="undefined"||document.querySelector("script[src*=\"atd-contas.js\"]"))return;var s=document.createElement("script");s.src="atd-contas.js?v=1";(document.head||document.documentElement).appendChild(s)})();
+/* (26/11/2026) voltar um passo de cada vez nos separadores das páginas dos agentes (voltar-equipa.js) */
+(function(){if(typeof document==="undefined"||document.querySelector("script[src*=\"voltar-equipa.js\"]"))return;var s=document.createElement("script");s.src="voltar-equipa.js?v=1";(document.head||document.documentElement).appendChild(s)})();

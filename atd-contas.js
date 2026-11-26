@@ -45,7 +45,8 @@
     if (x.id === "bb-ctb") abrir(); else if (history.state && history.state.bbContas) history.back(); else fechar();
   });
   /* voltar do telemóvel: fecha a vista (o atd-sessao.js não salta para o início enquanto a vista está aberta) */
-  window.addEventListener("popstate", function () { if (ABERTA) fechar(); });
+  /* (26/11/2026) marca o passo como tratado: o atd-sessao.js não salta para o início, seja qual for a ordem */
+  window.addEventListener("popstate", function (e) { if (ABERTA) { e.__bbTab = true; fechar(); } });
   var n = 0;
   (function arrancar() {
     if (!window.sb || !window.sb.rpc || !$("painel")) { if (++n < 200) setTimeout(arrancar, 150); return; }

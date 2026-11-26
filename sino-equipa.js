@@ -10,6 +10,7 @@
    - (22/11/2026) Avisos sem encomenda: SEM "📋 Outros avisos". Cada aviso fica no seu lugar: número vermelho no cartão/botão
      que abre a página do aviso (ex.: "🔐 Pedido de entrada" → cartão Agentes). Ao tocar, ficam lidos e abre a página.
      Avisos da própria página onde está (ex.: "✅ Entrada aprovada" no atendimento) ficam lidos sozinhos.
+   (26/11/2026) Só avisos com lugar na equipa; nada de avisos de outros lados em nenhum canto.
    Cada domínio só mostra os seus avisos (lados.js). Carregado pelo atd-sessao.js e pelo painel-admin-rececao.js. */
 (function () {
   if (window.__bbSinoEq) return; window.__bbSinoEq = 1;
@@ -25,13 +26,19 @@
   function carregarScript(f, teste) { return new Promise(function (ok) { if (teste()) return ok(); var x = d.querySelector('script[src*="' + f + '"]'); if (!x) { x = d.createElement("script"); x.src = f + "?v=1"; (d.head || d.documentElement).appendChild(x); } x.addEventListener("load", ok); x.addEventListener("error", ok); setTimeout(ok, 5000); }); }
   function lados() { return carregarScript("lados.js", function () { return !!window.BBLado; }); }
   function divisao() { return carregarScript("encomendas-divisao.js", function () { return !!window.BBEnc; }); }
-  /* este aviso é deste domínio? */
+  /* este aviso é deste domínio? (26/11/2026) só os avisos que têm o seu lugar na equipa:
+     páginas dos agentes (e, no dono, também as do dono). Avisos de cliente, fornecedor, chat da loja, disputa,
+     sem página ou de página desconhecida NÃO aparecem aqui em nenhum canto. */
   function meu(a) {
-    var L = window.BBLado; if (!L) return true;
-    var lado = L.ladoDoHost(), p = L.pagina(a.link || ""), x = L.ladoDoAviso(a, {}, null);
-    if (x === null || x === lado) return true;
-    /* o dono também chefia os agentes: vê os avisos dos agentes, nunca os de cliente/fornecedor */
-    return lado === "dono" && (x === "agente" || (L.listas && L.listas.SERVICO.indexOf(p) > -1));
+    var B = window.BBLado, link = String((a && a.link) || "");
+    if (!link) return false;
+    var p = B ? B.pagina(link) : link.split(/[?#]/)[0].split("/").pop().replace(/\.html$/i, "").toLowerCase();
+    var Ls = (B && B.listas) || {};
+    function em(l) { return !!l && l.indexOf(p) > -1; }
+    if (em(Ls.CLIENTE) || em(Ls.VENDEDOR) || em(Ls.LOJA_CLIENTE)) return false;
+    var equipa = em(Ls.AGENTE) || em(Ls.SERVICO) || /^atd-/.test(p) || p === "equipa-chat" || p === "agente-perfil";
+    if (equipa) return true;
+    return DONO && (em(Ls.DONO) || /^admin-/.test(p) || /^painel-(admin|equipa)/.test(p));
   }
   /* de que encomenda é este aviso? "#5E2C7CC8" no texto, ou o id do pedido no link */
   function pedidoDe(a) {
