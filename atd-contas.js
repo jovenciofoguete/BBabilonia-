@@ -15,6 +15,11 @@
     if (!PODE || !painelVisivel() || !t || $("bb-ctb")) return;
     var a = d.createElement("a"); a.id = "bb-ctb"; a.className = "pedbt"; a.href = "#";
     a.style.background = "linear-gradient(90deg,#1e3a8a,#7c3aed)";
+    /* (26/11/2026) o botão fica fora do .topo: tem o seu próprio estilo (antes aparecia como letras azuis sublinhadas) */
+    if (!$("bb-ctb-css")) { var st = d.createElement("style"); st.id = "bb-ctb-css";
+      st.textContent = "#bb-ctb{display:flex;align-items:center;gap:10px;width:100%;box-sizing:border-box;margin:0 0 12px;padding:16px;border-radius:16px;color:#fff;text-decoration:none;font:800 16px system-ui,sans-serif;box-shadow:0 4px 14px #0003}" +
+        "#bb-ctb small{display:block;font-weight:600;font-size:13px;opacity:.9;margin-top:2px}";
+      d.head.appendChild(st); }
     a.innerHTML = "<span>👥 Clientes e lojas<small>Procurar pelo nome ou código · bloquear, bloquear para sempre e remover</small></span>";
     p.insertBefore(a, t);
   }

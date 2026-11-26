@@ -3,6 +3,8 @@
    - a sessão do atendimento fica só neste separador: fechou, saiu (volta a pedir email e palavra-passe);
    - fica separada da sessão de cliente da loja;
    - 15 minutos sem mexer: sai sozinho. */
+/* (26/11/2026) passo onde a página abriu (o painel do atendimento reabre a lista de onde se foi para uma encomenda) */
+try{if(typeof window!=="undefined"&&window.__bbEstadoInicial===undefined)window.__bbEstadoInicial=history.state}catch(e){}
 window.ATD_AUTH={auth:{storage:window.sessionStorage,storageKey:'bb-atd',persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}};
 /* (22/11/2026) no domínio do dono (administrator) o atendimento usa a sessão do dono: nunca pede para entrar como agente */
 if(/^(admin|administrator)\./i.test(location.hostname))window.ATD_AUTH={};
@@ -83,10 +85,10 @@ if(/^(admin|administrator)\./i.test(location.hostname))window.ATD_AUTH={};
   var posto=false,toque=function(){if(posto)return;posto=true;try{history.pushState({bbArea:2},'',location.href)}catch(e){}
    ['pointerdown','touchstart','keydown','click'].forEach(function(n){document.removeEventListener(n,toque,true)})};
   ['pointerdown','touchstart','keydown','click'].forEach(function(n){document.addEventListener(n,toque,true)});
-  if(!(history.state&&history.state.bbArea))try{history.pushState({bbArea:1},'',location.href)}catch(e){}
+  if(!(history.state&&(history.state.bbArea||history.state.bbpV)))try{history.pushState({bbArea:1},'',location.href)}catch(e){}
   /* (23/11/2026) se uma vista da página estiver aberta (ex.: 👥 Clientes e lojas), o voltar só fecha essa vista */
   /* (26/11/2026) se houver um separador para desfazer (voltar-equipa.js), o voltar só volta a esse separador */
-  window.addEventListener('popstate',function(e){if(window.__bbVistaAberta)return;if(e&&e.__bbTab)return;if(window.BBVoltarEq&&window.BBVoltarEq.tem())return;location.replace(URL_INICIO)});
+  window.addEventListener('popstate',function(e){if(window.__bbVistaAberta)return;if(e&&e.__bbTab)return;if(window.BBVoltarEq&&window.BBVoltarEq.tem())return;if(window.BBPainelAtd&&window.BBPainelAtd.aberta())return;location.replace(URL_INICIO)});
  }
  function opcao(liga,cls,href,titulo,sub){
   return '<a class="'+cls+(liga?' on':'')+'" href="'+href+'">'+(liga?'<span class="bola">✓</span>':'')+titulo+'<small>'+sub+'</small>'+(liga?'<span class="esc">● Escolhida</span>':'')+'</a>';
@@ -143,3 +145,5 @@ if(/^(admin|administrator)\./i.test(location.hostname))window.ATD_AUTH={};
 (function(){if(typeof document==="undefined"||document.querySelector("script[src*=\"atd-contas.js\"]"))return;var s=document.createElement("script");s.src="atd-contas.js?v=1";(document.head||document.documentElement).appendChild(s)})();
 /* (26/11/2026) voltar um passo de cada vez nos separadores das páginas dos agentes (voltar-equipa.js) */
 (function(){if(typeof document==="undefined"||document.querySelector("script[src*=\"voltar-equipa.js\"]"))return;var s=document.createElement("script");s.src="voltar-equipa.js?v=1";(document.head||document.documentElement).appendChild(s)})();
+/* (26/11/2026) o atendimento em painéis brancos com contorno laranja (atd-painel.js) */
+(function(){if(typeof document==="undefined"||document.querySelector("script[src*=\"atd-painel.js\"]"))return;var s=document.createElement("script");s.src="atd-painel.js?v=1";(document.head||document.documentElement).appendChild(s)})();

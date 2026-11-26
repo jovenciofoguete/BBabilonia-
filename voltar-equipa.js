@@ -3,7 +3,8 @@
    cada separador aberto é um passo. Voltar regressa ao separador anterior (e não sai logo de tudo).
    Só no primeiro ecrã da página o voltar faz o que fazia antes (volta à página anterior / ao início).
    Páginas: atendimento.html (Os meus casos, Fila, …), atd-verificacoes.html e confirmar-produto.html.
-   A vista 👥 Clientes e lojas tem os seus passos (atd-contas.js). Carregado pelo atd-sessao.js. */
+   A vista 👥 Clientes e lojas tem os seus passos (atd-contas.js). Carregado pelo atd-sessao.js.
+   (26/11/2026) A seta ← do cabeçalho também volta um passo de cada vez. */
 (function () {
   if (window.__bbVoltarEq) return; window.__bbVoltarEq = 1;
   if (!/^(service|atendimento)\./i.test(location.hostname)) return;
@@ -44,5 +45,13 @@
     try { b.click(); } finally { aRepor = false; }
     window.scrollTo(0, 0);
   });
-  window.BBVoltarEq = { tem: function () { return pilha.length > 0; } };
+  window.BBVoltarEq = { tem: function () { return pilha.length > 0; }, limpar: function () { var n = pilha.length; pilha = []; return n; } };
+  /* (26/11/2026) seta ← do cabeçalho: com um separador ou uma vista aberta, volta só um passo (como o botão do telemóvel) */
+  d.addEventListener("click", function (e) {
+    if (!(e.target.closest && e.target.closest("#bb-ini"))) return;
+    var vista = window.__bbVistaAberta || (window.BBPainelAtd && window.BBPainelAtd.aberta());
+    if (!pilha.length && !vista) return;
+    e.preventDefault(); e.stopImmediatePropagation();
+    history.back();
+  }, true);
 })();
