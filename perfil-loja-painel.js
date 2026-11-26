@@ -4,7 +4,8 @@
    - Sem perfil: todos os painéis ficam trancados 🔒 e aparece "A sua loja ainda não está ativa" com ✍️ Completar perfil.
    - Loja recusada: aparece o motivo e o botão para corrigir.
    - Painel 📁 Os meus documentos e avisos da validade do documento de identificação.
-   Os links antigos "loja-criar.html" passam a abrir o perfil novo (perfil-loja.html). */
+   Os links antigos "loja-criar.html" passam a abrir o perfil novo (perfil-loja.html).
+   Link geral (raiz) sem sessão → página de apresentação (gongyingshang.html); ?criar=1 abre o criar conta. */
 (function () {
   if (window.__bbPerfilPainel) return; window.__bbPerfilPainel = 1;
   var d = document, SB = "https://dsfoqoeawvjafypycldz.supabase.co", K = "sb_publishable_BN4NiVcDab9CqdTY_odgDA_uUOhjja0", CH = "sb-dsfoqoeawvjafypycldz-auth-token";
@@ -126,6 +127,12 @@
   (function arrancar() {
     if (!d.body || !$("v-entrar")) { if (++n < 200) setTimeout(arrancar, 100); return; }
     prepararEntrar();
+    /* (26/11/2026) link geral suppliers.bbabilonia.com: quem ainda não entrou vê a página de apresentação;
+       "Abrir loja grátis" (…?criar=1) abre logo o criar conta */
+    if (!sessao()) {
+      if (location.pathname === "/" && !/[#&?](access_token|error)=/.test(location.href)) { location.replace("/gongyingshang.html"); return; }
+      if (/[?&]criar=1/.test(location.search)) modo(true);
+    } else if (/[?&]criar=1/.test(location.search)) { try { history.replaceState(null, "", location.pathname); } catch (e) {} }
     carregar();
     setInterval(carregar, 4000);
     new MutationObserver(function (ms) {
