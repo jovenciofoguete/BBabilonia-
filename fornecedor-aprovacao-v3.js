@@ -1,4 +1,5 @@
 /* fornecedor-aprovacao-v3.js - BBabilonia
+   (26/11/2026) Sem aprovação: basta completar o perfil (perfil-loja.html). Recusada mostra o motivo.
    Só lojas APROVADAS podem usar a área do fornecedor.
    Ficheiro novo: não altera nada do que já funciona. */
 (function () {
@@ -50,7 +51,7 @@
       var b = document.createElement('a');
       b.href = botaoLink;
       b.textContent = botaoTexto;
-      b.style.cssText = 'display:block;background:#e53935;color:#fff;text-decoration:none;padding:13px;border-radius:10px;font-weight:bold;margin-bottom:10px';
+      b.style.cssText = 'display:block;background:#f97316;color:#fff;text-decoration:none;padding:13px;border-radius:10px;font-weight:bold;margin-bottom:10px';
       c.appendChild(b);
     }
     var r = document.createElement('button');
@@ -101,18 +102,18 @@
         }
         if (!minha && rows.length === 1) minha = rows[0];
         if (!minha) {
-          mostrarAviso('Ainda não tem loja', 'Para vender, crie a sua loja e envie os documentos.', 'Criar a minha loja', '/loja-criar.html');
+          mostrarAviso('A sua loja ainda não está ativa', 'Complete o perfil da loja para desbloquear todos os painéis e começar a vender.', '✍️ Completar perfil', '/perfil-loja.html');
           return;
         }
         if (minha.aprovada === true || minha.aprovado === true) { tirarAviso(); return; }
         var est = norm(minha.estado || minha.status);
         if (est.indexOf('aprov') === 0) { tirarAviso(); return; }
         if (est.indexOf('rejeit') === 0 || est.indexOf('recus') === 0) {
-          mostrarAviso('Loja rejeitada', 'A sua loja não foi aprovada. Corrija os documentos e envie de novo.', 'Ver a minha loja', '/loja-criar.html');
+          mostrarAviso('A sua loja foi recusada', 'Motivo: ' + (minha.verificacao_motivo || minha.motivo || '—') + '. Corrija e envie de novo para a equipa BBabilônia verificar.', '✍️ Corrigir perfil', '/perfil-loja.html');
         } else if (est.indexOf('suspen') === 0) {
           mostrarAviso('Loja suspensa', 'A sua loja está suspensa. Fale com o atendimento da BBabilônia.');
         } else {
-          mostrarAviso('Loja em análise', 'A sua loja ainda não foi aprovada. Só pode publicar produtos depois da aprovação.');
+          mostrarAviso('Complete o perfil da loja', 'Complete o perfil da loja para desbloquear todos os painéis.', '✍️ Completar perfil', '/perfil-loja.html');
         }
       })
       .catch(function (e) {

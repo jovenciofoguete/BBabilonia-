@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<meta name="color-scheme" content="light">
+<title>Os meus documentos · BBabilônia</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0}
+body{background:#fff;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:#0f172a;line-height:1.4}
+.bar{position:sticky;top:0;z-index:5;background:#fff;display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:2px solid #f97316}
+.bk{width:38px;height:38px;flex:none;border-radius:50%;border:2px solid #f97316;background:#fff;color:#f97316;font:900 20px/34px system-ui;text-align:center;cursor:pointer;padding:0}
+.bar h1{font-size:17px;flex:1}
+main{max-width:640px;margin:0 auto;padding:14px 14px 60px}
+.cx{border:2.5px solid #f97316;border-radius:18px;padding:14px;margin-bottom:12px;background:#fff}
+.cx h3{font-size:16px;margin-bottom:8px}
+.av{border:2.5px solid #dc2626;border-radius:18px;padding:14px;margin-bottom:12px;background:#fef2f2;color:#7f1d1d;font-size:14px}
+.av b{display:block;color:#991b1b;font-size:15px;margin-bottom:3px}
+.am{border-color:#f59e0b;background:#fffbeb;color:#78350f}.am b{color:#92400e}
+.ok{border-color:#16a34a;background:#f0fdf4;color:#14532d}.ok b{color:#166534}
+.gr{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.dc{border:2px solid #fed7aa;border-radius:14px;padding:8px;text-align:center;font-size:12.5px;font-weight:700;color:#0f172a;text-decoration:none;display:block}
+.dc img,.dc video{display:block;width:100%;height:110px;object-fit:cover;border-radius:10px;background:#f1f5f9;margin-bottom:6px}
+.dc .ic{height:110px;display:flex;align-items:center;justify-content:center;font-size:34px;background:#fff7ed;border-radius:10px;margin-bottom:6px}
+.dc small{display:block;color:#64748b;font-weight:600}
+.l{font-size:14px;margin:4px 0}.l b{display:inline-block;min-width:130px;color:#475569;font-weight:700}
+label{display:block;font-size:13.5px;font-weight:700;margin:12px 0 5px}
+input{width:100%;border:2px solid #e2e8f0;border-radius:12px;padding:12px;font:inherit;font-size:16px}
+.up{display:flex;gap:8px}.up label{flex:1;margin:0;border:2px dashed #f97316;border-radius:12px;padding:12px 6px;text-align:center;font-size:12.5px;color:#9a3412;cursor:pointer}
+.up label.ok2{border-style:solid;background:#fff7ed}.up label span{display:block;font-size:22px}.up input{display:none}
+.bt{display:block;width:100%;border:0;background:#f97316;color:#fff;border-radius:14px;padding:14px;font:inherit;font-weight:800;font-size:15.5px;margin-top:12px;cursor:pointer;text-align:center;text-decoration:none}
+.bt.l{background:#fff;color:#c2410c;border:2px solid #f97316}
+.bt:disabled{opacity:.6}
+.msg{font-size:14px;margin-top:10px;white-space:pre-line;color:#dc2626}.msg.okm{color:#047857}
+.vz{text-align:center;color:#64748b;padding:30px 10px}.hide{display:none!important}
+</style>
+</head>
+<body>
+<script>/* (26/11/2026) voltar do telemóvel: aberta sem página anterior (ex.: por uma notificação), volta ao painel e nunca sai do site */
+(function(){var H='painel-vendedor-v2.html';try{var r=document.referrer?new URL(document.referrer):null;if(r&&r.host===location.host&&history.length>1)return}catch(e){}
+var u=location.href;try{history.replaceState({bbBase:1},'',H);history.pushState({bbPag:1},'',u)}catch(e){return}
+addEventListener('popstate',function(e){if(e.state&&e.state.bbBase)location.replace(H)});})();</script>
+<div class="bar"><button class="bk" id="volta" type="button" aria-label="Voltar">←</button><h1>📁 Os meus documentos</h1></div>
+<main>
+ <div id="carrega" class="vz">A carregar…</div>
+ <div id="app" class="hide">
+  <div id="estado"></div>
+  <div class="cx"><h3>🪪 Documento de identificação</h3>
+   <div id="ident"></div>
+   <button class="bt l" id="abrirBi" type="button">Atualizar o documento e a validade</button>
+   <div id="formBi" class="hide">
+    <label>Número do documento</label><input id="biNum" maxlength="20">
+    <label>Nova validade *</label><input id="biVal" type="date">
+    <label>Fotos do documento novo *</label>
+    <div class="up"><label data-up="bi_frente"><span>🪪</span><em>Frente</em><input type="file" accept="image/*"></label><label data-up="bi_verso"><span>🪪</span><em>Verso</em><input type="file" accept="image/*"></label></div>
+    <button class="bt" id="guardarBi" type="button">Guardar documento</button>
+    <p class="msg" id="msgBi"></p>
+   </div>
+  </div>
+  <div class="cx"><h3>📎 Documentos enviados</h3><div class="gr" id="docs"></div>
+   <a class="bt l" href="perfil-loja.html">✍️ Corrigir perfil ou trocar documentos</a>
+  </div>
+ </div>
+</main>
+<script>
+var sb = supabase.createClient('https://dsfoqoeawvjafypycldz.supabase.co', 'sb_publishable_BN4NiVcDab9CqdTY_odgDA_uUOhjja0');
+function $(i) { return document.getElementById(i); }
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+var NOMES = { foto_pessoal: 'Foto do dono', foto_loja: 'Foto da loja', video_loja: 'Vídeo da loja', bi_frente: 'Documento (frente)', bi_verso: 'Documento (verso)', licenca: 'Licença' };
+var U = null, NOVO = {};
+function dataPt(d) { try { return new Date(d + (String(d).length === 10 ? 'T12:00:00' : '')).toLocaleDateString('pt-PT'); } catch (e) { return d; } }
+async function iniciar() {
+  var s = (await sb.auth.getSession()).data.session;
+  $('carrega').classList.add('hide');
+  if (!s) { $('carrega').classList.remove('hide'); $('carrega').innerHTML = 'Entre primeiro na sua conta de vendedor.<br><br><a href="painel-vendedor-v2.html" style="color:#c2410c;font-weight:800">Ir para o painel</a>'; return; }
+  U = s.user; $('app').classList.remove('hide');
+  try { sb.rpc('lojas_validade_avisar'); } catch (e) {}
+  var r = await sb.rpc('loja_meu_perfil');
+  if (r.error) { $('estado').innerHTML = '<div class="av"><b>Erro</b>' + esc(/does not exist|could not find/i.test(r.error.message) ? 'Falta correr o SQL novo no Supabase (perfil da loja).' : r.error.message) + '</div>'; return; }
+  var d = r.data || {}, l = d.loja, it = d.identidade;
+  if (!l) { $('estado').innerHTML = '<div class="av"><b>⚠️ Ainda não completou o perfil da loja</b>Complete o perfil para enviar os documentos.<a class="bt" href="perfil-loja.html">✍️ Completar perfil</a></div>'; }
+  else if (l.estado === 'rejeitada') $('estado').innerHTML = '<div class="av"><b>❌ A sua loja foi recusada</b>Motivo: ' + esc(l.verificacao_motivo || l.motivo || '—') + '</div>';
+  else if (l.verificacao === 'verificada') $('estado').innerHTML = '<div class="av ok"><b>✅ Documentos verificados pela BBabilônia</b></div>';
+  else $('estado').innerHTML = '<div class="av am"><b>⏳ Documentos à espera de verificação</b>A loja já está ativa. A equipa BBabilônia vai conferir os documentos.</div>';
+  if (it) {
+    var dias = it.dias, aviso = dias < 0 ? '<div class="av" style="margin:8px 0 0"><b>⛔ O documento expirou</b>Atualize agora para a loja não ser bloqueada.</div>'
+      : dias <= 30 ? '<div class="av am" style="margin:8px 0 0"><b>🪪 O documento expira em ' + dias + ' dia(s)</b>Atualize antes de expirar.</div>' : '';
+    $('ident').innerHTML = '<div class="l"><b>Nome</b>' + esc(it.nome) + '</div><div class="l"><b>Número</b>' + esc(it.bi_numero) + '</div><div class="l"><b>Validade</b>' + esc(dataPt(it.bi_validade)) + '</div>' + aviso;
+    $('biNum').value = it.bi_numero || '';
+  } else $('ident').innerHTML = '<div class="l">Ainda sem documento de identificação.</div>';
+  $('abrirBi').classList.toggle('hide', !l);
+  var docs = d.docs || [], vistos = {}, h = '';
+  docs.forEach(function (x) { if (vistos[x.tipo]) return; vistos[x.tipo] = 1; h += '<a class="dc" data-f="' + esc(x.ficheiro) + '" data-t="' + esc(x.tipo) + '" target="_blank"><div class="ic">' + (x.tipo === 'video_loja' ? '🎥' : x.tipo === 'licenca' ? '📄' : '🖼️') + '</div>' + esc(NOMES[x.tipo] || x.tipo) + '<small>' + esc(dataPt(String(x.criado_em).slice(0, 10))) + '</small></a>'; });
+  $('docs').innerHTML = h || '<div class="l">Ainda sem documentos.</div>';
+  document.querySelectorAll('.dc[data-f]').forEach(async function (a) {
+    try {
+      var u = await sb.storage.from('documentos-loja').createSignedUrl(a.getAttribute('data-f'), 900); if (!u.data) return;
+      a.href = u.data.signedUrl; var t = a.getAttribute('data-t'), ic = a.querySelector('.ic');
+      if (t === 'video_loja') { var v = document.createElement('video'); v.src = u.data.signedUrl; v.muted = true; v.playsInline = true; v.preload = 'metadata'; ic.replaceWith(v); }
+      else if (!/\.pdf$/i.test(a.getAttribute('data-f'))) { var im = document.createElement('img'); im.src = u.data.signedUrl; im.alt = ''; ic.replaceWith(im); }
+    } catch (e) {}
+  });
+}
+$('abrirBi').onclick = function () {
+  var abrir = $('formBi').classList.contains('hide');
+  if (abrir) { $('formBi').classList.remove('hide'); try { history.pushState({ bbBi: 1 }, '', location.href); } catch (e) {} $('formBi').scrollIntoView({ block: 'start' }); }
+  else if (history.state && history.state.bbBi) history.back(); else $('formBi').classList.add('hide');
+};
+/* voltar (seta ou telemóvel) com o formulário aberto: fecha só o formulário */
+window.addEventListener('popstate', function () { if (!$('formBi').classList.contains('hide')) $('formBi').classList.add('hide'); });
+document.querySelectorAll('[data-up]').forEach(function (l) {
+  var inp = l.querySelector('input');
+  inp.onchange = function () { var f = inp.files && inp.files[0]; if (!f) return; if (f.size > 15 * 1024 * 1024) { $('msgBi').textContent = 'Foto grande demais (máximo 15 MB).'; return; } NOVO[l.getAttribute('data-up')] = f; l.classList.add('ok2'); l.querySelector('em').textContent = '✔ ' + l.querySelector('em').textContent.replace(/^✔ /, ''); };
+});
+async function sha(f) { try { var h = await crypto.subtle.digest('SHA-256', await f.arrayBuffer()); return Array.prototype.map.call(new Uint8Array(h), function (x) { return ('0' + x.toString(16)).slice(-2); }).join(''); } catch (e) { return ''; } }
+$('guardarBi').onclick = async function () {
+  var m = $('msgBi'), b = this; m.className = 'msg'; m.textContent = '';
+  if (!$('biVal').value) { m.textContent = 'Escreva a nova validade.'; return; }
+  if ($('biVal').value <= new Date().toISOString().slice(0, 10)) { m.textContent = 'Essa data já passou. Use o documento novo, válido.'; return; }
+  if (!NOVO.bi_frente || !NOVO.bi_verso) { m.textContent = 'Envie a foto da frente e do verso do documento novo.'; return; }
+  b.disabled = true; b.textContent = 'A enviar…';
+  try {
+    var p = { bi_validade: $('biVal').value, bi_numero: $('biNum').value.trim() };
+    for (var k of ['bi_frente', 'bi_verso']) {
+      var f = NOVO[k], cam = U.id + '/perfil-' + k + '-' + Date.now() + '.' + ((/\.([a-z0-9]{2,5})$/i.exec(f.name || '') || [0, 'jpg'])[1].toLowerCase());
+      var up = await sb.storage.from('documentos-loja').upload(cam, f, { contentType: f.type || 'image/jpeg' });
+      if (up.error) throw up.error;
+      p[k] = { ficheiro: cam, sha: await sha(f) };
+    }
+    var r = await sb.rpc('loja_atualizar_bi', { p: p });
+    if (r.error) throw r.error;
+    m.className = 'msg okm'; m.textContent = '✅ Documento atualizado. A equipa BBabilônia vai conferir.';
+    NOVO = {}; setTimeout(iniciar, 1200);
+  } catch (e) { m.textContent = String(e && e.message || e); }
+  b.disabled = false; b.textContent = 'Guardar documento';
+};
+$('volta').onclick = function () { if (!$('formBi').classList.contains('hide') && history.state && history.state.bbBi) { history.back(); return; } try { var r = document.referrer ? new URL(document.referrer) : null; if (r && r.host === location.host && history.length > 1) { history.back(); return; } } catch (e) {} location.href = 'painel-vendedor-v2.html'; };
+iniciar();
+</script>
+</body>
+</html>

@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<meta name="color-scheme" content="light">
+<title>Completar perfil da loja · BBabilônia</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0}
+body{background:#fff;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:#0f172a;line-height:1.4}
+.bar{position:sticky;top:0;z-index:5;background:#fff;display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:2px solid #f97316}
+.bk{width:38px;height:38px;flex:none;border-radius:50%;border:2px solid #f97316;background:#fff;color:#f97316;font:900 20px/34px system-ui;text-align:center;cursor:pointer;padding:0}
+.bar h1{font-size:17px;flex:1}
+main{max-width:640px;margin:0 auto;padding:14px 14px 60px}
+.cx{border:2.5px solid #f97316;border-radius:18px;padding:14px;margin-bottom:12px;background:#fff}
+.cx h3{font-size:16px;margin-bottom:4px;display:flex;align-items:center;flex-wrap:wrap;gap:6px}
+label{display:block;font-size:13.5px;font-weight:700;margin:12px 0 5px}
+label i{color:#dc2626;font-style:normal}
+.op{font-size:11.5px;color:#64748b;font-weight:600}
+input,select,textarea{width:100%;border:2px solid #e2e8f0;border-radius:12px;padding:12px;font:inherit;font-size:16px;background:#fff;color:#0f172a}
+input:focus,select:focus,textarea:focus{outline:none;border-color:#f97316}
+textarea{min-height:80px;resize:vertical}
+.lock{display:inline-block;font-size:11.5px;font-weight:700;color:#475569;background:#f1f5f9;border-radius:8px;padding:2px 7px}
+.nota{font-size:12.5px;color:#64748b;margin-top:6px}
+.up{display:flex;gap:8px}
+.up label{flex:1;margin:0;border:2px dashed #f97316;border-radius:12px;padding:12px 6px;text-align:center;font-size:12.5px;color:#9a3412;font-weight:700;cursor:pointer;background:#fff;position:relative;min-height:78px}
+.up label span{display:block;font-size:22px;margin-bottom:2px}.up label em{font-style:normal}
+.up label.ok{border-style:solid;background:#fff7ed}
+.up label img,.up label video{display:block;width:100%;max-height:110px;object-fit:cover;border-radius:8px;margin-top:6px}
+.up input{display:none}
+.sel{display:flex;gap:8px}
+.sel button{flex:1;text-align:center;border:2px solid #f97316;border-radius:12px;padding:12px 4px;font:inherit;font-weight:800;font-size:14.5px;background:#fff;color:#0f172a;cursor:pointer}
+.sel button.on{background:#fff7ed;color:#c2410c}
+.tel{display:flex;gap:8px}.tel span{flex:none;border:2px solid #e2e8f0;border-radius:12px;padding:12px 10px;font-weight:700;color:#475569;background:#f8fafc}
+.bt{display:block;width:100%;border:0;background:#f97316;color:#fff;border-radius:14px;padding:15px;font:inherit;font-weight:800;font-size:16px;margin-top:14px;cursor:pointer}
+.bt:disabled{opacity:.6}
+.msg{font-size:14px;margin-top:10px;white-space:pre-line;color:#dc2626}.msg.ok{color:#047857}
+.av{border:2.5px solid #dc2626;border-radius:18px;padding:14px;margin-bottom:12px;background:#fef2f2;color:#7f1d1d;font-size:14px}
+.av b{display:block;color:#991b1b;font-size:15px;margin-bottom:3px}
+.vz{text-align:center;color:#64748b;padding:40px 10px}
+.hide{display:none!important}
+.prog{height:8px;background:#ffedd5;border-radius:8px;overflow:hidden;margin-top:10px}.prog div{height:100%;width:0;background:#f97316;transition:width .2s}
+</style>
+</head>
+<body>
+<script>/* (26/11/2026) voltar do telemóvel: aberta sem página anterior (ex.: por uma notificação), volta ao painel e nunca sai do site */
+(function(){var H='painel-vendedor-v2.html';try{var r=document.referrer?new URL(document.referrer):null;if(r&&r.host===location.host&&history.length>1)return}catch(e){}
+var u=location.href;try{history.replaceState({bbBase:1},'',H);history.pushState({bbPag:1},'',u)}catch(e){return}
+addEventListener('popstate',function(e){if(e.state&&e.state.bbBase)location.replace(H)});})();</script>
+<div class="bar"><button class="bk" id="volta" type="button" aria-label="Voltar">←</button><h1>✍️ Completar perfil da loja</h1></div>
+<main>
+ <div id="carrega" class="vz">A carregar…</div>
+ <div id="semConta" class="vz hide">Entre primeiro na sua conta de vendedor.<br><br><a href="painel-vendedor-v2.html" style="color:#c2410c;font-weight:800">Ir para o painel</a></div>
+ <form id="f" class="hide" autocomplete="off" onsubmit="return false">
+  <div id="recusa" class="av hide"></div>
+
+  <div class="cx"><h3>A loja</h3>
+   <label>Nome da loja <i>*</i></label><input id="nome" maxlength="80" placeholder="Ex.: Boutique da Ana">
+   <label>Foto de perfil <i>*</i></label>
+   <div class="up"><label data-up="perfil"><span>🖼️</span><em>Escolher foto</em><input type="file" accept="image/*"></label></div>
+   <label>Descrição da loja <i>*</i></label><textarea id="desc" maxlength="1500" placeholder="O que vende, horário…"></textarea>
+  </div>
+
+  <div class="cx"><h3>Morada e contacto <span class="lock">🔒 Só a equipa BBabilônia vê</span></h3>
+   <div id="paisBox" class="hide"><label>País <i>*</i></label><select id="pais"></select></div>
+   <label>Província <i>*</i></label><select id="provS"></select><input id="provT" class="hide" maxlength="60" placeholder="Província ou estado">
+   <label>Bairro <i>*</i></label><input id="bairro" maxlength="40" placeholder="Ex.: Chissui">
+   <label>Rua <i>*</i></label><input id="rua" maxlength="150" placeholder="Ex.: Rua da Liberdade, nº 12">
+   <label>Contacto (celular) <i>*</i></label><div class="tel"><span id="pref">+258</span><input id="tel" inputmode="tel" placeholder="84 000 0000"></div>
+   <div class="nota">O cliente não vê a província, o bairro, a rua nem o contacto. Só o dono da plataforma e os agentes de atendimento.</div>
+  </div>
+
+  <div class="cx"><h3>Fotos e vídeo da loja <span class="lock">🔒</span></h3>
+   <label>Foto do dono <i>*</i></label><div class="up"><label data-up="foto_pessoal"><span>🤳</span><em>Tirar / escolher</em><input type="file" accept="image/*"></label></div>
+   <label>Foto da loja <i>*</i></label><div class="up"><label data-up="foto_loja"><span>📷</span><em>Tirar / escolher</em><input type="file" accept="image/*"></label></div>
+   <label>Vídeo da loja <i>*</i></label><div class="up"><label data-up="video_loja"><span>🎥</span><em>Filmar / escolher</em><input type="file" accept="video/*"></label></div>
+   <div class="nota">Vídeo curto (até 50 MB) a mostrar a loja por dentro e por fora.</div>
+  </div>
+
+  <div class="cx"><h3>Tipo de loja <i style="color:#dc2626;font-style:normal">*</i></h3>
+   <div class="sel"><button type="button" data-tipo="individual">👤 Individual</button><button type="button" data-tipo="empresarial">🏢 Empresarial</button></div>
+   <div id="tipoCampos" class="hide">
+    <label><b class="tE hide">Documento de identificação do proprietário</b><b class="tI">Bilhete de identidade do dono</b> <i>*</i></label>
+    <div class="up"><label data-up="bi_frente"><span>🪪</span><em>Frente</em><input type="file" accept="image/*"></label><label data-up="bi_verso"><span>🪪</span><em>Verso</em><input type="file" accept="image/*"></label></div>
+    <label>Nome completo <span class="tI">do dono</span><span class="tE hide">do proprietário</span> (como no documento) <i>*</i></label><input id="nomeDono" maxlength="100">
+    <label>Número do documento <i>*</i></label><input id="biNum" maxlength="20" placeholder="Ex.: 110100123456A">
+    <label>Validade do documento <i>*</i></label><input id="biVal" type="date">
+    <label><span class="tE hide">Licença da empresa <i>*</i></span><span class="tI">Licença <span class="op">(opcional)</span></span></label>
+    <div class="up"><label data-up="licenca"><span>📄</span><em>Carregar licença</em><input type="file" accept="image/*,application/pdf"></label></div>
+    <label><span class="tE hide">NUIT do proprietário <i>*</i></span><span class="tI">NUIT do dono <span class="op">(opcional)</span></span></label><input id="nuitDono" inputmode="numeric" maxlength="9" placeholder="9 algarismos">
+    <label>NUIT da empresa <span class="tE hide"><i>*</i></span><span class="tI op">(opcional)</span></label><input id="nuitEmp" inputmode="numeric" maxlength="9" placeholder="9 algarismos">
+    <div class="tE hide"><label>Celular do proprietário <i>*</i></label><div class="tel"><span class="pref2">+258</span><input id="celProp" inputmode="tel" placeholder="84 000 0000"></div></div>
+   </div>
+  </div>
+
+  <button class="bt" id="enviar" type="button">Enviar perfil</button>
+  <div class="prog hide" id="prog"><div></div></div>
+  <p class="msg" id="msg"></p>
+  <div class="nota" style="text-align:center">Depois de enviar, todos os painéis ficam a funcionar.</div>
+ </form>
+</main>
+<script>
+var sb = supabase.createClient('https://dsfoqoeawvjafypycldz.supabase.co', 'sb_publishable_BN4NiVcDab9CqdTY_odgDA_uUOhjja0');
+function $(i) { return document.getElementById(i); }
+var PROV = {
+  MZ: ['Cabo Delgado','Gaza','Inhambane','Manica','Maputo (Cidade)','Maputo (Província)','Nampula','Niassa','Sofala','Tete','Zambézia'],
+  TZ: ['Arusha','Dar es Salaam','Dodoma','Geita','Iringa','Kagera','Katavi','Kigoma','Kilimanjaro','Lindi','Manyara','Mara','Mbeya','Morogoro','Mtwara','Mwanza','Njombe','Pemba Norte','Pemba Sul','Pwani','Rukwa','Ruvuma','Shinyanga','Simiyu','Singida','Songwe','Tabora','Tanga','Zanzibar Norte','Zanzibar Sul','Zanzibar Urbano Oeste'],
+  ZA: ['Eastern Cape','Free State','Gauteng','KwaZulu-Natal','Limpopo','Mpumalanga','North West','Northern Cape','Western Cape']
+};
+var PAISES = [['MZ','🇲🇿 Moçambique','+258'],['TZ','🇹🇿 Tanzânia','+255'],['ZA','🇿🇦 África do Sul','+27'],['AO','🇦🇴 Angola','+244'],['MW','🇲🇼 Malawi','+265'],['ZW','🇿🇼 Zimbabué','+263'],['ZM','🇿🇲 Zâmbia','+260'],['KE','🇰🇪 Quénia','+254'],['CN','🇨🇳 China','+86'],['BR','🇧🇷 Brasil','+55'],['PT','🇵🇹 Portugal','+351'],['AE','🇦🇪 Emirados Árabes','+971'],['IN','🇮🇳 Índia','+91'],['TR','🇹🇷 Turquia','+90'],['US','🇺🇸 Estados Unidos','+1']];
+var U = null, PAIS = '', TIPO = '', FOTO = '', TEM = {}, NOVO = {};
+function prefixo(p) { var x = PAISES.filter(function (a) { return a[0] === p; })[0]; return x ? x[2] : '+'; }
+function telNorm(v, p) {
+  v = String(v || '').replace(/[^0-9+]/g, ''); if (!v) return '';
+  if (v.charAt(0) === '+') return v;
+  var pr = prefixo(p); if (v.indexOf(pr.slice(1)) === 0 && v.length > 9) return '+' + v;
+  return pr + v.replace(/^0+/, '');
+}
+function telLocal(v, p) { v = String(v || ''); var pr = prefixo(p); return v.indexOf(pr) === 0 ? v.slice(pr.length) : v; }
+function msg(t, bom) { var m = $('msg'); m.className = 'msg' + (bom ? ' ok' : ''); m.textContent = t || ''; }
+function erroTxt(e) {
+  var t = String((e && (e.message || e.error_description)) || e || '');
+  if (/jwt expired|JWT/i.test(t)) return 'A sessão expirou. Saia e entre de novo.';
+  if (/function .* does not exist|could not find the function/i.test(t)) return 'Falta correr o SQL novo no Supabase (perfil da loja).';
+  if (/exceeded|too large|maximum allowed size|Payload too large/i.test(t)) return 'O ficheiro é grande demais. Escolha um mais pequeno (vídeo até 50 MB).';
+  return t;
+}
+function mudarPais(p) {
+  PAIS = p; var lst = PROV[p];
+  $('provS').classList.toggle('hide', !lst); $('provT').classList.toggle('hide', !!lst);
+  if (lst) $('provS').innerHTML = '<option value="">Escolha a província ▾</option>' + lst.map(function (x) { return '<option>' + x + '</option>'; }).join('');
+  $('pref').textContent = prefixo(p); document.querySelectorAll('.pref2').forEach(function (x) { x.textContent = prefixo(p); });
+}
+function mudarTipo(t) {
+  TIPO = t;
+  document.querySelectorAll('[data-tipo]').forEach(function (b) { b.classList.toggle('on', b.getAttribute('data-tipo') === t); });
+  $('tipoCampos').classList.remove('hide');
+  document.querySelectorAll('.tE').forEach(function (x) { x.classList.toggle('hide', t !== 'empresarial'); });
+  document.querySelectorAll('.tI').forEach(function (x) { x.classList.toggle('hide', t === 'empresarial'); });
+}
+document.querySelectorAll('[data-tipo]').forEach(function (b) { b.onclick = function () { mudarTipo(b.getAttribute('data-tipo')); }; });
+$('pais').onchange = function () { mudarPais(this.value); };
+/* ficheiros: mostra a miniatura e guarda para enviar */
+document.querySelectorAll('[data-up]').forEach(function (l) {
+  var inp = l.querySelector('input');
+  inp.onchange = function () {
+    var f = inp.files && inp.files[0]; if (!f) return;
+    var k = l.getAttribute('data-up');
+    if (/^video\//.test(f.type) && f.size > 50 * 1024 * 1024) { msg('O vídeo é grande demais (máximo 50 MB). Grave um vídeo mais curto.'); inp.value = ''; return; }
+    if (!/^video\//.test(f.type) && f.size > 15 * 1024 * 1024) { msg('O ficheiro é grande demais (máximo 15 MB).'); inp.value = ''; return; }
+    NOVO[k] = f; msg('');
+    marcar(l, URL.createObjectURL(f), f.type);
+  };
+});
+function marcar(l, url, tipo) {
+  l.classList.add('ok');
+  var em = l.querySelector('em'); if (em && !/✔/.test(em.textContent)) em.textContent = '✔ ' + em.textContent;
+  var old = l.querySelector('img,video'); if (old) old.remove();
+  if (!url) return;
+  var m;
+  if (/^video\//.test(tipo || '')) { m = document.createElement('video'); m.muted = true; m.playsInline = true; }
+  else if (/pdf/.test(tipo || '')) return;
+  else m = document.createElement('img');
+  m.src = url; l.insertBefore(m, l.querySelector('input'));
+}
+async function sha(f) {
+  try { var h = await crypto.subtle.digest('SHA-256', await f.arrayBuffer()); return Array.prototype.map.call(new Uint8Array(h), function (x) { return ('0' + x.toString(16)).slice(-2); }).join(''); } catch (e) { return ''; }
+}
+function ext(f) { var m = /\.([a-z0-9]{2,5})$/i.exec(f.name || ''); return (m ? m[1] : (String(f.type).split('/')[1] || 'bin')).toLowerCase().replace('jpeg', 'jpg').replace('quicktime', 'mov'); }
+function progresso(i, n) { var p = $('prog'); p.classList.remove('hide'); p.firstChild.style.width = Math.round(i / n * 100) + '%'; }
+
+async function iniciar() {
+  var s = (await sb.auth.getSession()).data.session;
+  $('carrega').classList.add('hide');
+  if (!s) { $('semConta').classList.remove('hide'); return; }
+  U = s.user; $('f').classList.remove('hide');
+  $('pais').innerHTML = '<option value="">Escolha o país ▾</option>' + PAISES.map(function (a) { return '<option value="' + a[0] + '">' + a[1] + '</option>'; }).join('');
+  var r = await sb.rpc('loja_meu_perfil');
+  if (r.error) { msg(erroTxt(r.error)); }
+  var d = r.data || {}, l = d.loja, c = d.contacto || {}, pv = d.privado || {}, it = d.identidade || {};
+  var p = (l && l.pais) || d.pais_conta || (U.user_metadata && U.user_metadata.pais) || '';
+  if (!p || (l && !/^(MZ|TZ|ZA)$/.test(l.pais))) $('paisBox').classList.remove('hide');
+  $('pais').value = p; mudarPais(p);
+  if (l) {
+    $('nome').value = l.nome || ''; $('desc').value = l.descricao || ''; FOTO = l.foto_url || '';
+    if (FOTO) marcar(document.querySelector('[data-up="perfil"]'), FOTO, 'image/jpeg');
+    if (PROV[p]) $('provS').value = l.provincia || ''; else $('provT').value = l.provincia || '';
+    $('bairro').value = l.bairro || '';
+    mudarTipo(pv.tipo_loja || (l.tipo === 'empresa' ? 'empresarial' : 'individual'));
+    if (l.estado === 'rejeitada') {
+      $('recusa').classList.remove('hide');
+      $('recusa').innerHTML = '<b>❌ A sua loja foi recusada</b>Motivo: ' + String(l.verificacao_motivo || l.motivo || '—').replace(/[&<>]/g, '') + '<br>Corrija o que está errado e envie de novo. A equipa BBabilônia volta a verificar.';
+    }
+  }
+  $('rua').value = c.rua || ''; $('tel').value = telLocal(c.telefone, p);
+  $('nomeDono').value = it.nome || ''; $('biNum').value = it.bi_numero || ''; $('biVal').value = it.bi_validade || '';
+  $('nuitDono').value = pv.nuit_dono || it.nuit || ''; $('nuitEmp').value = pv.nuit_empresa || ''; $('celProp').value = telLocal(pv.celular_proprietario, p);
+  (d.docs || []).forEach(function (x) {
+    if (TEM[x.tipo]) return; TEM[x.tipo] = x.ficheiro;
+    var l2 = document.querySelector('[data-up="' + x.tipo + '"]'); if (l2) marcar(l2, '', '');
+  });
+  /* mostra as miniaturas dos documentos já enviados */
+  Object.keys(TEM).forEach(async function (k) {
+    try { var u = await sb.storage.from('documentos-loja').createSignedUrl(TEM[k], 600); var l3 = document.querySelector('[data-up="' + k + '"]'); if (u.data && l3) marcar(l3, u.data.signedUrl, k === 'video_loja' ? 'video/mp4' : 'image/jpeg'); } catch (e) {}
+  });
+}
+
+$('enviar').onclick = async function () {
+  msg('');
+  var b = this, nome = $('nome').value.trim(), desc = $('desc').value.trim();
+  var prov = PROV[PAIS] ? $('provS').value : $('provT').value.trim();
+  if (!PAIS) return msg('Escolha o país da loja.');
+  if (nome.length < 2) return msg('Escreva o nome da loja.');
+  if (!FOTO && !NOVO.perfil) return msg('Escolha a foto de perfil da loja.');
+  if (desc.length < 10) return msg('Escreva a descrição da loja (o que vende).');
+  if (!prov) return msg('Escolha a província.');
+  if ($('bairro').value.trim().length < 2) return msg('Escreva o bairro.');
+  if ($('rua').value.trim().length < 3) return msg('Escreva a rua.');
+  if (!$('tel').value.trim()) return msg('Escreva o contacto (celular).');
+  if (!TIPO) return msg('Escolha o tipo de loja: Individual ou Empresarial.');
+  var falta = [['foto_pessoal', 'a foto do dono'], ['foto_loja', 'a foto da loja'], ['video_loja', 'o vídeo da loja'], ['bi_frente', 'a frente do documento de identificação'], ['bi_verso', 'o verso do documento de identificação']];
+  if (TIPO === 'empresarial') falta.push(['licenca', 'a licença da empresa']);
+  for (var i = 0; i < falta.length; i++) if (!NOVO[falta[i][0]] && !TEM[falta[i][0]]) return msg('Falta ' + falta[i][1] + '.');
+  if ($('nomeDono').value.trim().length < 3) return msg('Escreva o nome completo como no documento.');
+  if ($('biNum').value.trim().length < 6) return msg('Escreva o número do documento de identificação.');
+  if (!$('biVal').value) return msg('Escreva a validade do documento de identificação.');
+  if ($('biVal').value <= new Date().toISOString().slice(0, 10)) return msg('O documento de identificação está expirado. Use um documento válido.');
+  var nd = $('nuitDono').value.replace(/\D/g, ''), ne = $('nuitEmp').value.replace(/\D/g, '');
+  if (nd && nd.length !== 9) return msg('O NUIT tem 9 algarismos.');
+  if (ne && ne.length !== 9) return msg('O NUIT da empresa tem 9 algarismos.');
+  if (TIPO === 'empresarial') {
+    if (!ne) return msg('Escreva o NUIT da empresa.');
+    if (!nd) return msg('Escreva o NUIT do proprietário.');
+    if (!$('celProp').value.trim()) return msg('Escreva o celular do proprietário.');
+  }
+  b.disabled = true; b.textContent = 'A enviar…';
+  try {
+    var ks = Object.keys(NOVO), n = ks.length + 1, feitos = 0, docs = {};
+    progresso(0, n);
+    if (NOVO.perfil) {
+      var cam = U.id + '/perfil-' + Date.now() + '.' + ext(NOVO.perfil);
+      var up = await sb.storage.from('loja-fotos').upload(cam, NOVO.perfil, { upsert: true, contentType: NOVO.perfil.type || 'image/jpeg' });
+      if (up.error) throw up.error;
+      FOTO = sb.storage.from('loja-fotos').getPublicUrl(cam).data.publicUrl;
+      progresso(++feitos, n);
+    }
+    for (var j = 0; j < ks.length; j++) {
+      var k = ks[j]; if (k === 'perfil') continue;
+      var f = NOVO[k], c2 = U.id + '/perfil-' + k + '-' + Date.now() + '.' + ext(f);
+      var h = await sha(f);
+      var u2 = await sb.storage.from('documentos-loja').upload(c2, f, { contentType: f.type || 'application/octet-stream' });
+      if (u2.error) throw u2.error;
+      docs[k] = { ficheiro: c2, sha: h };
+      progresso(++feitos, n);
+    }
+    var r = await sb.rpc('loja_completar_perfil', { p: {
+      pais: PAIS, tipo: TIPO, nome: nome, foto_url: FOTO, descricao: desc, provincia: prov,
+      bairro: $('bairro').value.trim(), rua: $('rua').value.trim(), telefone: telNorm($('tel').value, PAIS),
+      nome_dono: $('nomeDono').value.trim(), bi_numero: $('biNum').value.trim(), bi_validade: $('biVal').value,
+      nuit_dono: nd, nuit_empresa: ne, celular_proprietario: TIPO === 'empresarial' ? telNorm($('celProp').value, PAIS) : '', docs: docs } });
+    if (r.error) throw r.error;
+    progresso(n, n);
+    Object.keys(docs).forEach(function (k3) { TEM[k3] = docs[k3].ficheiro; }); NOVO = {};
+    if (r.data && r.data.estado === 'rejeitada') msg('✅ Perfil enviado. A equipa BBabilônia vai verificar de novo e avisa quando a loja voltar a ficar ativa.', true);
+    else { msg('✅ Perfil completo! A sua loja está ativa e todos os painéis já funcionam.', true); setTimeout(function () { location.href = 'painel-vendedor-v2.html'; }, 1800); }
+  } catch (e) { msg(erroTxt(e)); }
+  b.disabled = false; b.textContent = 'Enviar perfil';
+};
+$('volta').onclick = function () { try { var r = document.referrer ? new URL(document.referrer) : null; if (r && r.host === location.host && history.length > 1) { history.back(); return; } } catch (e) {} location.href = 'painel-vendedor-v2.html'; };
+iniciar();
+</script>
+</body>
+</html>

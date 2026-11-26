@@ -1,7 +1,7 @@
 /* atd-painel.js — BBabilônia (26/11/2026) · atendimento (service.bbabilonia.com/atendimento.html)
    O painel do atendimento em painéis, como no painel do dono: ecrã branco, cada painel com contorno laranja.
    Pedidos: 🆕 Novos pedidos · ⚙️ Pedidos em processo · ✅ Confirmar receção de um pedido
-   Clientes: 🔎 Procurar cliente, pedido ou loja · ⚖️ Casos dos clientes · 💬 Conversas · 👥 Clientes e lojas (superiores) · 📚 Respostas
+   Clientes: 🔎 Procurar cliente, pedido ou loja · ⚖️ Casos dos clientes · 💬 Conversas · 👥 Clientes e lojas (superiores) · 🏪 Verificar lojas · 📚 Respostas
    Equipa: 🧑‍💼 Agentes · 🔄 Atualizar · 🚪 Sair
    Cada painel abre a sua vista com "← Voltar ao painel". A seta ← do cabeçalho e o botão voltar do telemóvel
    voltam etapa por etapa (vista → painel; separadores dos casos um a um, voltar-equipa.js).
@@ -83,6 +83,7 @@
       cartao({ a: "casos", i: "⚖️", t: "Casos dos clientes", s: "Os meus casos, Fila, Todos em aberto e Fechados", n: contaCasos() }) +
       (linkTopo("conversas") ? cartao({ href: "conversas.html", i: "💬", t: "Conversas", s: "Mensagens com clientes e fornecedores" }) : "") +
       ($("bb-ctb") ? cartao({ a: "contas", i: "👥", t: "Clientes e lojas", s: "Procurar, bloquear e remover" }) : "") +
+      cartao({ href: "atd-lojas.html", i: "🏪", t: "Verificar lojas", s: "Conferir os documentos das lojas novas" }) +
       (linkTopo("respostas") ? cartao({ href: "respostas.html", i: "📚", t: "Respostas", s: "Respostas prontas" }) : "") +
       "</div><h2>Equipa</h2><div class=\"gr\">" +
       (linkTopo("agentes") ? cartao({ href: "agentes.html", i: "🧑‍💼", t: "Agentes", s: "A equipa do atendimento" }) : "") +

@@ -7,16 +7,18 @@
    14/11/2026: levantamento e pais só no cliente; admin-saldos (levantamentos dos fornecedores) só no dono;
                atd-levantamento (pagamentos por levantamento) nos agentes e no dono, nunca no cliente nem no fornecedor.
                atd-servicos (mensalidades de "Aluguer, serviços e diversos") igual ao atd-levantamento.
+   26/11/2026: perfil-loja e meus-documentos só no fornecedor; atd-lojas (verificar lojas) nos agentes e no dono.
    Usado pelo ir-lado.html (páginas abertas no domínio errado) e pelos avisos (sino e páginas de avisos). */
 (function () {
   if (window.BBLado) return;
   var VENDEDOR = ['painel-vendedor', 'painel-vendedor-v2', 'fornecedor', 'fornecedor-novo', 'fornecedor-v3', 'fornecedor-envios',
     'fornecedor-saldo', 'fornecedor-disputas', 'fornecedor-pedidos-clientes', 'registar-produto', 'detalhes-fornecedor', 'loja-criar',
-    'loja-editar', 'conta-bancaria', 'avisos-vendedor', 'produto-vendedor', 'importar-loja-v7', 'gongyingshang', 'fabrica'];
+    'loja-editar', 'conta-bancaria', 'avisos-vendedor', 'produto-vendedor', 'importar-loja-v7', 'gongyingshang', 'fabrica',
+    'perfil-loja', 'meus-documentos'];
   var DONO = ['painel-admin', 'admin-bbabilonia', 'admin-lojas', 'admin-disputas', 'admin-fotos', 'admin-pedidos', 'admin', 'gerar-formas', 'admin-agentes', 'admin-pins', 'admin-saldos'];
   var AGENTE = ['atendimento', 'agentes', 'respostas', 'conversas', 'meus-dados'];
   /* páginas das equipas de agentes que o dono também usa no seu domínio (13/11/2026) */
-  var SERVICO = ['confirmar-produto', 'atd-verificacoes', 'atd-levantamento', 'atd-servicos'];
+  var SERVICO = ['confirmar-produto', 'atd-verificacoes', 'atd-levantamento', 'atd-servicos', 'atd-lojas'];
   var CLIENTE = ['index', 'carrinho', 'checkout', 'finalizar', 'conta', 'moradas', 'moradas-v2', 'moradas-v3', 'minhas-moradas',
     'enderecos-entrega', 'pedidos', 'avisos', 'avaliar', 'minhas-disputas', 'pagamento-ok', 'pagar-link', 'pagar-link-v2',
     'pagar-link-seguro', 'produto-bbabilonia', 'produto-loja', 'produto2', 'produto-quadro', 'busca-imagem-v2', 'busca-imagem-v3',

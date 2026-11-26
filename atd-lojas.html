@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<meta name="color-scheme" content="light">
+<title>Verificar lojas · BBabilônia</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script>if(!/^(admin|administrator)\./i.test(location.hostname))document.write('<script src="atd-sessao.js?v=1"><\/script>');</script>
+<script src="verificar-documentos.js?v=1"></script>
+<style>
+*{box-sizing:border-box;margin:0}
+body{background:#fff;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:#0f172a;line-height:1.4}
+.bar{position:sticky;top:0;z-index:5;background:#fff;display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:2px solid #f97316}
+.bk{width:38px;height:38px;flex:none;border-radius:50%;border:2px solid #f97316;background:#fff;color:#f97316;font:900 20px/34px system-ui;text-align:center;cursor:pointer;padding:0}
+.bar h1{font-size:17px;flex:1}
+main{max-width:760px;margin:0 auto;padding:14px 12px 60px}
+.abas{display:flex;gap:6px;overflow-x:auto;margin-bottom:12px;scrollbar-width:none}.abas::-webkit-scrollbar{display:none}
+.abas button{flex:none;border:2px solid #f97316;border-radius:20px;padding:8px 13px;font:inherit;font-size:13.5px;font-weight:800;background:#fff;color:#0f172a;cursor:pointer}
+.abas button.on{background:#fff7ed;color:#c2410c}
+.abas i{font-style:normal;background:#ef4444;color:#fff;border-radius:10px;padding:0 6px;font-size:11px;margin-left:5px}
+.cx{border:2.5px solid #f97316;border-radius:18px;padding:14px;margin-bottom:12px;background:#fff}
+.cab{display:flex;gap:12px;align-items:center}
+.cab .ft{width:56px;height:56px;flex:none;border-radius:50%;border:2px solid #f97316;object-fit:cover;background:#fff7ed}
+.cab b{display:block;font-size:16px}
+.bd{display:inline-block;font-size:12px;font-weight:800;border-radius:20px;padding:2px 9px;margin:4px 4px 0 0;background:#f1f5f9;color:#334155}
+.bd.am{background:#fef3c7;color:#92400e}.bd.vd{background:#dcfce7;color:#166534}.bd.vm{background:#fee2e2;color:#991b1b}
+.l{font-size:14px;margin:4px 0;word-break:break-word}.l b{display:inline-block;min-width:150px;color:#475569;font-weight:700}
+.desc{background:#f8fafc;border-radius:10px;padding:10px;font-size:14px;margin-top:8px;white-space:pre-wrap}
+h4{font-size:14px;margin:14px 0 8px;color:#475569}
+.gr{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.dc{border:2px solid #fed7aa;border-radius:14px;padding:8px;font-size:12.5px;font-weight:700}
+.dc a{display:block;color:inherit;text-decoration:none}
+.dc img,.dc video,.dc .ic{display:block;width:100%;height:120px;object-fit:cover;border-radius:10px;background:#f1f5f9;margin-bottom:6px}
+.dc .ic{display:flex;align-items:center;justify-content:center;font-size:34px;background:#fff7ed}
+.vst{display:inline-block;font-size:11.5px;font-weight:800;border-radius:999px;padding:2px 8px;margin-top:4px;background:#f1f5f9;color:#475569}
+.v-ok{background:#dcfce7;color:#166534}.v-at{background:#fef3c7;color:#92400e}.v-su{background:#fee2e2;color:#991b1b}
+.dc details summary{font-size:12px;color:#c2410c;margin-top:4px;cursor:pointer}
+.bbv{background:#fff!important;color:#0f172a}.bbv li{color:#7f1d1d!important}.bbv small,.bbv div{color:#475569!important}
+.bs{display:flex;gap:8px;margin-top:14px}
+.bs button,.bt{flex:1;border:0;border-radius:12px;padding:13px;font:inherit;font-size:15px;font-weight:800;color:#fff;cursor:pointer}
+.sim{background:#16a34a}.nao{background:#dc2626}.det{background:#fff;color:#c2410c!important;border:2px solid #f97316!important;width:100%;margin-top:10px}
+button:disabled{opacity:.55}
+textarea{width:100%;border:2px solid #f97316;border-radius:12px;padding:11px;font:inherit;font-size:15px;min-height:76px}
+.msg{font-size:14px;margin-top:8px;color:#dc2626;white-space:pre-line}.msg.ok{color:#047857}
+.vz{text-align:center;color:#64748b;padding:30px 10px}.hide{display:none!important}
+.alvo{box-shadow:0 0 0 4px #fdba74}
+</style>
+</head>
+<body>
+<script>/* (26/11/2026) voltar do telemóvel: aberta sem página anterior (ex.: por uma notificação), volta ao painel e nunca sai do site */
+(function(){var H=(/^(admin|administrator)\./i.test(location.hostname)?'/':'atendimento.html');try{var r=document.referrer?new URL(document.referrer):null;if(r&&r.host===location.host&&history.length>1)return}catch(e){}
+var u=location.href;try{history.replaceState({bbBase:1},'',H);history.pushState({bbPag:1},'',u)}catch(e){return}
+addEventListener('popstate',function(e){if(e.state&&e.state.bbBase)location.replace(H)});})();</script>
+<div class="bar"><button class="bk" id="volta" type="button" aria-label="Voltar">←</button><h1>🏪 Verificar lojas</h1></div>
+<main>
+ <div class="abas" id="tabs">
+  <button data-f="por_verificar" class="on">⏳ Por verificar</button><button data-f="verificadas">✅ Verificadas</button><button data-f="recusadas">❌ Recusadas</button><button data-f="validade">🪪 BI a expirar</button>
+ </div>
+ <div id="lista"><div class="vz">A carregar…</div></div>
+</main>
+<script>
+var ADM = /^(admin|administrator)\./i.test(location.hostname);
+var sb = supabase.createClient('https://dsfoqoeawvjafypycldz.supabase.co', 'sb_publishable_BN4NiVcDab9CqdTY_odgDA_uUOhjja0', ADM ? {} : (window.ATD_AUTH || {}));
+function $(i) { return document.getElementById(i); }
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+var NOMES = { foto_pessoal: 'Foto do dono', foto_loja: 'Foto da loja', video_loja: 'Vídeo da loja', bi_frente: 'Documento (frente)', bi_verso: 'Documento (verso)', licenca: 'Licença', prova: 'Prova ao vivo', identificacao: 'Identificação', alvara: 'Alvará', nuit: 'NUIT' };
+var NV = { ok: ['v-ok', '✅ sem sinais'], atencao: ['v-at', '⚠️ atenção'], suspeito: ['v-su', '🚨 suspeito'] };
+var Q = new URLSearchParams(location.search), F = Q.get('f') || 'por_verificar', ALVO = Q.get('loja') || '', L = [], PASSOS = 0, ASSIN = null;
+function dataPt(d) { try { return d ? new Date(String(d).length === 10 ? d + 'T12:00:00' : d).toLocaleDateString('pt-PT') : '—'; } catch (e) { return d; } }
+function erroTxt(e) { var t = String(e && e.message || e || ''); return /does not exist|could not find the function/i.test(t) ? 'Falta correr o SQL novo no Supabase (perfil da loja).' : t; }
+
+function marcarAba() { document.querySelectorAll('#tabs button').forEach(function (b) { b.classList.toggle('on', b.getAttribute('data-f') === F); }); }
+async function carregar() {
+  marcarAba();
+  $('lista').innerHTML = '<div class="vz">A carregar…</div>';
+  var r = await sb.rpc('lojas_verif_lista', { p_filtro: F });
+  if (r.error) { $('lista').innerHTML = '<div class="vz">' + esc(erroTxt(r.error)) + '</div>'; return; }
+  var c = r.data.contas || {};
+  document.querySelectorAll('#tabs button').forEach(function (b) {
+    var k = b.getAttribute('data-f'), n = c[k] || 0, i = b.querySelector('i');
+    if ((k === 'por_verificar' || k === 'validade') && n) { if (!i) { i = document.createElement('i'); b.appendChild(i); } i.textContent = n; } else if (i) i.remove();
+  });
+  L = r.data.lojas || [];
+  if (!L.length) { $('lista').innerHTML = '<div class="vz">' + ({ por_verificar: 'Não há lojas por verificar. 👍', verificadas: 'Ainda não há lojas verificadas.', recusadas: 'Não há lojas recusadas.', validade: 'Nenhum documento a expirar. 👍' })[F] + '</div>'; return; }
+  $('lista').innerHTML = L.map(cartao).join('');
+  L.forEach(function (l) { abrirDocs(l); });
+  if (ALVO) { var el = document.querySelector('[data-loja="' + ALVO + '"]'); if (el) { el.classList.add('alvo'); el.scrollIntoView({ block: 'start' }); var bt = el.querySelector('[data-a="det"]'); if (bt && F === 'por_verificar') bt.click(); } ALVO = ''; }
+}
+function linha(n, v) { return v ? '<div class="l"><b>' + n + '</b>' + esc(v) + '</div>' : ''; }
+function cartao(l) {
+  var est = l.estado === 'rejeitada' ? '<span class="bd vm">❌ Recusada</span>' : l.estado === 'aprovada' ? '<span class="bd vd">🟢 Ativa</span>' : '<span class="bd">' + esc(l.estado) + '</span>';
+  var ver = l.verificacao === 'verificada' ? '<span class="bd vd">✅ Verificada</span>' : l.verificacao === 'por_verificar' ? '<span class="bd am">⏳ Por verificar</span>' : '';
+  var dias = l.dias, bi = l.bi_validade ? dataPt(l.bi_validade) + (dias < 0 ? ' — ⛔ expirou' : dias <= 30 ? ' — ⚠️ expira em ' + dias + ' dia(s)' : '') : '';
+  var tipo = l.tipo_loja === 'empresarial' || l.tipo === 'empresa' ? '🏢 Empresarial' : '👤 Individual';
+  var vistos = {}, docs = (l.docs || []).filter(function (d) { if (vistos[d.tipo]) return false; vistos[d.tipo] = 1; return true; });
+  return '<div class="cx" data-loja="' + esc(l.id) + '">' +
+    '<div class="cab">' + (l.foto_url ? '<img class="ft" src="' + esc(l.foto_url) + '" alt="">' : '<div class="ft"></div>') + '<div><b>' + esc(l.nome) + '</b>' + est + ver + '<span class="bd">' + tipo + '</span></div></div>' +
+    (l.estado === 'rejeitada' && (l.verificacao_motivo || l.motivo) ? '<div class="l" style="color:#991b1b;margin-top:8px"><b>Motivo da recusa</b>' + esc(l.verificacao_motivo || l.motivo) + '</div>' : '') +
+    '<h4>Dados da loja</h4>' + linha('Email', l.email) + linha('País', l.pais) + linha('Província', l.provincia) + linha('Bairro', l.bairro) + linha('Rua', l.rua) + linha('Contacto', l.telefone) +
+    '<h4>Dono / proprietário</h4>' + linha('Nome', l.nome_dono) + linha('Nº do documento', l.bi_numero) + linha('Validade', bi) + linha('NUIT do dono', l.nuit_dono) + linha('NUIT da empresa', l.nuit_empresa) + linha('Celular do proprietário', l.celular_proprietario) +
+    (l.descricao ? '<div class="desc">' + esc(l.descricao) + '</div>' : '') +
+    '<h4>Documentos</h4><div class="gr">' + (docs.length ? docs.map(function (d) {
+      return '<div class="dc" data-doc="' + esc(d.ficheiro) + '" data-tipo="' + esc(d.tipo) + '"><a target="_blank"><div class="ic">' + (d.tipo === 'video_loja' || d.tipo === 'prova' ? '🎥' : d.tipo === 'licenca' ? '📄' : '🖼️') + '</div>' + esc(NOMES[d.tipo] || d.tipo) + '</a><span class="vst">' + (d.tipo === 'video_loja' || d.tipo === 'prova' ? '🎥 ver vídeo' : '🔍 por verificar') + '</span><details class="hide"><summary>Ver análise</summary><div class="res"></div></details></div>';
+    }).join('') : '<div class="l">Sem documentos.</div>') + '</div>' +
+    (docs.length ? '<button type="button" class="bt det" data-a="det">🔍 Verificar documentos (fotos editadas ou feitas por IA)</button>' : '') +
+    (l.verificado_por ? '<div class="l" style="margin-top:10px;color:#64748b">Última decisão: ' + esc(l.verificado_por) + ' · ' + esc(dataPt(l.verificado_em)) + '</div>' : '') +
+    '<h4>Motivo da recusa <span style="font-weight:600;color:#64748b">(só se recusar — o fornecedor vai ler)</span></h4><textarea class="motivo" placeholder="Ex.: A foto do BI parece editada. Envie uma foto nova do documento original." maxlength="500"></textarea>' +
+    '<div class="bs"><button type="button" class="sim" data-a="ok">✅ Está tudo certo</button><button type="button" class="nao" data-a="confirmar">❌ Recusar loja</button></div>' +
+    '<p class="msg"></p></div>';
+}
+async function abrirDocs(l) {
+  var el = document.querySelector('[data-loja="' + l.id + '"]'); if (!el) return;
+  el.querySelectorAll('.dc[data-doc]').forEach(async function (dc) {
+    try {
+      var f = dc.getAttribute('data-doc'), t = dc.getAttribute('data-tipo');
+      var u = await sb.storage.from('documentos-loja').createSignedUrl(f, 900); if (!u.data) return;
+      var a = dc.querySelector('a'), ic = dc.querySelector('.ic'); a.href = u.data.signedUrl;
+      if (t === 'video_loja' || t === 'prova' || /\.(mp4|mov|webm|3gp)$/i.test(f)) { var v = document.createElement('video'); v.src = u.data.signedUrl; v.controls = true; v.playsInline = true; v.preload = 'metadata'; ic.replaceWith(v); }
+      else if (!/\.pdf$/i.test(f)) { var im = document.createElement('img'); im.src = u.data.signedUrl; im.alt = ''; ic.replaceWith(im); }
+    } catch (e) {}
+  });
+}
+async function assinaturas() {
+  if (ASSIN) return;
+  var r = await sb.rpc('verif_assinaturas'); ASSIN = (r && !r.error && r.data) || [];
+  if (window.BBVerificaDoc) BBVerificaDoc.definirAssinaturas(ASSIN);
+}
+async function detetar(l, el, bt) {
+  if (!window.BBVerificaDoc) { bt.textContent = 'Falta o ficheiro verificar-documentos.js no GitHub'; return; }
+  bt.disabled = true; bt.textContent = '⏳ A verificar documentos…';
+  await assinaturas();
+  var susp = 0, aten = 0;
+  var dcs = el.querySelectorAll('.dc[data-doc]');
+  for (var i = 0; i < dcs.length; i++) {
+    var dc = dcs[i], f = dc.getAttribute('data-doc'), t = dc.getAttribute('data-tipo'), est = dc.querySelector('.vst'), det = dc.querySelector('details'), res = dc.querySelector('.res');
+    if (t === 'video_loja' || t === 'prova' || /\.(mp4|mov|webm|3gp)$/i.test(f)) continue;
+    est.className = 'vst'; est.textContent = '⏳ a verificar…';
+    try {
+      var d = await sb.storage.from('documentos-loja').download(f); if (d.error) throw d.error;
+      var r = await BBVerificaDoc.analisar(d.data, f);
+      try {
+        var o = await sb.rpc('verif_doc_guardar', { p: { ficheiro: f, loja_id: String(l.id), tipo: t, dhash: r.dhash, sha: r.sha, nivel: r.nivel, pontos: r.pontos, sinais: r.sinais.map(function (s) { return s.t; }) } });
+        var iguais = ((o && o.data) || []).filter(function (x) { return (r.sha && x.sha === r.sha) || (r.dhash && x.dhash && !/^0+$|^f+$/.test(r.dhash) && BBVerificaDoc.distancia(r.dhash, x.dhash) <= 5); });
+        if (iguais.length) {
+          var nomes = []; iguais.forEach(function (x) { var n = x.nome || x.loja_id; if (nomes.indexOf(n) < 0) nomes.push(n); });
+          r.sinais.unshift({ p: 8, t: 'Este documento (ou quase igual) já foi enviado por outra loja: ' + nomes.join(', ') + '.' });
+          r.pontos += 8; r.nivel = r.pontos >= 7 ? 'suspeito' : r.pontos >= 3 ? 'atencao' : 'ok';
+        }
+      } catch (e) {}
+      if (r.nivel === 'suspeito') susp++; else if (r.nivel === 'atencao') aten++;
+      est.className = 'vst ' + NV[r.nivel][0]; est.textContent = NV[r.nivel][1];
+      res.innerHTML = ''; res.appendChild(BBVerificaDoc.cartao(r)); det.classList.remove('hide'); if (r.nivel !== 'ok') det.open = true;
+    } catch (e) { est.className = 'vst'; est.textContent = '❌ não abriu'; }
+  }
+  bt.disabled = false;
+  bt.textContent = susp ? '🚨 ' + susp + ' documento(s) suspeito(s)' + (aten ? ' · ' + aten + ' com atenção' : '') + ' — verificar de novo' : aten ? '⚠️ ' + aten + ' documento(s) para rever — verificar de novo' : '✅ Sem sinais fortes — verificar de novo';
+}
+document.addEventListener('click', async function (e) {
+  var b = e.target.closest('[data-a]'); if (!b) return;
+  var el = b.closest('[data-loja]'), id = el.getAttribute('data-loja'), l = L.filter(function (x) { return x.id === id; })[0], m = el.querySelector('.msg'), a = b.getAttribute('data-a');
+  m.className = 'msg'; m.textContent = '';
+  if (a === 'det') return detetar(l, el, b);
+  var motivo = a === 'confirmar' ? el.querySelector('textarea.motivo').value.trim() : '';
+  if (a === 'confirmar' && motivo.length < 5) { m.textContent = 'Escreva o motivo da recusa na caixa acima.'; el.querySelector('textarea.motivo').focus(); return; }
+  if (a === 'confirmar' && !confirm('Recusar a loja ' + (l && l.nome || '') + '?\nMotivo: ' + motivo)) return;
+  if (a === 'ok' && el.querySelector('.v-su') && !confirm('Há documentos SUSPEITOS nesta loja. Confirmou bem e quer marcar como certa?')) return;
+  b.disabled = true;
+  var r = await sb.rpc('lojas_verif_decidir', { p_loja: id, p_ok: a === 'ok', p_motivo: motivo || null });
+  b.disabled = false;
+  if (r.error) { m.textContent = erroTxt(r.error); return; }
+  m.className = 'msg ok'; m.textContent = a === 'ok' ? '✅ Loja verificada.' : '❌ Loja recusada. O fornecedor recebeu o motivo.';
+  setTimeout(carregar, 900);
+});
+/* separadores: cada um é um passo (o voltar do telemóvel volta ao anterior) */
+document.querySelectorAll('#tabs button').forEach(function (b) {
+  b.onclick = function () { var f = b.getAttribute('data-f'); if (f === F) return; F = f; PASSOS++; try { history.pushState({ atdLojas: f }, '', location.pathname + '?f=' + f); } catch (e) {} carregar(); };
+});
+window.addEventListener('popstate', function (e) {
+  if (e.state && e.state.atdLojas) { F = e.state.atdLojas; PASSOS = Math.max(0, PASSOS - 1); carregar(); return; }
+  if (PASSOS > 0) { PASSOS = 0; F = new URLSearchParams(location.search).get('f') || 'por_verificar'; carregar(); return; }
+  sair();
+});
+function sair() { location.href = ADM ? '/' : 'atendimento.html'; }
+$('volta').onclick = function () { if (PASSOS > 0) { history.back(); return; } try { var r = document.referrer ? new URL(document.referrer) : null; if (r && r.host === location.host && history.length > 1) { history.back(); return; } } catch (e) {} sair(); };
+(async function () {
+  var s = (await sb.auth.getSession()).data.session;
+  if (!s) { $('lista').innerHTML = '<div class="vz">Entre primeiro ' + (ADM ? 'no painel do dono' : 'no atendimento') + '.<br><br><a href="' + (ADM ? '/' : 'atendimento.html') + '" style="color:#c2410c;font-weight:800">Entrar</a></div>'; return; }
+  if (ALVO) { try { var u = await sb.rpc('lojas_verif_uma', { p_loja: ALVO }); if (u.data && u.data.filtro) F = u.data.filtro; } catch (e) {} }
+  try { history.replaceState({ atdLojas: F }, '', location.pathname + '?f=' + F + (ALVO ? '&loja=' + ALVO : '')); } catch (e) {}
+  try { sb.rpc('lojas_validade_avisar'); } catch (e) {}
+  carregar();
+})();
+</script>
+</body>
+</html>
